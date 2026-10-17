@@ -103,7 +103,8 @@ class Model:
         Plain multi-sentence text is generated sentence by sentence with completed
         text/audio history. max_frames bounds the combined returned frames.
         split_sentences=False selects one native generation for comparison.
-        Marked-up text is left intact. Sampling seed/options apply to each chunk;
+        A single leading speaker tag is preserved on every chunk. Other marked-up
+        text is left intact. Sampling seed/options apply to each chunk;
         attempts records chunk indices/text and all attempt costs for split input.
 
         history accepts completed (text, codes[frames,10]) turns for conditioning

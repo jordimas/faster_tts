@@ -43,8 +43,9 @@ per chunk, and its cost is retained. This is a mitigation for observed sentence
 omissions, not a guarantee of complete content or consistent speaker identity.
 
 The conservative English/Spanish splitter preserves common abbreviations,
-initials and decimals. Text containing markup, speaker tags or bracketed cues
-stays intact; use explicit history for those inputs. For single-pass comparison,
+initials and decimals. A single leading speaker tag is repeated on every chunk.
+Dialogue with multiple tags, other markup and bracketed cues stays intact; use
+explicit history for those inputs. For single-pass comparison,
 use `split_sentences=False` or CLI `--no-split-sentences`.
 
 ## Compute type and memory

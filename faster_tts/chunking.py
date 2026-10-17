@@ -15,8 +15,12 @@ def split_text(text):
     """
     if not isinstance(text, str):
         raise TypeError('text must be a string')
+    original = text
+    speaker = re.match(r'[ \t\r\n]*(<\|speaker:(?:[0-9]|1[0-5])\|>)[ \t\r\n]*', text)
+    if speaker:
+        text = text[speaker.end():]
     if any(mark in text for mark in ('<', '>', '[', ']')):
-        return [text]
+        return [original]
     chunks, start = [], 0
     for match in _END.finditer(text):
         if match.group().startswith('.'):
@@ -34,4 +38,6 @@ def split_text(text):
     tail = text[start:].strip()
     if tail:
         chunks.append(tail)
+    if speaker:
+        return [speaker[1] + ' ' + chunk for chunk in chunks] if len(chunks) > 1 else [original]
     return chunks or [text]

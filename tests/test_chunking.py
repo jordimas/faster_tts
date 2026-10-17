@@ -25,6 +25,17 @@ class ChunkingTest(unittest.TestCase):
             self.assertEqual(' '.join(chunks), text)
 
     def test_markup_speakers_and_cues_preserve_the_original_request(self):
-        for text in ('<|speaker:2|> Hello. Goodbye.', '[whisper] Hello. Goodbye.',
+        for text in ('<|speaker:2|> Hello. <|speaker:3|> Goodbye.', '[whisper] Hello. Goodbye.',
                      '<whisper>Hello. Goodbye.</whisper>'):
+            self.assertEqual(split_text(text), [text])
+
+    def test_single_leading_speaker_is_preserved_on_every_chunk(self):
+        for speaker in (0, 2, 15):
+            tag = f'<|speaker:{speaker}|>'
+            self.assertEqual(split_text('  ' + tag + ' Hello. Goodbye.'),
+                             [tag + ' Hello.', tag + ' Goodbye.'])
+            text = '\t' + tag + ' Hello.'
+            self.assertEqual(split_text(text), [text])
+        for text in ('<|speaker:02|> Hello. Goodbye.', '<|speaker:16|> Hello. Goodbye.',
+                     '<|speaker:2|> [whisper] Hello. Goodbye.'):
             self.assertEqual(split_text(text), [text])

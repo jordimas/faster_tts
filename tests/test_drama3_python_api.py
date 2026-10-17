@@ -106,6 +106,18 @@ class Drama3PythonAPITest(unittest.TestCase):
         model.synthesize("Hello. Hello!")
         self.assertEqual(np.count_nonzero(self.backend.generate.call_args_list[0].args[0][:, 0] == begin), 0)
 
+    def test_single_speaker_tag_survives_chunking_and_history(self):
+        model = Model(self.root)
+        result = model.synthesize('<|speaker:2|> Hello. Hello?')
+        self.assertEqual(result.finish_reason, 'eos')
+        self.assertEqual([a['text'] for a in result.attempts],
+                         ['<|speaker:2|> Hello.', '<|speaker:2|> Hello?'])
+        speaker = model._prompt.tokenizer.token_to_id('<|speaker:2|>')
+        default = model._prompt.tokenizer.token_to_id('<|speaker:0|>')
+        calls = self.backend.generate.call_args_list
+        self.assertEqual([np.count_nonzero(c.args[0][:, 0] == speaker) for c in calls], [1, 2])
+        self.assertTrue(all(not np.any(c.args[0][:, 0] == default) for c in calls))
+
     def test_split_opt_out_and_invalid_input_before_partial_generation(self):
         model = Model(self.root)
         model.synthesize("Hello. Hello!", split_sentences=False)
