@@ -96,8 +96,11 @@ class Model:
         return json.loads(json.dumps(self._info))
 
     def synthesize(self, text, max_frames=512, temperature=.8, top_k=30,
-                   top_p=.8, seed=0, greedy=False, *, max_retries=0):
+                   top_p=.8, seed=0, greedy=False, *, max_retries=0, history=()):
         """Return mono float32 audio and generated [frames,10] codec indices.
+
+        history accepts completed (text, codes[frames,10]) turns for conditioning
+        later chunks. It does not establish speaker continuity or speech quality.
 
         finish_reason='length' means the frame budget was exhausted and audio may
         end mid-utterance; 'eos' means the model emitted its stop token.
@@ -122,7 +125,7 @@ class Model:
             raise ValueError("greedy must be a boolean")
         if not isinstance(max_retries, int) or isinstance(max_retries, bool) or max_retries not in (0, 1):
             raise ValueError("max_retries must be 0 or 1")
-        prepared = self._prompt.prepare(text)
+        prepared = self._prompt.prepare(text, history=history)
         maximum = self._prompt.config.get("text_config", {}).get("max_position_embeddings")
         if isinstance(maximum, int) and len(prepared.rows) + max_frames > maximum:
             raise ValueError("prompt plus max_frames exceeds model context capacity")

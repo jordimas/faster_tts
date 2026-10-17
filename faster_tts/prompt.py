@@ -1,10 +1,11 @@
-"""Plain text-only Drama 3 prompt preparation without a model runtime.
+"""Drama 3 prompt preparation without a model runtime.
 
 Protocol evidence: Fish Speech's fish_omni/generate.py build_drama3_prompt:
 https://github.com/fishaudio/fish-speech/blob/main/fish_speech/models/text2semantic/fish_omni/generate.py
 The checkpoint's generic chat_template.jinja is NOT the TTS prompt builder.
 Literals are encoded separately; concatenating them before encoding changes BPE
-boundaries. This module implements no references, history, or waveform synthesis.
+boundaries. Optional history contains completed text/audio turns; reference voice
+encoding and waveform synthesis are outside this module.
 """
 
 from dataclasses import dataclass
@@ -31,8 +32,8 @@ class Drama3Prompt:
 
     Column zero holds tokenizer IDs; columns 1..10 are zero for text rows, NOT
     audio_pad_token_id. Audio rows would hold ten codec indices and an offset
-    semantic ID, but this text-only builder never emits them. semantic_mask is
-    therefore entirely false. audio_pad_token_id names a tokenizer special token;
+    semantic ID. semantic_mask identifies audio rows supplied through history.
+    audio_pad_token_id names a tokenizer special token;
     it is exposed as metadata and is not the filler for codec columns.
     """
     rows: np.ndarray
@@ -85,7 +86,12 @@ class Drama3PromptBuilder:
             if self.tokenizer.token_to_id(literal) is None:
                 raise ValueError(f"missing tokenizer special token: {literal}")
 
-    def prepare(self, text):
+    def prepare(self, text, *, history=()):
+        """Prepare text with optional (text, integer codes[frames,10]) history.
+
+        Include only completed generations. History is conditioning context,
+        not output audio, and counts towards the prompt/context limit.
+        """
         if not isinstance(text, str):
             raise TypeError("text must be a string")
         text = unicodedata.normalize("NFC", text)
@@ -100,14 +106,35 @@ class Drama3PromptBuilder:
         segments = ("<|im_start|>system\n", "convert the provided text to speech",
                     "<|im_end|>\n", "<|im_start|>user\n", spoken,
                     "<|im_end|>\n", "<|im_start|>assistant\n<|voice|>")
-        token_ids = []
+        turns = []
+        for previous_text, codes in history:
+            previous = self.prepare(previous_text)
+            codes = np.asarray(codes)
+            audio = self.config["audio_decoder_config"]
+            if (codes.ndim != 2 or codes.shape[1] != audio["num_codebooks"]
+                    or not codes.size or not np.issubdtype(codes.dtype, np.integer)
+                    or np.any(codes < 0) or np.any(codes >= audio["vocab_size"])):
+                raise ValueError("history codes must be nonempty integer [frames,10] within vocabulary")
+            if len(codes) > self.max_prompt_rows:
+                raise ValueError("history exceeds prompt row limit")
+            turns.extend((*previous.segments[3:], codes.astype(np.int64, copy=False), "<|im_end|>\n"))
+        segments = segments[:3] + tuple(turns) + segments[3:]
+        blocks, count = [], 0
         for segment in segments:
-            token_ids.extend(self.tokenizer.encode(segment).ids)
-            if len(token_ids) > self.max_prompt_rows:
+            if isinstance(segment, str):
+                ids = self.tokenizer.encode(segment).ids
+                block = np.zeros((len(ids), 11), dtype=np.int64)
+                block[:, 0] = ids
+            else:
+                block = np.column_stack((segment[:, 0] + self.config["semantic_start_token_id"], segment))
+            count += len(block)
+            if count > self.max_prompt_rows:
                 raise ValueError(f"prompt exceeds {self.max_prompt_rows} rows")
-        rows = np.zeros((len(token_ids), 11), dtype=np.int64)
-        rows[:, 0] = token_ids
-        return Drama3Prompt(rows=rows, semantic_mask=np.zeros(len(rows), dtype=np.bool_),
+            blocks.append(block)
+        rows = np.ascontiguousarray(np.concatenate(blocks), dtype=np.int64)
+        semantic = ((rows[:, 0] >= self.config["semantic_start_token_id"])
+                    & (rows[:, 0] <= self.config["semantic_end_token_id"]))
+        return Drama3Prompt(rows=rows, semantic_mask=semantic,
                             normalized_text=text, segments=segments,
                             **{field: self.config[field] for field in
                                ("semantic_start_token_id", "semantic_end_token_id",

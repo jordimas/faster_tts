@@ -57,3 +57,20 @@ The CLI keeps the WAV for inspection but exits with status 1 if generation hits
 the frame limit. An EOS result exits successfully; EOS alone does not establish
 complete content or speech quality. The Python API retains the explicit
 `finish_reason` field for callers to check.
+
+To generate explicit sentence-sized chunks with earlier audio as conditioning:
+
+```python
+first = model.synthesize("The train followed the river through the valley.")
+if first.finish_reason != "eos":
+    raise RuntimeError("First chunk is incomplete")
+second = model.synthesize(
+    "From her seat, Maya watched the fields slowly disappear behind the trees.",
+    history=[("The train followed the river through the valley.", first.codes)],
+)
+```
+
+`history` contains completed `(text, codes)` turns; codes have shape `[frames,10]`.
+History counts towards the context limit and is not included in returned audio.
+Check every chunk's `finish_reason`. Chunking is explicit: it does not change
+single-text defaults, guarantee complete content, or establish speaker similarity.

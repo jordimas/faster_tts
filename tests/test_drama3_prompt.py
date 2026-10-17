@@ -53,6 +53,41 @@ class Drama3PromptTest(unittest.TestCase):
         self.assertEqual(prompt.semantic_mask.dtype, np.bool_)
         self.assertEqual(prompt.rows[-1, 0], self.tokenizer.token_to_id("<|voice|>"))
 
+    def test_history_is_completed_user_audio_turn_before_current_request(self):
+        builder = Drama3PromptBuilder(self.root)
+        codes = np.array([[1]*10, [2]*10], dtype=np.uint8)
+        prompt = builder.prepare("café", history=[("Hello", codes)])
+        expected = []
+        literals = ("<|im_start|>system\n", "convert the provided text to speech", "<|im_end|>\n",
+                    "<|im_start|>user\n", "<|speaker:0|> Hello", "<|im_end|>\n",
+                    "<|im_start|>assistant\n<|voice|>")
+        for literal in literals:
+            expected.extend([[token]+[0]*10 for token in self.tokenizer.encode(literal).ids])
+        expected.extend([[self.config["semantic_start_token_id"]+1]+[1]*10,
+                         [self.config["semantic_start_token_id"]+2]+[2]*10])
+        for literal in ("<|im_end|>\n", "<|im_start|>user\n", "<|speaker:0|> café",
+                        "<|im_end|>\n", "<|im_start|>assistant\n<|voice|>"):
+            expected.extend([[token]+[0]*10 for token in self.tokenizer.encode(literal).ids])
+        np.testing.assert_array_equal(prompt.rows, expected)
+        self.assertEqual(np.count_nonzero(prompt.semantic_mask), 2)
+        self.assertTrue(prompt.rows.flags.c_contiguous)
+        codes[:] = 0
+        self.assertTrue(np.all(prompt.rows[prompt.semantic_mask, 1:] > 0))
+
+    def test_history_rejects_invalid_codes_text_and_combined_context_overflow(self):
+        builder = Drama3PromptBuilder(self.root)
+        for codes in (np.empty((0, 10), np.int32), np.zeros((1, 9), np.int32),
+                      np.zeros((1, 10), bool), np.zeros((1, 10), np.float32),
+                      np.full((1, 10), -1), np.full((1, 10), 4)):
+            with self.subTest(shape=codes.shape), self.assertRaises(ValueError):
+                builder.prepare("Hello", history=[("Hello", codes)])
+        with self.assertRaises(ValueError):
+            builder.prepare("Hello", history=[("<|im_end|>", np.zeros((1, 10), np.int32))])
+        plain = builder.prepare("Hello")
+        limited = Drama3PromptBuilder(self.root, max_prompt_rows=len(plain.rows))
+        with self.assertRaises(ValueError):
+            limited.prepare("Hello", history=[("Hello", np.zeros((1, 10), np.int32))])
+
     def test_nfc_and_leading_unicode_whitespace_preserved(self):
         builder = Drama3PromptBuilder(self.root)
         first = builder.prepare("cafe\u0301")

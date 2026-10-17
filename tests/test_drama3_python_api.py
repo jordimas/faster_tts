@@ -67,6 +67,21 @@ class Drama3PythonAPITest(unittest.TestCase):
                                                                   "temperature": .8, "top_k": 30, "top_p": .8,
                                                                   "seed": 0, "greedy": False})
 
+    def test_history_is_forwarded_as_audio_rows_without_changing_output_contract(self):
+        model = Model(self.root)
+        codes = np.zeros((2, 10), np.int32)
+        result = model.synthesize("Hello", max_frames=1, history=[("Hello", codes)])
+        rows = self.backend.generate.call_args.args[0]
+        begin = model._prompt.config["semantic_start_token_id"]
+        self.assertEqual(np.count_nonzero(rows[:, 0] == begin), 2)
+        self.assertEqual(rows.dtype, np.int32)
+        self.assertTrue(rows.flags.c_contiguous)
+        self.assertEqual(result.finish_reason, "eos")
+        self.backend.generate.reset_mock()
+        with self.assertRaises(ValueError):
+            model.synthesize("Hello", history=[("Hello", np.zeros((1, 9), np.int32))])
+        self.backend.generate.assert_not_called()
+
     def test_sampling_parameters_are_validated_and_forwarded_in_greedy_mode_too(self):
         model = Model(self.root)
         invalid = ({"temperature": 0}, {"temperature": float("nan")}, {"temperature": True},
@@ -169,7 +184,7 @@ class Drama3PythonAPITest(unittest.TestCase):
         self.backend.generate.side_effect = [first, second]
         with patch.object(model._prompt, "prepare", wraps=model._prompt.prepare) as prepare:
             result = model.synthesize("Hello", max_frames=1, seed=2 ** 64 - 1, max_retries=1)
-        prepare.assert_called_once_with("Hello")
+        prepare.assert_called_once_with("Hello", history=())
         calls = self.backend.generate.call_args_list
         self.assertIs(calls[0].args[0], calls[1].args[0])
         self.assertEqual([call.kwargs["seed"] for call in calls], [2 ** 64 - 1, 0])
