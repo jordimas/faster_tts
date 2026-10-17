@@ -229,7 +229,8 @@ class Drama3PythonAPITest(unittest.TestCase):
         fake.return_value.synthesize.return_value = result
         arguments = ["faster-tts", str(self.root), "--text", "Hello", "--output", str(output_path)]
         with patch("faster_tts.__main__.Model", fake), patch.object(sys, "argv", arguments), patch("builtins.print"):
-            main()
+            with self.assertRaisesRegex(SystemExit, "Incomplete synthesis"):
+                main()
         with wave.open(str(output_path), "rb") as stream:
             self.assertEqual((stream.getnchannels(), stream.getsampwidth(), stream.getframerate()), (1, 2, 44100))
             np.testing.assert_array_equal(np.frombuffer(stream.readframes(6), dtype="<i2"),

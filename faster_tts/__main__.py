@@ -51,6 +51,8 @@ def main():
     print(f"Saved {result.audio.size / result.sample_rate:.3f}s to {args.output}; "
           f"finish_reason={result.finish_reason}; decoding={'greedy' if args.greedy else 'sampled'}")
     print(f"Inference time (excluding model loading): {inference_seconds:.3f}s")
+    if result.finish_reason != "eos":
+        raise SystemExit("Incomplete synthesis: frame limit reached; the saved audio may be truncated.")
 
 
 if __name__ == "__main__":

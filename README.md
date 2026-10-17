@@ -52,3 +52,8 @@ The mixed checkpoint's on-disk audit covers all 519 FLOAT32 matrices. Native tin
 fixtures verify representative weight preservation and FLOAT32 Dense execution;
 they do not enumerate all 519 variables in a freshly loaded full model. Structural
 audits do not establish speech quality.
+
+The CLI keeps the WAV for inspection but exits with status 1 if generation hits
+the frame limit. An EOS result exits successfully; EOS alone does not establish
+complete content or speech quality. The Python API retains the explicit
+`finish_reason` field for callers to check.
