@@ -39,7 +39,7 @@ class Drama3PythonAPITest(unittest.TestCase):
 
     def test_reuses_loaded_backend_and_passes_contiguous_int32_prompt(self):
         model = Model(self.root, intra_threads=3, prefill_chunk_size=2)
-        self.constructor.assert_called_once_with(str(self.root.resolve()), intra_threads=3, compute_type="int8_float32")
+        self.constructor.assert_called_once_with(str(self.root.resolve()), intra_threads=3, compute_type="default")
         first = model.synthesize("Hello", max_frames=1)
         second = model.synthesize("Hello", max_frames=2)
         self.assertIsInstance(first, SynthesisResult)
@@ -54,7 +54,7 @@ class Drama3PythonAPITest(unittest.TestCase):
         self.assertEqual(rows.shape[1], 11)
         self.assertFalse(np.any(rows[:, 1:]))
         self.assertEqual(self.backend.generate.call_args.kwargs, {"max_frames": 2, "prefill_chunk_size": 2,
-                                                                  "temperature": .8, "top_k": 30, "top_p": .8,
+                                                                  "temperature": .7, "top_k": 30, "top_p": .7,
                                                                   "seed": 0, "greedy": False})
 
     def test_multi_sentence_joins_outputs_and_conditions_later_sentence(self):
@@ -160,7 +160,7 @@ class Drama3PythonAPITest(unittest.TestCase):
         self.assertEqual(snapshot.call_args.kwargs["cache_dir"], str(cache_dir))
         self.assertTrue(snapshot.call_args.kwargs["local_files_only"])
         self.constructor.assert_called_once_with(str(self.root.resolve()), intra_threads=8,
-                                                  compute_type="int8_float32")
+                                                  compute_type="default")
         self.backend.generate.assert_not_called()
         self.assertIsNotNone(model)
 
@@ -313,8 +313,11 @@ class Drama3PythonAPITest(unittest.TestCase):
         with patch("faster_tts.__main__.Model", fake), patch.object(sys, "argv", arguments), patch("builtins.print"):
             main()
         fake.assert_called_once_with("hf://organization/converted-drama3", intra_threads=8,
-                                     compute_type="int8_float32", revision="pinned-commit",
+                                     compute_type="default", revision="pinned-commit",
                                      cache_dir=self.root / "cache", local_files_only=True)
+        fake.return_value.synthesize.assert_called_once_with(
+            "Hello", max_frames=512, temperature=.7, top_k=30, top_p=.7,
+            seed=0, greedy=False, split_sentences=True)
 
     def test_rejects_zero_stride_native_audio_instead_of_repeating_first_sample(self):
         # Reproduces pybind11 2.11's rank-one allocation metadata under NumPy 2.

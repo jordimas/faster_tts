@@ -1,96 +1,72 @@
 # Experimental Drama 3 CPU inference
 
-This package requires the matching experimental CTranslate2 wheel exposing
-`Drama3` and a converted checkpoint. Ordinary upstream CT2 wheels do not guarantee
-that binding. This is a local functional prototype; held-out generation reliability
-and portable installation remain open.
+Requires a matching experimental CTranslate2 build exposing `Drama3` and a
+converted checkpoint. This wrapper currently uses CPU only. Portable installation
+and broad speech reliability remain unverified.
+
+Raw CTranslate2 accepts prepared token/audio rows. This library adds a text API
+with tokenizer and prompt handling, automatic chunking with audio history,
+optional retries, result validation, and a WAV-writing CLI. It also resolves
+explicit `hf://` model identifiers with the optional `hub` dependency. Inference
+and waveform decoding still run in CTranslate2; this wrapper adds no separate
+model or inference engine.
 
 ```python
 from faster_tts import Model
 
-model = Model("/path/to/converted-drama3", compute_type="int8_float32")
+model = Model("/path/to/converted-drama3")
 result = model.synthesize("Hello, how are you?")
 print(result.sample_rate, result.finish_reason)
 ```
 
-A bounded retry is optional and disabled by default:
-
-```python
-result = model.synthesize("Hello, how are you?", seed=0, max_retries=1)
-print(result.attempts)  # Includes capped attempts and their cost.
+```bash
+python -m faster_tts /path/to/converted-drama3 \
+  --text "Hello, how are you?" --output hello.wav
 ```
 
-Only sampled generation ending at the frame limit retries once, on the same
-loaded model with fresh native state and the next seed. EOS, greedy decoding,
-and errors never retry. This can double computation; a second capped attempt
-returns its partial audio. Attempt metadata is retained, discarded audio/codes
-are not, and `result.timings` sums native phase timings across all attempts.
-Retrying does not detect incomplete speech that ends with EOS or establish
-speech quality.
+Results contain mono FLOAT32 `audio` at 44,100 Hz, INT32 `codes` shaped
+`[frames, 10]`, `finish_reason`, `timings`, and `attempts` metadata.
+`finish_reason="length"` means generation exhausted its frame budget and may be
+truncated; `"eos"` does not guarantee complete speech. The CLI saves the WAV and
+exits with status 1 on `length`.
 
-## Multi-sentence text
+## Generation
 
-Plain text is generated sentence by sentence, conditioning later sentences on
-completed text/audio from the first and latest chunks. Returned audio and codes
-contain every generated chunk in order, without silence trimming or padding.
-`max_frames` is the total returned-frame budget, shared across chunks. The result
-reports `eos` only if every chunk reaches EOS; otherwise it reports `length`.
-An empty generation raises an error. Check the final status before using audio.
+Text splits at sentence boundaries and, for long sentences, at comma, semicolon
+or colon boundaries with a soft target of 200 characters. Common English/Spanish
+abbreviations, initials and decimals stay together. A leading speaker tag repeats
+on each chunk. Sentences with their own leading bracketed cues can split;
+ambiguous cue scope, multiple speaker tags and other markup stay intact.
+Use `split_sentences=False` or `--no-split-sentences` for a single pass.
 
-`result.attempts` records each chunk's text/index, seed, stop reason and cost.
-The same sampling settings/seed apply to each chunk. A retry is still opt-in,
-per chunk, and its cost is retained. This is a mitigation for observed sentence
-omissions, not a guarantee of complete content or consistent speaker identity.
+Later chunks use completed text/audio from the first and latest chunks as
+history. Audio is concatenated without silence trimming or padding.
+`max_frames=512` is the shared output budget; `eos` requires every chunk to
+finish. Splitting does not guarantee content completeness or speaker continuity.
 
-The conservative English/Spanish splitter preserves common abbreviations,
-initials and decimals. A single leading speaker tag is repeated on every chunk.
-Dialogue with multiple tags, other markup and bracketed cues stays intact; use
-explicit history for those inputs. For single-pass comparison,
-use `split_sentences=False` or CLI `--no-split-sentences`.
+Sampling defaults are temperature 0.7, top-k 30 and top-p 0.7, applied with the
+same seed to each chunk. Native CTranslate2 defaults to temperature/top-p 0.8.
+`greedy=True` enables diagnostic greedy decoding.
 
-## Compute type and memory
+Optional `max_retries=1` retries each sampled, frame-limited chunk once with the
+next seed. It can double computation and returns partial audio if the retry also
+hits the limit. EOS, greedy decoding and errors do not retry. `attempts` retains
+attempt costs and chunk metadata; `timings` includes discarded attempts.
 
-Use `compute_type="int8_float32"` (the default) with a checkpoint converted using
-the intended quantization policy. With `experts_int8_sensitive_float32`, routed
-experts remain INT8 while the other 519 matrix weights remain FLOAT32, including
-embeddings, routers, shared experts and output heads. The independently audited
-mixed checkpoint has 47,825,164,164 bytes of tensor payload (44.54 GiB); runtime
-memory additionally includes caches, scratch buffers and process overhead. This
-payload size is not a measured inference peak or a quality acceptance result.
+For explicit conditioning, pass completed turns as
+`history=[("Previous text.", previous_result.codes)]`. History counts towards the
+context limit and is excluded from returned audio. Check each turn's
+`finish_reason` before reusing it.
 
-`compute_type="float32"` dequantizes the routed expert bank during native loading;
-it does not merely select FLOAT32 activations. Those 30,720 expert matrices alone
-expand from 30 GiB of INT8 values to **120 GiB** of FLOAT32 values. The complete
-FLOAT32 tensor payload is approximately **134.42 GiB** (144,336,099,204 bytes),
-before runtime allocations or conversion temporaries. It exceeds both this
-machine's approximately 122 GiB RAM and the intended 60 GiB memory budget. This
-estimate follows the audited tensor inventory and loader conversion behavior;
-no full FLOAT32 load was attempted. FLOAT32 remains available for machines with
-sufficient memory.
+## Precision and memory
 
-The mixed checkpoint's on-disk audit covers all 519 FLOAT32 matrices. Native tiny
-fixtures verify representative weight preservation and FLOAT32 Dense execution;
-they do not enumerate all 519 variables in a freshly loaded full model. Structural
-audits do not establish speech quality.
+`compute_type="default"` follows the converted package precision. Default FP8
+packages retain original expert bytes and block scales with FLOAT32 sensitive
+weights and codec. FLOAT32 execution decodes selected experts on demand, without
+expanding the entire bank. The audited FP8 tensor payload is about 44.43 GiB;
+runtime allocations require additional memory.
 
-The CLI keeps the WAV for inspection but exits with status 1 if generation hits
-the frame limit. An EOS result exits successfully; EOS alone does not establish
-complete content or speech quality. The Python API retains the explicit
-`finish_reason` field for callers to check.
-
-To generate explicit sentence-sized chunks with earlier audio as conditioning:
-
-```python
-first = model.synthesize("The train followed the river through the valley.")
-if first.finish_reason != "eos":
-    raise RuntimeError("First chunk is incomplete")
-second = model.synthesize(
-    "From her seat, Maya watched the fields slowly disappear behind the trees.",
-    history=[("The train followed the river through the valley.", first.codes)],
-)
-```
-
-`history` contains completed `(text, codes)` turns; codes have shape `[frames,10]`.
-History counts towards the context limit and is not included in returned audio.
-Check every chunk's `finish_reason`. Explicit history also supports caller-chosen
-boundaries; it does not guarantee complete content or establish speaker similarity.
+CTranslate2 also supports standard quantized packages and runtime conversion,
+including `compute_type="int8_float32"`. Converting FP8 weights at load time
+requires additional temporary memory. Available compute types follow the CPU
+backend; the synthesis graph and codec use FLOAT32 activations.
