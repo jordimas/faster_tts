@@ -1,8 +1,14 @@
-# Experimental Drama 3 CPU inference
+# Experimental Drama 3 inference
+
+The goal of `faster_tts` is to make text-to-speech easy to adopt in any codebase,
+with CTranslate2 as its only inference backend. It aims to provide a small,
+text-first API, sensible defaults, simple model loading and reuse, convenient
+audio output, and clear errors. Prompt preparation and multilingual chunking
+belong in this layer; advanced CT2 controls should remain available when needed.
 
 Requires a matching experimental CTranslate2 build exposing `Drama3` and a
-converted checkpoint. This wrapper currently uses CPU only. Portable installation
-and broad speech reliability remain unverified.
+converted checkpoint. Portable installation and broad speech reliability remain
+unverified.
 
 Text input accepts all languages supported by
 [Drama 3](https://huggingface.co/fishaudio/drama-3), without a language selector.
@@ -74,5 +80,5 @@ runtime allocations require additional memory.
 
 CTranslate2 also supports standard quantized packages and runtime conversion,
 including `compute_type="int8_float32"`. Converting FP8 weights at load time
-requires additional temporary memory. Available compute types follow the CPU
-backend; the synthesis graph and codec use FLOAT32 activations.
+requires additional temporary memory. Available compute types depend on the
+selected CTranslate2 backend and hardware.
