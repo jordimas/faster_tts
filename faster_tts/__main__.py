@@ -31,6 +31,7 @@ def main():
     parser.add_argument("--top-k", type=int, default=30)
     parser.add_argument("--top-p", type=float, default=.8)
     parser.add_argument("--seed", type=int, default=0)
+    parser.add_argument("--no-split-sentences", action="store_true", help="diagnostic single-pass generation")
     parser.add_argument("--greedy", action="store_true", help="diagnostic greedy decoding instead of sampling")
     args = parser.parse_args()
     model = Model(args.model, intra_threads=args.threads, compute_type=args.compute_type,
@@ -39,7 +40,8 @@ def main():
     started = time.perf_counter()
     result = model.synthesize(
         args.text, max_frames=args.max_frames, temperature=args.temperature,
-        top_k=args.top_k, top_p=args.top_p, seed=args.seed, greedy=args.greedy)
+        top_k=args.top_k, top_p=args.top_p, seed=args.seed, greedy=args.greedy,
+        split_sentences=not args.no_split_sentences)
     inference_seconds = time.perf_counter() - started
     pcm = np.rint(np.clip(result.audio, -1, 1) * 32767).astype("<i2")
     args.output.parent.mkdir(parents=True, exist_ok=True)

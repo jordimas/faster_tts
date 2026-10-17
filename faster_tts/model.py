@@ -19,6 +19,7 @@ import numpy as np
 
 from .prompt import Drama3PromptBuilder
 from .cache import resolve_model_path
+from .chunking import split_text
 
 
 @dataclass(frozen=True)
@@ -96,8 +97,14 @@ class Model:
         return json.loads(json.dumps(self._info))
 
     def synthesize(self, text, max_frames=512, temperature=.8, top_k=30,
-                   top_p=.8, seed=0, greedy=False, *, max_retries=0, history=()):
+                   top_p=.8, seed=0, greedy=False, *, max_retries=0, history=(), split_sentences=True):
         """Return mono float32 audio and generated [frames,10] codec indices.
+
+        Plain multi-sentence text is generated sentence by sentence with completed
+        text/audio history. max_frames bounds the combined returned frames.
+        split_sentences=False selects one native generation for comparison.
+        Marked-up text is left intact. Sampling seed/options apply to each chunk;
+        attempts records chunk indices/text and all attempt costs for split input.
 
         history accepts completed (text, codes[frames,10]) turns for conditioning
         later chunks. It does not establish speaker continuity or speech quality.
@@ -125,6 +132,14 @@ class Model:
             raise ValueError("greedy must be a boolean")
         if not isinstance(max_retries, int) or isinstance(max_retries, bool) or max_retries not in (0, 1):
             raise ValueError("max_retries must be 0 or 1")
+        if not isinstance(split_sentences, bool):
+            raise ValueError("split_sentences must be a boolean")
+        chunks = split_text(text) if split_sentences else [text]
+        if len(chunks) > 1:
+            # Validate all input before starting any partial synthesis.
+            self._prompt.prepare(text)
+            return self._synthesize_chunks(chunks, max_frames, temperature, top_k, top_p,
+                                           seed, greedy, max_retries, history)
         prepared = self._prompt.prepare(text, history=history)
         maximum = self._prompt.config.get("text_config", {}).get("max_position_embeddings")
         if isinstance(maximum, int) and len(prepared.rows) + max_frames > maximum:
@@ -154,6 +169,8 @@ class Model:
                 raise RuntimeError("native Drama3 returned invalid audio/code metadata")
             if audio.size != codes.shape[0] * 2048:
                 raise RuntimeError("native Drama3 audio length disagrees with codec frame count")
+            if not audio.size:
+                raise RuntimeError("Incomplete synthesis: model returned no audio")
             timings = result.get("timings", {})
             if (not isinstance(timings, dict)
                     or any(not isinstance(k, str) or not isinstance(v, Real)
@@ -171,3 +188,28 @@ class Model:
         return SynthesisResult(audio=np.ascontiguousarray(audio), sample_rate=44100,
                                codes=np.ascontiguousarray(codes), finish_reason=reason,
                                timings=aggregate_timings, attempts=tuple(attempts))
+
+    def _synthesize_chunks(self, chunks, max_frames, temperature, top_k, top_p,
+                           seed, greedy, max_retries, history):
+        initial = list(history)
+        completed, audio, codes, attempts, timings = [], [], [], [], {}
+        remaining = max_frames
+        for index, text in enumerate(chunks):
+            if remaining == 0:
+                break
+            context = initial + completed[:1] + (completed[-1:] if len(completed) > 1 else [])
+            result = self.synthesize(text, remaining, temperature, top_k, top_p, seed, greedy,
+                                     max_retries=max_retries, history=context, split_sentences=False)
+            audio.append(result.audio)
+            codes.append(result.codes)
+            remaining -= len(result.codes)
+            attempts.extend(dict(attempt, chunk_index=index, text=text) for attempt in result.attempts)
+            for phase, seconds in result.timings.items():
+                timings[phase] = timings.get(phase, 0.) + seconds
+            if result.finish_reason != "eos":
+                break
+            completed.append((text, result.codes))
+        reason = "eos" if len(completed) == len(chunks) else "length"
+        return SynthesisResult(audio=np.concatenate(audio), sample_rate=44100,
+                               codes=np.concatenate(codes), finish_reason=reason,
+                               timings=timings, attempts=tuple(attempts))

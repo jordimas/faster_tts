@@ -67,6 +67,55 @@ class Drama3PythonAPITest(unittest.TestCase):
                                                                   "temperature": .8, "top_k": 30, "top_p": .8,
                                                                   "seed": 0, "greedy": False})
 
+    def test_multi_sentence_joins_outputs_and_conditions_later_sentence(self):
+        model = Model(self.root)
+        first = dict(self.result, audio=np.full(2048, .1, np.float32), timings={"native": 2.})
+        second = dict(self.result, audio=np.full(2048, .2, np.float32), timings={"native": 3.})
+        self.backend.generate.side_effect = [first, second]
+        result = model.synthesize("Hello. Hello?", max_frames=3)
+        self.assertEqual(result.finish_reason, "eos")
+        np.testing.assert_array_equal(result.audio, np.concatenate([first["audio"], second["audio"]]))
+        self.assertEqual(result.codes.shape, (2, 10))
+        self.assertEqual(result.timings, {"native": 5.})
+        calls = self.backend.generate.call_args_list
+        self.assertEqual([call.kwargs["max_frames"] for call in calls], [3, 2])
+        begin = model._prompt.config["semantic_start_token_id"]
+        self.assertEqual(np.count_nonzero(calls[1].args[0][:, 0] == begin), 1)
+        self.assertEqual([a["chunk_index"] for a in result.attempts], [0, 1])
+        self.assertEqual([a["text"] for a in result.attempts], ["Hello.", "Hello?"])
+
+    def test_chunk_budget_exhaustion_never_reports_full_success_or_skips_ahead(self):
+        model = Model(self.root)
+        result = model.synthesize("Hello. Hello! Hello?", max_frames=2)
+        self.assertEqual(result.finish_reason, "length")
+        self.assertEqual(result.codes.shape[0], 2)
+        self.assertEqual(self.backend.generate.call_count, 2)
+        self.backend.generate.reset_mock()
+        self.backend.generate.side_effect = [self.result, dict(self.result, finish_reason="length")]
+        result = model.synthesize("Hello. Hello! Hello?", max_frames=4)
+        self.assertEqual(result.finish_reason, "length")
+        self.assertEqual(self.backend.generate.call_count, 2)
+
+    def test_chunk_history_is_bounded_and_not_retained_between_requests(self):
+        model = Model(self.root)
+        model.synthesize("Hello. Hello! Hello? Hello.")
+        begin = model._prompt.config["semantic_start_token_id"]
+        self.assertEqual([np.count_nonzero(c.args[0][:, 0] == begin)
+                          for c in self.backend.generate.call_args_list], [0, 1, 2, 2])
+        self.backend.generate.reset_mock()
+        model.synthesize("Hello. Hello!")
+        self.assertEqual(np.count_nonzero(self.backend.generate.call_args_list[0].args[0][:, 0] == begin), 0)
+
+    def test_split_opt_out_and_invalid_input_before_partial_generation(self):
+        model = Model(self.root)
+        model.synthesize("Hello. Hello!", split_sentences=False)
+        self.assertEqual(self.backend.generate.call_count, 1)
+        self.backend.generate.reset_mock()
+        for kwargs in ({"text": "Hello. <|im_end|>"}, {"text": "Hello.", "split_sentences": 1}):
+            with self.assertRaises(ValueError):
+                model.synthesize(**kwargs)
+        self.backend.generate.assert_not_called()
+
     def test_history_is_forwarded_as_audio_rows_without_changing_output_contract(self):
         model = Model(self.root)
         codes = np.zeros((2, 10), np.int32)
@@ -175,7 +224,8 @@ class Drama3PythonAPITest(unittest.TestCase):
         self.assertEqual(model.synthesize("Hello", max_frames=1).finish_reason, "length")
         self.backend.generate.return_value = {"audio": np.empty(0, np.float32), "codes": np.empty((0, 10), np.int32),
                                                "sample_rate": 44100, "finish_reason": "eos"}
-        self.assertEqual(model.synthesize("Hello").audio.size, 0)
+        with self.assertRaisesRegex(RuntimeError, "no audio"):
+            model.synthesize("Hello")
 
     def test_opt_in_retry_preserves_attempts_cost_prompt_and_seed_wrap(self):
         model = Model(self.root)

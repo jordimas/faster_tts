@@ -28,6 +28,25 @@ are not, and `result.timings` sums native phase timings across all attempts.
 Retrying does not detect incomplete speech that ends with EOS or establish
 speech quality.
 
+## Multi-sentence text
+
+Plain text is generated sentence by sentence, conditioning later sentences on
+completed text/audio from the first and latest chunks. Returned audio and codes
+contain every generated chunk in order, without silence trimming or padding.
+`max_frames` is the total returned-frame budget, shared across chunks. The result
+reports `eos` only if every chunk reaches EOS; otherwise it reports `length`.
+An empty generation raises an error. Check the final status before using audio.
+
+`result.attempts` records each chunk's text/index, seed, stop reason and cost.
+The same sampling settings/seed apply to each chunk. A retry is still opt-in,
+per chunk, and its cost is retained. This is a mitigation for observed sentence
+omissions, not a guarantee of complete content or consistent speaker identity.
+
+The conservative English/Spanish splitter preserves common abbreviations,
+initials and decimals. Text containing markup, speaker tags or bracketed cues
+stays intact; use explicit history for those inputs. For single-pass comparison,
+use `split_sentences=False` or CLI `--no-split-sentences`.
+
 ## Compute type and memory
 
 Use `compute_type="int8_float32"` (the default) with a checkpoint converted using
@@ -72,5 +91,5 @@ second = model.synthesize(
 
 `history` contains completed `(text, codes)` turns; codes have shape `[frames,10]`.
 History counts towards the context limit and is not included in returned audio.
-Check every chunk's `finish_reason`. Chunking is explicit: it does not change
-single-text defaults, guarantee complete content, or establish speaker similarity.
+Check every chunk's `finish_reason`. Explicit history also supports caller-chosen
+boundaries; it does not guarantee complete content or establish speaker similarity.
