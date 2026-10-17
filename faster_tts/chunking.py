@@ -1,16 +1,32 @@
-"""Conservative English/Spanish sentence and clause boundaries for synthesis."""
+"""Conservative Unicode sentence and clause boundaries for synthesis."""
 import re
 
 
 _ABBREVIATIONS = frozenset(('mr', 'mrs', 'ms', 'dr', 'dra', 'sr', 'sra', 'srta',
                             'prof', 'jr', 'vs', 'etc', 'approx', 'no', 'núm', 'ud', 'uds'))
-_END = re.compile(r'[.!?]+[\"\'”’»)]*(?=\s|$)|\n+')
+# Period abbreviations are inherently ambiguous without language context. Keep
+# familiar forms and short initials together; unknown forms remain heuristic.
+_ABBREVIATIONS = _ABBREVIATIONS | frozenset((
+    'mme', 'mmes', 'mlle', 'mlles', 'ém', 'av', 'bd', 'bzw', 'ca', 'dipl',
+    'ing', 'nr', 'str', 'vgl', 'z.b', 'd.h', 'sig', 'sig.ra', 'dott', 'dott.ssa',
+    'ecc', 'ex', 'p.ex', 'sra', 'sta', 'sant', 'pàg', 'pág', 'tel',
+    'г', 'гг', 'ул', 'д', 'им', 'рис', 'стр', 'т.д', 'т.п',
+))
+_CLOSERS = r'[\"\'”’»）)\]}」』】》]*'
+# These marks can end sentences without whitespace (e.g. Chinese and Japanese).
+_TERMINALS = '。！？؟۔।॥።፧፨։။᙮꓿'
+_END = re.compile(
+    r'[.!?]+' + _CLOSERS + r'(?=\s|$)|[' + _TERMINALS + r']+'
+    + _CLOSERS + r'|\n+'
+)
+_CLAUSE = re.compile(r'[,;:](?=\s)|[，、；：،؛]')
 
 
 def split_text(text):
     """Keep abbreviations together and preserve a single leading speaker tag.
 
-    This is a bounded plain-text heuristic, not a multilingual linguistic parser.
+    This is a Unicode punctuation heuristic, not a linguistic parser. Text in
+    any language is accepted; text without clear boundaries stays together.
     Long sentences group at clause punctuation with a 200-character soft target.
     Sentence-attached bracket cues are kept when every sentence has its own cue.
     Other markup stays intact. Spoken spans retain their punctuation and internal
@@ -40,7 +56,7 @@ def split_text(text):
             word = word.group(1) if word else ''
             if (word.casefold() in _ABBREVIATIONS
                     or len(word) == 1 and word.isalpha()
-                    or re.fullmatch(r'(?:[A-Za-z]\.)+[A-Za-z]', word)):
+                    or re.fullmatch(r'(?:[^\W\d_]\.)+[^\W\d_]', word)):
                 continue
         chunk = text[start:match.end()].strip()
         if chunk:
@@ -59,7 +75,7 @@ def split_text(text):
     bounded = []
     for chunk in chunks:
         start = previous = 0
-        ends = [match.end() for match in re.finditer(r'[,;:](?=\s)', chunk)] + [len(chunk)]
+        ends = [match.end() for match in _CLAUSE.finditer(chunk)] + [len(chunk)]
         for end in ends:
             if end - start > 200 and previous > start:
                 bounded.append(chunk[start:previous].strip())

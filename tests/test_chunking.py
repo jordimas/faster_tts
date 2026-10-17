@@ -4,6 +4,50 @@ from faster_tts.chunking import split_text
 
 
 class ChunkingTest(unittest.TestCase):
+    def test_unicode_sentence_boundaries_with_and_without_spaces(self):
+        cases = (
+            ('你好。世界！再见？', ['你好。', '世界！', '再见？']),
+            ('「こんにちは。」次です。', ['「こんにちは。」', '次です。']),
+            ('안녕하세요! 다음 문장입니다.', ['안녕하세요!', '다음 문장입니다.']),
+            ('مرحبا؟ نعم!', ['مرحبا؟', 'نعم!']),
+            ('یہ پہلا جملہ ہے۔ یہ دوسرا ہے۔', ['یہ پہلا جملہ ہے۔', 'یہ دوسرا ہے۔']),
+            ('नमस्ते। फिर मिलेंगे॥', ['नमस्ते।', 'फिर मिलेंगे॥']),
+            ('မင်္ဂလာပါ။နောက်တစ်ကြောင်း။', ['မင်္ဂလာပါ။', 'နောက်တစ်ကြောင်း။']),
+            ('Բարեւ։ Հաջորդը։', ['Բարեւ։', 'Հաջորդը։']),
+            ('ሰላም። እንዴት ነህ፧', ['ሰላም።', 'እንዴት ነህ፧']),
+            ('Привет. До свидания.', ['Привет.', 'До свидания.']),
+        )
+        for text, expected in cases:
+            with self.subTest(text=text):
+                self.assertEqual(split_text(text), expected)
+
+    def test_multilingual_abbreviations_and_unicode_initials(self):
+        for first in ('Mme. Dupont arrive.', 'Das ist z.B. richtig.',
+                      'El núm. és correcte.', 'Ж. Иванов пришёл.',
+                      'Он живёт на ул. Ленина.'):
+            with self.subTest(first=first):
+                self.assertEqual(split_text(first + ' Next sentence.'),
+                                 [first, 'Next sentence.'])
+
+    def test_unicode_clauses_preserve_every_character(self):
+        for clause in ('这是一个很长的分句，', 'هذه عبارة طويلة،',
+                       'これは長い節です；'):
+            text = clause * 40
+            chunks = split_text(text)
+            self.assertGreater(len(chunks), 1)
+            self.assertEqual(''.join(chunks), text)
+            self.assertTrue(all(chunk for chunk in chunks))
+
+    def test_unpunctuated_scripts_remain_intact(self):
+        for text in ('สวัสดีทุกคนยินดีต้อนรับ', 'שלום לכולם', 'ខ្ញុំសូមស្វាគមន៍'):
+            self.assertEqual(split_text(text), [text])
+
+    def test_unicode_speaker_tags_and_cues(self):
+        self.assertEqual(split_text('<|speaker:2|> 你好。再见。'),
+                         ['<|speaker:2|> 你好。', '<|speaker:2|> 再见。'])
+        self.assertEqual(split_text('[轻声] 你好。[悲伤] 再见。'),
+                         ['[轻声] 你好。', '[悲伤] 再见。'])
+
     def test_long_sentence_groups_clauses_without_changing_spoken_text(self):
         first = 'The visitor waited quietly beside the door, '
         second = 'watching the clouds move slowly across the sky; '

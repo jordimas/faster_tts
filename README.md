@@ -4,6 +4,10 @@ Requires a matching experimental CTranslate2 build exposing `Drama3` and a
 converted checkpoint. This wrapper currently uses CPU only. Portable installation
 and broad speech reliability remain unverified.
 
+Text input accepts all languages supported by
+[Drama 3](https://huggingface.co/fishaudio/drama-3), without a language selector.
+Speech quality across those languages has not been validated in this runtime.
+
 Raw CTranslate2 accepts prepared token/audio rows. This library adds a text API
 with tokenizer and prompt handling, automatic chunking with audio history,
 optional retries, result validation, and a WAV-writing CLI. It also resolves
@@ -32,9 +36,11 @@ exits with status 1 on `length`.
 
 ## Generation
 
-Text splits at sentence boundaries and, for long sentences, at comma, semicolon
-or colon boundaries with a soft target of 200 characters. Common English/Spanish
-abbreviations, initials and decimals stay together. A leading speaker tag repeats
+Text splits using Unicode sentence punctuation, including CJK, Arabic, Indic
+and other script-specific marks. Long sentences split at clause punctuation with
+a soft target of 200 characters. Known abbreviations, Unicode initials and
+decimals stay together. Splitting is heuristic: unfamiliar abbreviations may
+split, and text without clear boundaries stays intact. A leading speaker tag repeats
 on each chunk. Sentences with their own leading bracketed cues can split;
 ambiguous cue scope, multiple speaker tags and other markup stay intact.
 Use `split_sentences=False` or `--no-split-sentences` for a single pass.
