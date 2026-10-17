@@ -7,10 +7,10 @@ or external TTS engine fallback is performed. Seeded sampling and diagnostic gre
 do not themselves establish production speech quality.
 """
 
+from copy import deepcopy
 from dataclasses import dataclass, field
 from importlib import import_module
 import json
-
 import math
 import time
 from numbers import Real
@@ -44,7 +44,6 @@ def _native_class():
 def _positive_int(value, name):
     if not isinstance(value, int) or isinstance(value, bool) or not 1 <= value <= np.iinfo(np.int32).max:
         raise ValueError(f"{name} must be a positive int32 integer")
-    return value
 
 
 class Model:
@@ -92,9 +91,7 @@ class Model:
         assets may not record them. This does not scan weights or run inference.
         The compute type is the constructor setting accepted by the native loader.
         """
-        # Metadata fields are scalars in supported converted configuration files.
-        # JSON round-tripping also protects against unexpected nested metadata.
-        return json.loads(json.dumps(self._info))
+        return deepcopy(self._info)
 
     def synthesize(self, text, max_frames=512, temperature=.8, top_k=30,
                    top_p=.8, seed=0, greedy=False, *, max_retries=0, history=(), split_sentences=True):
@@ -186,8 +183,8 @@ class Model:
                 break
             # Keep only compact metadata from discarded attempts.
             del result, audio, codes
-        return SynthesisResult(audio=np.ascontiguousarray(audio), sample_rate=44100,
-                               codes=np.ascontiguousarray(codes), finish_reason=reason,
+        return SynthesisResult(audio=audio, sample_rate=44100,
+                               codes=codes, finish_reason=reason,
                                timings=aggregate_timings, attempts=tuple(attempts))
 
     def _synthesize_chunks(self, chunks, max_frames, temperature, top_k, top_p,

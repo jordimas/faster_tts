@@ -6,7 +6,9 @@ import tempfile
 import unittest
 
 import numpy as np
-from tokenizers import AddedToken, Tokenizer, models, normalizers, pre_tokenizers
+from tokenizers import normalizers
+
+from drama3_fixtures import make_prompt_assets
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
@@ -18,19 +20,8 @@ class Drama3PromptTest(unittest.TestCase):
         self.temp = tempfile.TemporaryDirectory()
         self.addCleanup(self.temp.cleanup)
         self.root = Path(self.temp.name)
-        self.tokenizer = Tokenizer(models.WordLevel({"[UNK]": 0, "Hello": 1, "café": 2}, unk_token="[UNK]"))
-        self.tokenizer.normalizer = normalizers.NFC()
-        self.tokenizer.pre_tokenizer = pre_tokenizers.WhitespaceSplit()
-        special = ["<|im_start|>", "<|im_end|>", "<|voice|>", "<|audio_pad|>"]
-        special += [f"<|speaker:{i}|>" for i in range(16)]
-        special += [f"<|semantic:{i}|>" for i in range(4)]
-        self.tokenizer.add_special_tokens([AddedToken(token, special=True) for token in special])
-        self.tokenizer.save(str(self.root / "tokenizer.json"))
-        self.config = {"model_type": "fish_omni", "audio_decoder_config": {"num_codebooks": 10, "vocab_size": 4},
-                       "semantic_start_token_id": self.tokenizer.token_to_id("<|semantic:0|>"),
-                       "semantic_end_token_id": self.tokenizer.token_to_id("<|semantic:3|>"),
-                       "eos_token_id": self.tokenizer.token_to_id("<|im_end|>"),
-                       "audio_pad_token_id": self.tokenizer.token_to_id("<|audio_pad|>")}
+        self.tokenizer, self.config = make_prompt_assets(
+            self.root, {"[UNK]": 0, "Hello": 1, "café": 2}, normalizer=normalizers.NFC())
         self.write_config()
 
     def write_config(self):
