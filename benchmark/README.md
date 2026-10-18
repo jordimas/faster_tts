@@ -9,8 +9,9 @@ uv run python benchmark/benchmark.py drama-3 --device cuda --compute-type float1
 
 Use `--text` for your own input, or pass a local model directory instead of
 `drama-3`. The script loads once, warms up once, then reports synthesis time,
-audio duration, mean latency and sample standard deviation across 3 runs by
-default, real-time factor (RTF), device, and peak process RAM (RSS, in GiB).
+audio duration, latency, real-time factor (RTF), device, and peak process RAM
+(RSS, in GiB). It performs one timed run by default; use `--runs` for more
+runs and their mean latency and sample standard deviation.
 Peak RSS includes loading, warmup, and timed runs; it excludes filesystem cache
 outside the process. The script uses Python's resource module (Linux/macOS).
 RTF below 1 means faster than real

@@ -13,7 +13,7 @@ from faster_tts import Model
 parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument("model", nargs="?", default="drama-3")
 parser.add_argument("--text", default="Hello! Welcome to our application.")
-parser.add_argument("--runs", type=int, default=3)
+parser.add_argument("--runs", type=int, default=1)
 parser.add_argument("--threads", type=int, default=8)
 parser.add_argument("--device", choices=("cpu", "cuda", "auto"), default="cpu")
 parser.add_argument("--compute-type", help="default: benchmark all supported types")
