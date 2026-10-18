@@ -41,14 +41,14 @@ wheels = [
 
 [[package]]
 name = "ctranslate2"
-version = "4.8.3+expertfix.1"
-source = { path = "dist/ctranslate2-4.8.3+expertfix.1-cp314-cp314-linux_x86_64.whl" }
+version = "4.8.3+rocm.bf82b529.mkl.1"
+source = { path = "dist/ctranslate2-4.8.3+rocm.bf82b529.mkl.1-cp314-cp314-linux_x86_64.whl" }
 dependencies = [
     { name = "numpy", marker = "python_full_version == '3.14.*'" },
     { name = "pyyaml", marker = "python_full_version == '3.14.*'" },
 ]
 wheels = [
-    { filename = "ctranslate2-4.8.3+expertfix.1-cp314-cp314-linux_x86_64.whl", hash = "sha256:38970cef9690aba2e3e14e62833d6cb966162cb6b02afa191be27731aadb7226" },
+    { filename = "ctranslate2-4.8.3+rocm.bf82b529.mkl.1-cp314-cp314-linux_x86_64.whl", hash = "sha256:af5e4d43d8f25257c95d6f39220a0a131e08208414a218efc083861f81078281" },
 ]
 
 [package.metadata]
@@ -75,7 +75,7 @@ hub = [
 
 [package.metadata]
 requires-dist = [
-    { name = "ctranslate2", path = "dist/ctranslate2-4.8.3+expertfix.1-cp314-cp314-linux_x86_64.whl" },
+    { name = "ctranslate2", path = "dist/ctranslate2-4.8.3+rocm.bf82b529.mkl.1-cp314-cp314-linux_x86_64.whl" },
     { name = "huggingface-hub", specifier = ">=0.24" },
     { name = "huggingface-hub", marker = "extra == 'hub'", specifier = ">=0.24" },
     { name = "numpy", specifier = ">=1.23" },

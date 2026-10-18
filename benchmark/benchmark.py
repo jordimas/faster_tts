@@ -1,6 +1,8 @@
 """Run from the repository root: uv run python benchmark/benchmark.py [model]."""
 
 import argparse
+import json
+import math
 import os
 import resource
 import subprocess
@@ -9,7 +11,9 @@ from statistics import mean, stdev
 from time import perf_counter
 
 import ctranslate2
+from huggingface_hub.utils import disable_progress_bars, enable_progress_bars
 from faster_tts import Model
+from faster_tts.cache import resolve_model_path
 
 parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument("model", nargs="?", default="drama-3")
@@ -20,18 +24,34 @@ parser.add_argument("--device", choices=("cpu", "cuda", "auto"),
                     help="default: benchmark CPU and every available GPU")
 parser.add_argument("--device-index", type=int, default=0, help="GPU index for an explicit --device")
 parser.add_argument("--compute-type", help="default: benchmark all supported types")
+parser.add_argument("--compute-worker", action="store_true", help=argparse.SUPPRESS)
+parser.add_argument("--show-progress", action="store_true", help="show model download progress bars")
+parser.add_argument("--memory-profile", choices=("default", "limited"),
+                    help="default: benchmark both uncapped and memory-limited configurations")
+parser.add_argument("--cpu-memory-gb", type=float, default=12,
+                    help="limited profile: whole CPU process cap in decimal GB (default: 12)")
+parser.add_argument("--gpu-expert-cache-gb", type=float, default=4,
+                    help="limited profile: GPU expert cache in decimal GB (default: 4)")
 args = parser.parse_args()
 if args.runs < 1:
     parser.error("--runs must be positive")
 if args.device_index < 0:
     parser.error("--device-index must be nonnegative")
 
+if any(not math.isfinite(value) or value <= 0
+       for value in (args.cpu_memory_gb, args.gpu_expert_cache_gb)):
+    parser.error("memory budgets must be finite and positive")
+
+if args.show_progress:
+    enable_progress_bars()
+else:
+    disable_progress_bars()
+
 if args.device is None:
     devices = [("cpu", 0)] + [("cuda", i) for i in range(ctranslate2.get_cuda_device_count())]
     failed = []
     for device, device_index in devices:
         label = "cpu" if device == "cpu" else f"cuda:{device_index}"
-        print(f"\nBenchmarking device: {label}", flush=True)
         status = subprocess.run([sys.executable, "-u", *sys.argv,
                                  "--device", device,
                                  "--device-index", str(device_index)]).returncode
@@ -42,6 +62,40 @@ if args.device is None:
 
 if args.device == "auto":
     args.device = "cuda" if ctranslate2.get_cuda_device_count() else "cpu"
+if args.memory_profile is None:
+    failed = []
+    for profile in ("default", "limited"):
+        status = subprocess.run([sys.executable, "-u", *sys.argv,
+                                 "--memory-profile", profile]).returncode
+        if status:
+            print(f"{args.device}:{args.device_index} / {profile} failed (exit {status})", flush=True)
+            failed.append(profile)
+    raise SystemExit(1 if failed else 0)
+
+# Make each profile reproducible, even if the invoking shell has limits set.
+os.environ.pop("CT2_DRAMA3_MAX_MEMORY_GB", None)
+os.environ.pop("CT2_DRAMA3_GPU_EXPERT_CACHE_GB", None)
+if args.memory_profile == "limited":
+    if args.device == "cpu":
+        if sys.platform != "linux":
+            print("SKIP limited CPU profile: process caps require Linux cgroup v2.", flush=True)
+            raise SystemExit(0)
+        args.model = str(resolve_model_path(args.model))
+        from pathlib import Path
+        config = json.loads((Path(args.model) / "config.json").read_text())
+        if (config.get("quantization_policy") != "standard"
+                or config.get("matrix_dtype") != "int8"):
+            print("SKIP limited CPU profile: requires a standard INT8 checkpoint "
+                  "with matrix_dtype=int8; runtime quantization of FP8 weights is unsupported.", flush=True)
+            raise SystemExit(0)
+        os.environ["CT2_DRAMA3_MAX_MEMORY_GB"] = f"{args.cpu_memory_gb:g}"
+    else:
+        os.environ["CT2_DRAMA3_GPU_EXPERT_CACHE_GB"] = f"{args.gpu_expert_cache_gb:g}"
+memory_label = (f"CPU process cap={args.cpu_memory_gb:g} GB" if args.device == "cpu"
+                else f"GPU expert cache={args.gpu_expert_cache_gb:g} GB")
+if args.memory_profile == "default":
+    memory_label = "uncapped"
+
 if args.device == "cuda":
     # Half-precision expert weights persist across synthesis calls. The CUB
     # default rounds allocations to powers of four, inflating their footprint.
@@ -49,20 +103,27 @@ if args.device == "cuda":
     os.environ.setdefault("CT2_CUDA_CACHING_ALLOCATOR_CONFIG", "2,6,24,209715200")
 compute_types = [args.compute_type] if args.compute_type else sorted(
     ctranslate2.get_supported_compute_types(args.device, args.device_index))
+if not args.compute_worker:
+    print(f"\nDevice: {args.device}:{args.device_index}; "
+          f"Memory profile: {args.memory_profile}; {memory_label}", flush=True)
 if args.compute_type is None:
     failed = []
     for compute_type in compute_types:
         # Process exit releases native allocator caches as well as model weights.
         status = subprocess.run([sys.executable, "-u", *sys.argv,
-                                 "--compute-type", compute_type]).returncode
+                                 "--compute-type", compute_type, "--compute-worker"]).returncode
         if status:
             print(f"{compute_type} failed (exit {status})", flush=True)
             failed.append(compute_type)
     raise SystemExit(1 if failed else 0)
+if (args.memory_profile == "limited" and args.device == "cpu"
+        and args.compute_type not in ("int8", "int8_float32")):
+    print(f"SKIP limited CPU / {args.compute_type}: requires int8 or int8_float32 compute.", flush=True)
+    raise SystemExit(0)
 for compute_type in compute_types:
     model = Model(args.model, cpu_threads=args.threads,
                   device=args.device, device_index=args.device_index, compute_type=compute_type)
-    print(f"\nDevice: {args.device}:{args.device_index}; compute type: {compute_type}", flush=True)
+    print(f"\nCompute type: {compute_type}", flush=True)
     model.synthesize(args.text)  # Warm up; exclude loading and first-run costs.
     total_time = total_audio = 0.0
     times = []
@@ -82,6 +143,5 @@ for compute_type in compute_types:
     peak_rss = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
     peak_gib = peak_rss / (1024**3 if sys.platform == "darwin" else 1024**2)
     print(f"Mean: {mean(times):.3f}s; std: {stdev(times) if len(times) > 1 else 0:.3f}s; "
-          f"RTF: {total_time / total_audio:.3f}; device: {args.device}:{args.device_index}; "
-          f"peak RSS: {peak_gib:.3f} GiB")
+          f"RTF: {total_time / total_audio:.3f}; peak RSS: {peak_gib:.3f} GiB")
     del model

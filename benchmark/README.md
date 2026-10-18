@@ -14,6 +14,8 @@ audio duration, latency, real-time factor (RTF), device, and peak process RAM
 runs and their mean latency and sample standard deviation.
 Peak RSS includes loading, warmup, and timed runs; it excludes filesystem cache
 outside the process. The script uses Python's resource module (Linux/macOS).
+Model download progress bars are hidden by default; use `--show-progress` to
+enable them. Warnings and errors remain visible.
 RTF below 1 means faster than real
 time. Loading and warmup are excluded. Keep text and model fixed when comparing
 settings; check audio durations because different precisions can change output.
@@ -37,3 +39,43 @@ precedence; the setting has no effect on the asynchronous CUDA allocator.
 It limits unused cached blocks to 200 MiB, not total GPU memory. Live expert
 weights can still exceed available memory. On integrated GPUs, GPU allocations
 also consume system RAM and are not included in the reported process RSS.
+
+### Memory configurations
+
+Each device benchmarks both `default` (uncapped) and `limited` profiles, in
+separate processes. Loading and warmup remain outside the timing. Results label
+the profile and budget. Profile settings override inherited values of the two
+Drama3 memory variables so the uncapped comparison is reproducible.
+
+* CPU limited: `CT2_DRAMA3_MAX_MEMORY_GB=12`, a whole-process cap in decimal GB,
+  intended to leave room for the OS on a 16 GB machine. It covers charged file
+  cache too; this is not an expert-cache size or a guarantee about total machine
+  memory. Requires Linux cgroup v2 and a standard INT8 checkpoint with
+  `matrix_dtype=int8`, using `int8` or `int8_float32` compute. Unsupported
+  checkpoints and compute types are reported as skipped, not silently converted.
+  Cgroup enforcement errors and OOMs count as failures and the sweep continues.
+* GPU limited: `CT2_DRAMA3_GPU_EXPERT_CACHE_GB=4`, a cached-expert budget rather
+  than a total VRAM limit. Other GPU allocations and CPU weights need extra memory.
+
+Use `--memory-profile default` or `--memory-profile limited` to select just one.
+`--cpu-memory-gb` and `--gpu-expert-cache-gb` override the limited budgets.
+For example, with a compatible local INT8 checkpoint:
+
+```bash
+uv run python benchmark/benchmark.py /path/to/standard-int8-model \
+  --device cpu --compute-type int8 --memory-profile limited
+```
+
+The default FP8 checkpoint cannot run the CPU limited profile; supply a standard
+INT8 checkpoint to measure the 12 GB configuration. No conversion is performed
+by this benchmark.
+
+### Local CTranslate2 wheel
+
+The uv dependency source currently points to
+`dist/ctranslate2-4.8.3+rocm.bf82b529.mkl.1-cp314-cp314-linux_x86_64.whl`,
+built from CT2 commit `bf82b529e1a23f3a2acd48cb3637b012173b29fd` with
+ROCm, MKL, and oneDNN. It bundles a freshly built native library and Python
+3.14 bindings. This is a host-specific Linux wheel, not a manylinux release.
+Build provenance and hashes are recorded in the adjacent `.build.json` file.
+Run `uv sync` before benchmarking to install the referenced wheel.
