@@ -42,33 +42,21 @@ also consume system RAM and are not included in the reported process RSS.
 
 ### Memory configurations
 
-Each device benchmarks both `default` (uncapped) and `limited` profiles, in
-separate processes. Loading and warmup remain outside the timing. Results label
-the profile and budget. Profile settings override inherited values of the two
-Drama3 memory variables so the uncapped comparison is reproducible.
+CPU runs use default mapped-weight loading where supported. There is no CPU
+process cap or `--cpu-memory-gb` setting. Weight quantization, prompt/history size,
+`max_frames`, and `prefill_chunk_size` control individual allocations, without a
+guaranteed total RAM ceiling. Optional `CT2_DRAMA_CPU_MLOCK=1` keeps mapped expert
+pages resident, subject to the OS locked-memory allowance.
 
-* CPU limited: `CT2_DRAMA3_MAX_MEMORY_GB=12`, a whole-process cap in decimal GB,
-  intended to leave room for the OS on a 16 GB machine. It covers charged file
-  cache too; this is not an expert-cache size or a guarantee about total machine
-  memory. Requires Linux cgroup v2 and a standard INT8 checkpoint with
-  `matrix_dtype=int8`, using `int8` or `int8_float32` compute. Unsupported
-  checkpoints and compute types are reported as skipped, not silently converted.
-  Cgroup enforcement errors and OOMs count as failures and the sweep continues.
-* GPU limited: `CT2_DRAMA3_GPU_EXPERT_CACHE_GB=4`, a cached-expert budget rather
-  than a total VRAM limit. Other GPU allocations and CPU weights need extra memory.
+Each GPU benchmarks `default` (uncapped expert cache) and `limited`
+(`CT2_DRAMA3_GPU_EXPERT_CACHE_GB=4`) in separate processes. This limits cached
+expert weights, not total VRAM or system RAM. Other allocations require extra
+memory. Profile settings override an inherited GPU expert-cache setting.
 
-Use `--memory-profile default` or `--memory-profile limited` to select just one.
-`--cpu-memory-gb` and `--gpu-expert-cache-gb` override the limited budgets.
-For example, with a compatible local INT8 checkpoint:
-
-```bash
-uv run python benchmark/benchmark.py /path/to/standard-int8-model \
-  --device cpu --compute-type int8 --memory-profile limited
-```
-
-The default FP8 checkpoint cannot run the CPU limited profile; supply a standard
-INT8 checkpoint to measure the 12 GB configuration. No conversion is performed
-by this benchmark.
+Use `--memory-profile default` or `--memory-profile limited` to select one GPU
+profile. `--gpu-expert-cache-gb` overrides the limited cache budget. An explicit
+CPU `limited` profile is reported as skipped. Loading and warmup remain outside
+the timing; failures are reported and the sweep continues.
 
 ### Local CTranslate2 wheel
 
