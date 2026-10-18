@@ -1,27 +1,21 @@
-# Experimental Drama 3 inference
+# faster_tts
 
-The goal of `faster_tts` is to make text-to-speech easy to adopt in any codebase,
-with CTranslate2 as its only inference backend. It aims to provide a small,
-text-first API, sensible defaults, simple model loading and reuse, convenient
-audio output, and clear errors. Prompt preparation and multilingual chunking
-belong in this layer; advanced CT2 controls should remain available when needed.
+`faster_tts` is a Python text-to-speech library built on CTranslate2. Its goal is
+to provide a common interface for multiple TTS engines supported by CTranslate2:
+load a model, synthesize text, and use the returned audio.
 
-Requires CTranslate2 **4.8.3 or higher**, with a build exposing `Drama3`, and a
-converted checkpoint. Portable installation and broad speech reliability remain
+The library handles model downloading and caching, tokenization, prompt
+preparation, text chunking, and audio output. CTranslate2 runs inference and
+waveform decoding. Models are loaded once and reused across requests, with
+advanced generation and runtime controls available when needed.
+
+Requires CTranslate2 **4.8.3 or higher** and a compatible converted checkpoint.
+The current implementation supports **Drama 3 on CPU**; support for additional
+TTS engines is planned. A matching CTranslate2 build exposing `Drama3` is
+currently required. Portable installation and broad speech reliability remain
 unverified.
 
-Text input accepts all languages supported by
-[Drama 3](https://huggingface.co/fishaudio/drama-3), without a language selector.
-Speech quality across those languages has not been validated in this runtime.
-
-Raw CTranslate2 accepts prepared token/audio rows. This library adds a text API
-with tokenizer and prompt handling, automatic chunking with audio history,
-optional retries, result validation, and a WAV-writing CLI. It also resolves
-model names and Hugging Face repository IDs with automatic downloading and caching. Inference
-and waveform decoding still run in CTranslate2; this wrapper adds no separate
-model or inference engine.
-
-## Example
+## Quick start
 
 Load the default model and generate speech:
 
@@ -37,8 +31,8 @@ sample_rate = result.sample_rate
 
 `Model()` downloads or reuses the cached
 [`jordimas/drama-3-ct2`](https://huggingface.co/jordimas/drama-3-ct2) checkpoint.
-Reuse the same model for subsequent `synthesize()` calls. The returned audio is a
-mono NumPy array at 44,100 Hz.
+Reuse the same model for subsequent `synthesize()` calls. `result.audio` is a
+NumPy array; use `result.sample_rate` when playing or saving it.
 
 To save speech directly to a WAV file, use the CLI:
 
@@ -47,13 +41,15 @@ python -m faster_tts \
   --text "Hello, how are you?" --output hello.wav
 ```
 
-Model loading also accepts a short name, a converted Hub repository ID, or a
-local directory:
+## Model loading
+
+Model loading accepts a short name, a compatible converted Hub repository ID,
+or a local directory:
 
 ```python
 model = Model("drama-3")  # Alias for the default checkpoint.
 model = Model("jordimas/drama-3-ct2", revision="main", cache_dir="./models")
-model = Model("/path/to/converted-drama3")
+model = Model("/path/to/converted-model")
 model = Model(local_files_only=True)  # Use only cached assets.
 ```
 
@@ -63,13 +59,27 @@ directories take precedence; use a `Path` object or `./`, `../`, `~/`, or an
 absolute path to keep missing local paths from being interpreted as Hub IDs.
 Models must already be converted to CTranslate2 format.
 
-Results contain mono FLOAT32 `audio` at 44,100 Hz, INT32 `codes` shaped
-`[frames, 10]`, `finish_reason`, `timings`, and `attempts` metadata.
+## Results
+
+`Model.synthesize()` returns a `SynthesisResult` with `audio`, `sample_rate`,
+`codes`, `finish_reason`, `timings`, and `attempts`. Audio format, codec codes,
+languages, and generation options depend on the supported engine.
+
 `finish_reason="length"` means generation exhausted its frame budget and may be
 truncated; `"eos"` does not guarantee complete speech. The CLI saves the WAV and
 exits with status 1 on `length`.
 
-## Generation
+## Current engine: Drama 3
+
+Drama 3 currently generates mono FLOAT32 audio at 44,100 Hz and INT32 codec
+`codes` shaped `[frames, 10]`. Text input accepts the languages supported by the
+model without a language selector. Speech quality across those languages has
+not been validated in this runtime.
+
+The following generation and precision details apply to the current Drama 3
+implementation.
+
+### Generation
 
 Text splits using Unicode sentence punctuation, including CJK, Arabic, Indic
 and other script-specific marks. Long sentences split at clause punctuation with
@@ -99,7 +109,7 @@ For explicit conditioning, pass completed turns as
 context limit and is excluded from returned audio. Check each turn's
 `finish_reason` before reusing it.
 
-## Precision and memory
+### Precision and memory
 
 `compute_type="default"` follows the converted package precision. Default FP8
 packages retain original expert bytes and block scales with FLOAT32 sensitive
