@@ -16,11 +16,29 @@ parser.add_argument("model", nargs="?", default="drama-3")
 parser.add_argument("--text", default="Hello! Welcome to our application.")
 parser.add_argument("--runs", type=int, default=1)
 parser.add_argument("--threads", type=int, default=8)
-parser.add_argument("--device", choices=("cpu", "cuda", "auto"), default="cpu")
+parser.add_argument("--device", choices=("cpu", "cuda", "auto"),
+                    help="default: benchmark CPU and every available GPU")
+parser.add_argument("--device-index", type=int, default=0, help="GPU index for an explicit --device")
 parser.add_argument("--compute-type", help="default: benchmark all supported types")
 args = parser.parse_args()
 if args.runs < 1:
     parser.error("--runs must be positive")
+if args.device_index < 0:
+    parser.error("--device-index must be nonnegative")
+
+if args.device is None:
+    devices = [("cpu", 0)] + [("cuda", i) for i in range(ctranslate2.get_cuda_device_count())]
+    failed = []
+    for device, device_index in devices:
+        label = "cpu" if device == "cpu" else f"cuda:{device_index}"
+        print(f"\nBenchmarking device: {label}", flush=True)
+        status = subprocess.run([sys.executable, "-u", *sys.argv,
+                                 "--device", device,
+                                 "--device-index", str(device_index)]).returncode
+        if status:
+            print(f"{label} failed (exit {status})", flush=True)
+            failed.append(label)
+    raise SystemExit(1 if failed else 0)
 
 if args.device == "auto":
     args.device = "cuda" if ctranslate2.get_cuda_device_count() else "cpu"
@@ -30,7 +48,7 @@ if args.device == "cuda":
     # Use finer bins before the first allocation; keep explicit user settings.
     os.environ.setdefault("CT2_CUDA_CACHING_ALLOCATOR_CONFIG", "2,6,24,209715200")
 compute_types = [args.compute_type] if args.compute_type else sorted(
-    ctranslate2.get_supported_compute_types(args.device))
+    ctranslate2.get_supported_compute_types(args.device, args.device_index))
 if args.compute_type is None:
     failed = []
     for compute_type in compute_types:
@@ -43,8 +61,8 @@ if args.compute_type is None:
     raise SystemExit(1 if failed else 0)
 for compute_type in compute_types:
     model = Model(args.model, cpu_threads=args.threads,
-                  device=args.device, compute_type=compute_type)
-    print(f"\nDevice: {args.device}; compute type: {compute_type}", flush=True)
+                  device=args.device, device_index=args.device_index, compute_type=compute_type)
+    print(f"\nDevice: {args.device}:{args.device_index}; compute type: {compute_type}", flush=True)
     model.synthesize(args.text)  # Warm up; exclude loading and first-run costs.
     total_time = total_audio = 0.0
     times = []
@@ -64,6 +82,6 @@ for compute_type in compute_types:
     peak_rss = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
     peak_gib = peak_rss / (1024**3 if sys.platform == "darwin" else 1024**2)
     print(f"Mean: {mean(times):.3f}s; std: {stdev(times) if len(times) > 1 else 0:.3f}s; "
-          f"RTF: {total_time / total_audio:.3f}; device: {args.device}; "
+          f"RTF: {total_time / total_audio:.3f}; device: {args.device}:{args.device_index}; "
           f"peak RSS: {peak_gib:.3f} GiB")
     del model

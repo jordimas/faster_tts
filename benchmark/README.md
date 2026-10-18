@@ -17,6 +17,11 @@ outside the process. The script uses Python's resource module (Linux/macOS).
 RTF below 1 means faster than real
 time. Loading and warmup are excluded. Keep text and model fixed when comparing
 settings; check audio durations because different precisions can change output.
+Without `--device`, it benchmarks CPU followed by every GPU visible to CTranslate2
+(including ROCm GPUs exposed through `cuda`). Each device runs in a separate
+process, and a failed device does not prevent the remaining devices from running.
+Use `--device cpu` or `--device cuda --device-index 0` to select a single device.
+`--device auto` selects one GPU when available, otherwise CPU.
 Without `--compute-type`, it benchmarks every compute type reported as supported
 by CTranslate2 for the selected device. Specify a type to benchmark only that one.
 Each compute type runs in a separate process so model memory and native allocator
