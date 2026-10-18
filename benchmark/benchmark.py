@@ -1,6 +1,7 @@
 """Run from the repository root: uv run python benchmark/benchmark.py [model]."""
 
 import argparse
+import resource
 import subprocess
 import sys
 from statistics import mean, stdev
@@ -54,6 +55,9 @@ for compute_type in compute_types:
         times.append(elapsed)
         total_audio += duration
         del result
+    peak_rss = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
+    peak_gib = peak_rss / (1024**3 if sys.platform == "darwin" else 1024**2)
     print(f"Mean: {mean(times):.3f}s; std: {stdev(times) if len(times) > 1 else 0:.3f}s; "
-          f"RTF: {total_time / total_audio:.3f}; device: {args.device}")
+          f"RTF: {total_time / total_audio:.3f}; device: {args.device}; "
+          f"peak RSS: {peak_gib:.3f} GiB")
     del model
