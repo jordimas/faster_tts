@@ -18,3 +18,9 @@ faster-tts = "faster_tts.__main__:main"
 [tool.setuptools.packages.find]
 where = ["."]
 include = ["faster_tts*"]
+
+[tool.uv]
+environments = ["python_version == '3.14'"]
+
+[tool.uv.sources]
+ctranslate2 = { path = "/tmp/ci390-rocm-wheels/ctranslate2-4.8.3-cp314-cp314-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl" }
