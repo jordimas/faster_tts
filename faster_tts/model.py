@@ -1,8 +1,8 @@
 """Thin CPU inference API for converted Drama 3 checkpoints.
 
 Requires a CTranslate2 build exposing _ext.Drama3. Ordinary upstream wheels may
-not expose that experimental binding. Explicit hf:// identifiers optionally resolve
-converted Hub snapshots; local paths never trigger downloads. No PyTorch runtime
+not expose that experimental binding. Model names and Hub repository IDs resolve
+converted Hub snapshots; explicit local paths never trigger downloads. No PyTorch runtime
 or external TTS engine fallback is performed. Seeded sampling and diagnostic greedy decoding
 do not themselves establish production speech quality.
 """
@@ -18,7 +18,7 @@ from numbers import Real
 import numpy as np
 
 from .prompt import Drama3PromptBuilder
-from .cache import resolve_model_path
+from .cache import DEFAULT_MODEL, resolve_model_path
 from .chunking import split_text
 
 
@@ -54,15 +54,13 @@ class Model:
     Conversion must provide model.bin, a Drama3 layout-version1 config.json with
     source_config, and frozen tokenizer.json.
 
-    Local example: ``Model("/path/to/converted-drama3")``. To opt into Hub
-    resolution, install ``faster-tts-ct2[hub]`` and use
-    ``Model("hf://YOUR_ORG/YOUR_CONVERTED_REPO", revision="PINNED_COMMIT")``.
-    Those uppercase values are placeholders for a compatible converted repository
-    and revision you provide; no published model repository is implied.
-    ``local_files_only=True`` limits Hub resolution to already cached assets.
+    ``Model()`` loads jordimas/drama-3-ct2 from the Hugging Face cache or Hub.
+    ``Model("drama-3")`` selects the same checkpoint. A converted Hub repository
+    ID (with optional hf:// prefix) or local directory can also be supplied.
+    ``revision`` can pin a commit; ``local_files_only=True`` prevents downloads.
     """
 
-    def __init__(self, model_path, intra_threads=8, compute_type="default", prefill_chunk_size=16,
+    def __init__(self, model_path=DEFAULT_MODEL, intra_threads=8, compute_type="default", prefill_chunk_size=16,
                  *, revision=None, cache_dir=None, local_files_only=False):
         _positive_int(intra_threads, "intra_threads")
         _positive_int(prefill_chunk_size, "prefill_chunk_size")

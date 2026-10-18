@@ -164,6 +164,23 @@ class Drama3PythonAPITest(unittest.TestCase):
         self.backend.generate.assert_not_called()
         self.assertIsNotNone(model)
 
+    def test_default_model_resolves_and_loads(self):
+        snapshot = Mock(return_value=str(self.root))
+        with patch("faster_tts.cache.import_module", return_value=Mock(snapshot_download=snapshot)):
+            Model()
+        self.assertEqual(snapshot.call_args.kwargs["repo_id"], "jordimas/drama-3-ct2")
+        self.constructor.assert_called_once_with(str(self.root.resolve()), intra_threads=8,
+                                                  compute_type="default")
+
+    def test_cli_default_model(self):
+        fake = Mock()
+        fake.return_value.synthesize.return_value = SynthesisResult(
+            np.zeros(2048, np.float32), 44100, np.zeros((1, 10), np.int32), "eos")
+        arguments = ["faster-tts", "--text", "Hello", "--output", str(self.root / "default.wav")]
+        with patch("faster_tts.__main__.Model", fake), patch.object(sys, "argv", arguments), patch("builtins.print"):
+            main()
+        self.assertEqual(fake.call_args.args, ("jordimas/drama-3-ct2",))
+
     def test_info_reports_actual_configuration_without_inference(self):
         model = Model(self.root, intra_threads=3, compute_type="float32", prefill_chunk_size=2)
         expected = {"backend": "cpu", "codec_device": "cpu", "mode": "offline", "gpu_supported": False,

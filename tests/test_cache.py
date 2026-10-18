@@ -34,11 +34,22 @@ class CacheTests(unittest.TestCase):
         with patch.object(cache, "import_module", side_effect=AssertionError("Hub imported")):
             self.assertEqual(cache.resolve_model_path(self.model), self.model.resolve())
 
-    def test_missing_local_or_bare_repo_never_downloads(self):
+    def test_missing_explicit_local_never_downloads(self):
         with patch.object(cache, "import_module", side_effect=AssertionError("Hub imported")):
-            for value in (str(self.model/"missing"), "organization/checkpoint"):
-                with self.assertRaisesRegex(FileNotFoundError, "hf://"):
+            for value in (self.model/"missing", str(self.model/"missing"),
+                          "./organization/checkpoint", "../missing", "~/missing"):
+                with self.assertRaises(FileNotFoundError):
                     cache.resolve_model_path(value)
+
+    def test_default_alias_and_bare_repo_resolve(self):
+        for value, expected in ((None, "jordimas/drama-3-ct2"),
+                                ("drama-3", "jordimas/drama-3-ct2"),
+                                ("organization/checkpoint", "organization/checkpoint")):
+            download = Mock(return_value=str(self.model))
+            with patch.object(cache, "import_module", return_value=types.SimpleNamespace(snapshot_download=download)):
+                result = cache.resolve_model_path() if value is None else cache.resolve_model_path(value)
+            self.assertEqual(result, self.model.resolve())
+            self.assertEqual(download.call_args.kwargs["repo_id"], expected)
 
     def test_required_assets(self):
         for name in ("model.bin", "config.json", "tokenizer.json"):

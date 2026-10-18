@@ -1,13 +1,17 @@
-"""Resolve local converted models or explicitly requested Hugging Face snapshots.
+"""Resolve local converted models, model names, or Hugging Face snapshots.
 
-Remote identifiers must use ``hf://organization/repository``. A missing local
-path never triggers a download. This module does not load an inference engine.
+Repository IDs accept an optional ``hf://`` prefix. Explicit local paths never
+trigger downloads. This module does not load an inference engine.
 """
 from importlib import import_module
 import json
 import os
 from pathlib import Path
 import re
+
+
+DEFAULT_MODEL = "jordimas/drama-3-ct2"
+MODEL_ALIASES = {"drama-3": DEFAULT_MODEL}
 
 
 ALLOW_PATTERNS = (
@@ -49,21 +53,20 @@ def _validate(directory):
     return directory
 
 
-def resolve_model_path(model, *, revision=None, cache_dir=None, local_files_only=False):
+def resolve_model_path(model=DEFAULT_MODEL, *, revision=None, cache_dir=None, local_files_only=False):
     """Return a validated local converted checkpoint directory as a ``Path``.
 
-    ``model`` is an existing directory or the explicit string
-    ``hf://organization/repository``. Hub resolution lazily requires the optional
-    ``huggingface-hub`` package. ``revision`` (preferably an immutable commit),
-    ``cache_dir`` and ``local_files_only`` pass directly to ``snapshot_download``.
-    Offline Hub requests never fall back to another model or fetch missing files.
+    Accept a local directory, ``drama-3``, or a Hub repository ID (with optional
+    ``hf://`` prefix). Existing directories take precedence. Path objects and
+    explicit paths (absolute, ./, ../, ~/) stay local. revision, cache_dir and
+    local_files_only pass to snapshot_download; no fallback model is loaded.
 
     Validation checks required nonempty assets and the supported config envelope,
     not the full binary payload, tokenizer vocabulary, or numerical correctness;
     the matching native loader performs those checks when loading the model.
     """
     if not isinstance(model, (str, os.PathLike)):
-        raise TypeError("model must be a local path or an explicit hf://organization/repository string")
+        raise TypeError("model must be a local path, model name, or organization/repository string")
     if not isinstance(local_files_only, bool):
         raise TypeError("local_files_only must be a bool")
     if revision is not None and (not isinstance(revision, str) or not revision.strip()):
@@ -73,18 +76,18 @@ def resolve_model_path(model, *, revision=None, cache_dir=None, local_files_only
         if not local.is_dir():
             raise NotADirectoryError(f"Model path is not a directory: {local}")
         return _validate(local)
-    if not isinstance(model, str) or not model.startswith("hf://"):
-        raise FileNotFoundError(
-            f"Local model directory does not exist: {local}. "
-            "To explicitly request a Hub checkpoint, use hf://organization/repository.")
-    repository = model[len("hf://"):]
+    if not isinstance(model, str) or model.startswith(("/", "./", "../", "~/")):
+        raise FileNotFoundError(f"Local model directory does not exist: {local}")
+    explicit_hub = model.startswith("hf://")
+    repository = model[len("hf://"):] if explicit_hub else MODEL_ALIASES.get(model, model)
     if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_.-]*/[A-Za-z0-9][A-Za-z0-9_.-]*", repository):
-        raise ValueError("Use hf://organization/repository with revision supplied separately")
+        raise ValueError("Use a known model name (drama-3), organization/repository "
+                         "with revision supplied separately, or an explicit local path")
     try:
         hub = import_module("huggingface_hub")
     except ImportError as exc:
         raise ImportError(
-            "Hub model resolution requires the optional huggingface-hub package. "
+            "Hub model resolution requires the huggingface-hub package. "
             "Install it with: pip install huggingface-hub ; or provide an existing local converted model.") from exc
     try:
         snapshot = hub.snapshot_download(

@@ -1,9 +1,7 @@
-"""CPU synthesis: python -m faster_tts MODEL --text TEXT --output out.wav.
+"""CPU synthesis: python -m faster_tts [MODEL] --text TEXT --output out.wav.
 
-MODEL is a local converted directory or explicit hf://organization/repository.
-Hub example (replace placeholders; requires faster-tts-ct2[hub]):
-python -m faster_tts hf://YOUR_ORG/YOUR_CONVERTED_REPO --revision PINNED_COMMIT
-    --text "Hello" --output out.wav
+MODEL defaults to jordimas/drama-3-ct2. Accepts drama-3, a converted Hub repository
+ID (optionally prefixed with hf://), or a local converted directory.
 """
 
 import argparse
@@ -14,11 +12,13 @@ import wave
 import numpy as np
 
 from .model import Model
+from .cache import DEFAULT_MODEL
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("model", help="local converted directory or explicit hf://organization/repository")
+    parser.add_argument("model", nargs="?", default=DEFAULT_MODEL,
+                        help="model name, Hub repository ID, or local directory (default: %(default)s)")
     parser.add_argument("--revision", help="Hub revision; prefer a pinned commit")
     parser.add_argument("--cache-dir", type=Path, help="Hugging Face snapshot cache directory")
     parser.add_argument("--local-files-only", action="store_true", help="resolve Hub assets only from the local cache")

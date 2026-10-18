@@ -6,7 +6,7 @@ text-first API, sensible defaults, simple model loading and reuse, convenient
 audio output, and clear errors. Prompt preparation and multilingual chunking
 belong in this layer; advanced CT2 controls should remain available when needed.
 
-Requires a matching experimental CTranslate2 build exposing `Drama3` and a
+Requires CTranslate2 **4.8.3 or higher**, with a build exposing `Drama3`, and a
 converted checkpoint. Portable installation and broad speech reliability remain
 unverified.
 
@@ -17,22 +17,51 @@ Speech quality across those languages has not been validated in this runtime.
 Raw CTranslate2 accepts prepared token/audio rows. This library adds a text API
 with tokenizer and prompt handling, automatic chunking with audio history,
 optional retries, result validation, and a WAV-writing CLI. It also resolves
-explicit `hf://` model identifiers with the optional `hub` dependency. Inference
+model names and Hugging Face repository IDs with automatic downloading and caching. Inference
 and waveform decoding still run in CTranslate2; this wrapper adds no separate
 model or inference engine.
+
+## Example
+
+Load the default model and generate speech:
 
 ```python
 from faster_tts import Model
 
-model = Model("/path/to/converted-drama3")
-result = model.synthesize("Hello, how are you?")
-print(result.sample_rate, result.finish_reason)
+model = Model()
+result = model.synthesize("Hello! Welcome to our application.")
+
+audio = result.audio
+sample_rate = result.sample_rate
 ```
 
+`Model()` downloads or reuses the cached
+[`jordimas/drama-3-ct2`](https://huggingface.co/jordimas/drama-3-ct2) checkpoint.
+Reuse the same model for subsequent `synthesize()` calls. The returned audio is a
+mono NumPy array at 44,100 Hz.
+
+To save speech directly to a WAV file, use the CLI:
+
 ```bash
-python -m faster_tts /path/to/converted-drama3 \
+python -m faster_tts \
   --text "Hello, how are you?" --output hello.wav
 ```
+
+Model loading also accepts a short name, a converted Hub repository ID, or a
+local directory:
+
+```python
+model = Model("drama-3")  # Alias for the default checkpoint.
+model = Model("jordimas/drama-3-ct2", revision="main", cache_dir="./models")
+model = Model("/path/to/converted-drama3")
+model = Model(local_files_only=True)  # Use only cached assets.
+```
+
+The CLI accepts the same optional model argument, plus `--revision`, `--cache-dir`,
+and `--local-files-only`. The `hf://` prefix remains supported. Existing local
+directories take precedence; use a `Path` object or `./`, `../`, `~/`, or an
+absolute path to keep missing local paths from being interpreted as Hub IDs.
+Models must already be converted to CTranslate2 format.
 
 Results contain mono FLOAT32 `audio` at 44,100 Hz, INT32 `codes` shaped
 `[frames, 10]`, `finish_reason`, `timings`, and `attempts` metadata.
