@@ -53,6 +53,24 @@ model = Model("/path/to/converted-model")
 model = Model(local_files_only=True)  # Use only cached assets.
 ```
 
+Like faster-whisper, `faster_tts` maps recognized short names to predefined
+Hugging Face repositories, then downloads or reuses the cached checkpoint:
+
+| Short name | Hugging Face repository |
+| --- | --- |
+| `drama-3` | `jordimas/drama-3-ct2` |
+
+`Model()` uses this same default repository. An explicit Hub repository ID or
+local directory lets you load a compatible custom checkpoint without adding an
+internal alias. A custom checkpoint must use an engine and converted layout
+supported by the installed library and CTranslate2 build.
+
+As additional TTS engines are added, the same `Model(...).synthesize(...)` API
+will remain the entry point. Aliases will select checkpoints, and the
+checkpoint's `config.json` `model_type` field will select the engine adapter.
+Currently, only Drama 3 (`model_type="drama3"`) is implemented; automatic
+dispatch between multiple engines is planned.
+
 The CLI accepts the same optional model argument, plus `--revision`, `--cache-dir`,
 and `--local-files-only`. The `hf://` prefix remains supported. Existing local
 directories take precedence; use a `Path` object or `./`, `../`, `~/`, or an
