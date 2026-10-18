@@ -36,9 +36,9 @@ if args.compute_type is None:
             failed.append(compute_type)
     raise SystemExit(1 if failed else 0)
 for compute_type in compute_types:
-    print(f"\nDevice: {args.device}; compute type: {compute_type}", flush=True)
     model = Model(args.model, cpu_threads=args.threads,
                   device=args.device, compute_type=compute_type)
+    print(f"\nDevice: {args.device}; compute type: {compute_type}", flush=True)
     model.synthesize(args.text)  # Warm up; exclude loading and first-run costs.
     total_time = total_audio = 0.0
     times = []
