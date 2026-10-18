@@ -31,6 +31,35 @@ caches are released before the next type starts. Failed types are reported and
 the sweep continues, exiting with status 1 if any failed. A single type can still
 exceed available memory; Drama 3 GPU inference also keeps CPU float32 weights.
 
+Use `--check quality` (or `--check-quality`) to transcribe every timed output
+with faster-whisper's multilingual `medium` model and compare it with `--text`:
+
+```bash
+uv run --with faster-whisper python benchmark/benchmark.py drama-3 --check quality
+```
+
+The checker writes temporary mono PCM16 WAV files and removes them after checking.
+It runs after the performance summary in a separate CPU int8 process, so ASR
+loading, transcription, and memory are excluded from synthesis timing and peak
+RSS. The first check downloads the Whisper model if it is not cached. A single
+final line reports `WER: 12.50% (1/8) [cuda:0 float16 default]`
+(total word errors / total reference words), labeled with the device, compute
+type, and memory profile for each benchmark configuration. This pools errors and
+reference word counts across runs (equivalent to mean WER because every run uses
+the same text).
+WER is word-level edit distance divided by
+reference word count; lower is better, and insertions can make it exceed 100%.
+Scoring normalizes Unicode, case, whitespace, and punctuation, retaining internal
+apostrophes. Numbers and abbreviations are not expanded, so equivalent spoken
+forms can still count as errors. Word-based scoring is less useful for languages
+without spaces between words.
+
+WER is an intelligibility/content regression check: it can expose dropped,
+repeated, or mispronounced words, but ASR mistakes also affect the score. It does
+not measure naturalness, prosody, voice similarity, or audio artifacts. Compare
+fixed texts and ASR settings across configurations, use a varied set of longer
+texts, and listen to representative outputs alongside the scores.
+
 For GPU runs, the script defaults `CT2_CUDA_CACHING_ALLOCATOR_CONFIG` to
 `2,6,24,209715200`. When the CUB allocator is active (the ROCm default), this
 rounds allocations to powers of two instead of powers of four, reducing padding
