@@ -69,55 +69,11 @@ languages, and generation options depend on the supported engine.
 truncated; `"eos"` does not guarantee complete speech. The CLI saves the WAV and
 exits with status 1 on `length`.
 
-## Current engine: Drama 3
+## Engine documentation
 
-Drama 3 currently generates mono FLOAT32 audio at 44,100 Hz and INT32 codec
-`codes` shaped `[frames, 10]`. Text input accepts the languages supported by the
-model without a language selector. Speech quality across those languages has
-not been validated in this runtime.
+For Drama 3 conversion, native runtime options, precision, and memory requirements,
+see the [CTranslate2 Drama 3 guide](https://github.com/jordimas/CTranslate2/blob/feat/drama3-cpu/docs/guides/drama3.md).
 
-The following generation and precision details apply to the current Drama 3
-implementation.
-
-### Generation
-
-Text splits using Unicode sentence punctuation, including CJK, Arabic, Indic
-and other script-specific marks. Long sentences split at clause punctuation with
-a soft target of 200 characters. Known abbreviations, Unicode initials and
-decimals stay together. Splitting is heuristic: unfamiliar abbreviations may
-split, and text without clear boundaries stays intact. A leading speaker tag repeats
-on each chunk. Sentences with their own leading bracketed cues can split;
-ambiguous cue scope, multiple speaker tags and other markup stay intact.
-Use `split_sentences=False` or `--no-split-sentences` for a single pass.
-
-Later chunks use completed text/audio from the first and latest chunks as
-history. Audio is concatenated without silence trimming or padding.
-`max_frames=512` is the shared output budget; `eos` requires every chunk to
-finish. Splitting does not guarantee content completeness or speaker continuity.
-
-Sampling defaults are temperature 0.7, top-k 30 and top-p 0.7, applied with the
-same seed to each chunk. Native CTranslate2 defaults to temperature/top-p 0.8.
-`greedy=True` enables diagnostic greedy decoding.
-
-Optional `max_retries=1` retries each sampled, frame-limited chunk once with the
-next seed. It can double computation and returns partial audio if the retry also
-hits the limit. EOS, greedy decoding and errors do not retry. `attempts` retains
-attempt costs and chunk metadata; `timings` includes discarded attempts.
-
-For explicit conditioning, pass completed turns as
-`history=[("Previous text.", previous_result.codes)]`. History counts towards the
-context limit and is excluded from returned audio. Check each turn's
-`finish_reason` before reusing it.
-
-### Precision and memory
-
-`compute_type="default"` follows the converted package precision. Default FP8
-packages retain original expert bytes and block scales with FLOAT32 sensitive
-weights and codec. FLOAT32 execution decodes selected experts on demand, without
-expanding the entire bank. The audited FP8 tensor payload is about 44.43 GiB;
-runtime allocations require additional memory.
-
-CTranslate2 also supports standard quantized packages and runtime conversion,
-including `compute_type="int8_float32"`. Converting FP8 weights at load time
-requires additional temporary memory. Available compute types depend on the
-selected CTranslate2 backend and hardware.
+For this library's synthesis options, see the
+[`Model.synthesize()` API documentation](faster_tts/model.py) or run
+`python -m faster_tts --help` for CLI options.
