@@ -23,3 +23,12 @@ Each compute type runs in a separate process so model memory and native allocato
 caches are released before the next type starts. Failed types are reported and
 the sweep continues, exiting with status 1 if any failed. A single type can still
 exceed available memory; Drama 3 GPU inference also keeps CPU float32 weights.
+
+For GPU runs, the script defaults `CT2_CUDA_CACHING_ALLOCATOR_CONFIG` to
+`2,6,24,209715200`. When the CUB allocator is active (the ROCm default), this
+rounds allocations to powers of two instead of powers of four, reducing padding
+for cached float16/bfloat16 expert weights. Explicit environment settings take
+precedence; the setting has no effect on the asynchronous CUDA allocator.
+It limits unused cached blocks to 200 MiB, not total GPU memory. Live expert
+weights can still exceed available memory. On integrated GPUs, GPU allocations
+also consume system RAM and are not included in the reported process RSS.

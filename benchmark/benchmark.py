@@ -1,6 +1,7 @@
 """Run from the repository root: uv run python benchmark/benchmark.py [model]."""
 
 import argparse
+import os
 import resource
 import subprocess
 import sys
@@ -23,6 +24,11 @@ if args.runs < 1:
 
 if args.device == "auto":
     args.device = "cuda" if ctranslate2.get_cuda_device_count() else "cpu"
+if args.device == "cuda":
+    # Half-precision expert weights persist across synthesis calls. The CUB
+    # default rounds allocations to powers of four, inflating their footprint.
+    # Use finer bins before the first allocation; keep explicit user settings.
+    os.environ.setdefault("CT2_CUDA_CACHING_ALLOCATOR_CONFIG", "2,6,24,209715200")
 compute_types = [args.compute_type] if args.compute_type else sorted(
     ctranslate2.get_supported_compute_types(args.device))
 if args.compute_type is None:
