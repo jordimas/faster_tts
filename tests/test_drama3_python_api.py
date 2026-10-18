@@ -1,8 +1,10 @@
 """Python API boundary tests with a fake native engine; no model inference claims."""
 import json
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 import sys
 import tempfile
+from threading import Barrier, Lock
 import unittest
 from unittest.mock import Mock, patch
 import wave
@@ -56,6 +58,61 @@ class Drama3PythonAPITest(unittest.TestCase):
         self.assertEqual(self.backend.generate.call_args.kwargs, {"max_frames": 2, "prefill_chunk_size": 2,
                                                                   "temperature": .7, "top_k": 30, "top_p": .7,
                                                                   "seed": 0, "greedy": False})
+
+    def test_cpu_threads_controls_native_thread_count(self):
+        for options in ({"cpu_threads": 4}, {"cpu_threads": 4, "intra_threads": 2}):
+            model = Model(self.root, **options)
+            self.assertEqual(self.constructor.call_args.kwargs["intra_threads"], 4)
+            self.assertEqual(model.info()["intra_threads"], 4)
+
+    def test_cpu_threads_validation(self):
+        for value in (0, -1, True, 1.5, 2 ** 31):
+            with self.subTest(value=value), self.assertRaisesRegex(ValueError, "cpu_threads"):
+                Model(self.root, cpu_threads=value)
+        self.constructor.assert_not_called()
+
+    def test_workers_run_concurrently_without_reusing_a_busy_instance(self):
+        barrier = Barrier(2)
+        active = set()
+        lock = Lock()
+
+        def generate(index, *args, **kwargs):
+            with lock:
+                self.assertNotIn(index, active)
+                active.add(index)
+            try:
+                barrier.wait(timeout=5)
+                return self.result
+            finally:
+                with lock:
+                    active.remove(index)
+
+        workers = [Mock(), Mock()]
+        for index, worker in enumerate(workers):
+            worker.generate.side_effect = lambda *a, index=index, **kw: generate(index, *a, **kw)
+        self.constructor.side_effect = workers
+        model = Model(self.root, cpu_threads=2, num_workers=2)
+        self.assertEqual(self.constructor.call_count, 2)
+        self.assertTrue(all(c.kwargs["intra_threads"] == 2 for c in self.constructor.call_args_list))
+        with ThreadPoolExecutor(max_workers=4) as executor:
+            results = list(executor.map(lambda _: model.synthesize("Hello"), range(4)))
+        self.assertTrue(all(result.finish_reason == "eos" for result in results))
+        self.assertEqual(model.info()["num_workers"], 2)
+        self.assertEqual(model._workers.qsize(), 2)
+
+    def test_worker_is_returned_after_native_failure(self):
+        model = Model(self.root)
+        self.backend.generate.side_effect = [RuntimeError("native failure"), self.result]
+        with self.assertRaisesRegex(RuntimeError, "native failure"):
+            model.synthesize("Hello")
+        self.assertEqual(model._workers.qsize(), 1)
+        self.assertEqual(model.synthesize("Hello").finish_reason, "eos")
+
+    def test_num_workers_validation_before_loading(self):
+        for value in (0, -1, True, 1.5, 2 ** 31):
+            with self.subTest(value=value), self.assertRaisesRegex(ValueError, "num_workers"):
+                Model(self.root, num_workers=value)
+        self.constructor.assert_not_called()
 
     def test_device_selection_and_compute_type(self):
         model = Model(self.root, device="cuda", device_index=2, compute_type="float16")
@@ -223,7 +280,8 @@ class Drama3PythonAPITest(unittest.TestCase):
         model = Model(self.root, intra_threads=3, compute_type="float32", prefill_chunk_size=2)
         expected = {"backend": "cpu", "codec_device": "cpu", "mode": "offline", "gpu_supported": True,
                     "device": "cpu", "device_index": 0,
-                    "compute_type": "float32", "intra_threads": 3, "prefill_chunk_size": 2,
+                    "compute_type": "float32", "intra_threads": 3, "cpu_threads": 3,
+                    "num_workers": 1, "prefill_chunk_size": 2,
                     "model_path": str(self.root.resolve()), "source_revision": "source-commit",
                     "quantization_policy": "all_matrices_int8", "matrix_dtype": "int8", "activation_dtype": "float32"}
         self.assertEqual(model.info(), expected)

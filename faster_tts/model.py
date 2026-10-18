@@ -14,6 +14,7 @@ import json
 import math
 import time
 from numbers import Real
+from queue import Queue
 
 import numpy as np
 
@@ -62,11 +63,19 @@ class Model:
     covers backbone/tower projections; waveform decoding remains on CPU.
     ``compute_type`` is passed to the native loader (default: "default").
     ``revision`` can pin a commit; ``local_files_only=True`` prevents downloads.
+    ``cpu_threads`` sets the CPU thread count (default: 8), overriding the
+    legacy ``intra_threads`` argument when supplied.
+    ``num_workers`` (default: 1) allows concurrent calls from Python threads.
+    Each worker loads a separate native model and uses ``cpu_threads`` threads.
     """
 
     def __init__(self, model_path=DEFAULT_MODEL, intra_threads=8, compute_type="default", prefill_chunk_size=16,
-                 *, device="cpu", device_index=0, revision=None, cache_dir=None, local_files_only=False):
+                 *, cpu_threads=None, num_workers=1, device="cpu", device_index=0, revision=None, cache_dir=None, local_files_only=False):
+        if cpu_threads is not None:
+            _positive_int(cpu_threads, "cpu_threads")
+            intra_threads = cpu_threads
         _positive_int(intra_threads, "intra_threads")
+        _positive_int(num_workers, "num_workers")
         _positive_int(prefill_chunk_size, "prefill_chunk_size")
         if not isinstance(compute_type, str) or not compute_type:
             raise ValueError("compute_type must be a nonempty string")
@@ -84,13 +93,16 @@ class Model:
         resolved_device = device
         if device == "auto":
             resolved_device = "cuda" if import_module("ctranslate2").get_cuda_device_count() > 0 else "cpu"
-        self._backend = backend_class(str(directory), intra_threads=intra_threads,
-                                      compute_type=compute_type, device=resolved_device,
-                                      device_index=device_index)
+        self._workers = Queue(maxsize=num_workers)
+        for _ in range(num_workers):
+            self._workers.put(backend_class(str(directory), intra_threads=intra_threads,
+                                           compute_type=compute_type, device=resolved_device,
+                                           device_index=device_index))
         self._info = {
             "backend": resolved_device, "codec_device": "cpu", "mode": "offline", "gpu_supported": True,
             "device": resolved_device, "device_index": device_index,
             "compute_type": compute_type, "intra_threads": intra_threads,
+            "cpu_threads": intra_threads, "num_workers": num_workers,
             "prefill_chunk_size": prefill_chunk_size, "model_path": str(directory),
             "source_revision": metadata.get("source_revision"),
             "quantization_policy": metadata.get("quantization_policy"),
@@ -164,9 +176,13 @@ class Model:
         for attempt in range(1 + (max_retries if not greedy else 0)):
             attempt_seed = (seed + attempt) % (2 ** 64)
             started = time.perf_counter()
-            result = self._backend.generate(rows, max_frames=max_frames, prefill_chunk_size=self._prefill_chunk_size,
-                                            temperature=float(temperature), top_k=top_k, top_p=float(top_p),
-                                            seed=attempt_seed, greedy=greedy)
+            worker = self._workers.get()
+            try:
+                result = worker.generate(rows, max_frames=max_frames, prefill_chunk_size=self._prefill_chunk_size,
+                                         temperature=float(temperature), top_k=top_k, top_p=float(top_p),
+                                         seed=attempt_seed, greedy=greedy)
+            finally:
+                self._workers.put(worker)
             if not isinstance(result, dict):
                 raise RuntimeError("native Drama3 returned a malformed result")
             audio, codes = result.get("audio"), result.get("codes")

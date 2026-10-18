@@ -100,6 +100,34 @@ python -m faster_tts --device cuda --device-index 0 --compute-type float16 \
   --text "Hello!" --output hello.wav
 ```
 
+## Threads and concurrent requests
+
+Set the CPU thread count with `cpu_threads` (default: 8):
+
+```python
+model = Model("drama-3", cpu_threads=4, num_workers=2)
+```
+
+The CLI and benchmark accept `--threads 4`. The existing `intra_threads`
+argument remains supported; `cpu_threads` takes precedence when both are supplied.
+
+Like faster-whisper, `num_workers` (default: 1) enables parallel inference when
+you call `synthesize()` from multiple Python threads:
+
+```python
+from concurrent.futures import ThreadPoolExecutor
+
+with ThreadPoolExecutor(max_workers=2) as executor:
+    results = list(executor.map(model.synthesize, ["Hello!", "How are you?"]))
+```
+
+Each worker uses the configured CPU thread count. Drama 3 currently lacks a
+native worker pool, so the library pools separate native model instances, each
+with its own weights and runtime memory. Calls wait when all workers are busy.
+Workers improve concurrent throughput; a single request still runs sequentially.
+`model.info()` reports both settings. The standalone benchmark measures sequential
+latency with one worker.
+
 ## Results
 
 `Model.synthesize()` returns a `SynthesisResult` with `audio`, `sample_rate`,
@@ -109,6 +137,21 @@ languages, and generation options depend on the supported engine.
 `finish_reason="length"` means generation exhausted its frame budget and may be
 truncated; `"eos"` does not guarantee complete speech. The CLI saves the WAV and
 exits with status 1 on `length`.
+
+## Performance benchmarking
+
+Run the standalone script from the repository root:
+
+```bash
+python benchmark.py drama-3 --threads 8 --runs 5
+python benchmark.py drama-3 --device cuda --compute-type float16
+```
+
+Use `--text` for your own input, or pass a local model directory instead of
+`drama-3`. The script loads once, warms up once, then reports synthesis time,
+audio duration, and real-time factor (RTF). RTF below 1 means faster than real
+time. Loading and warmup are excluded. Keep text and model fixed when comparing
+settings; check audio durations because different precisions can change output.
 
 ## Engine documentation
 
