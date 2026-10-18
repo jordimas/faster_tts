@@ -61,8 +61,8 @@ the timing; failures are reported and the sweep continues.
 ### Local CTranslate2 wheel
 
 The uv dependency source currently points to
-`dist/ctranslate2-4.8.3+rocm.bf82b529.mkl.1-cp314-cp314-linux_x86_64.whl`,
-built from CT2 commit `bf82b529e1a23f3a2acd48cb3637b012173b29fd` with
+`dist/ctranslate2-4.8.3+rocm.1e66308c.mkl.1-cp314-cp314-linux_x86_64.whl`,
+built from CT2 commit `1e66308cb916dd6e5f4bd074848a6ac17b2adf96` with
 ROCm, MKL, and oneDNN. It bundles a freshly built native library and Python
 3.14 bindings. This is a host-specific Linux wheel, not a manylinux release.
 Build provenance and hashes are recorded in the adjacent `.build.json` file.
