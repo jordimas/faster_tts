@@ -12,8 +12,7 @@ advanced generation and runtime controls available when needed.
 Requires CTranslate2 **4.8.3 or higher** and a compatible converted checkpoint.
 The current implementation supports **Drama 3 with CPU inference and optional GPU acceleration**; support for additional
 TTS engines is planned. A matching CTranslate2 build exposing `Drama3` is
-currently required. Portable installation and broad speech reliability remain
-unverified.
+currently required. Portable installation remains unverified.
 
 ## Quick start
 
@@ -140,18 +139,7 @@ exits with status 1 on `length`.
 
 ## Performance benchmarking
 
-Run the standalone script from the repository root:
-
-```bash
-python benchmark.py drama-3 --threads 8 --runs 5
-python benchmark.py drama-3 --device cuda --compute-type float16
-```
-
-Use `--text` for your own input, or pass a local model directory instead of
-`drama-3`. The script loads once, warms up once, then reports synthesis time,
-audio duration, and real-time factor (RTF). RTF below 1 means faster than real
-time. Loading and warmup are excluded. Keep text and model fixed when comparing
-settings; check audio durations because different precisions can change output.
+See [benchmark instructions](benchmark/README.md).
 
 ## Engine documentation
 
