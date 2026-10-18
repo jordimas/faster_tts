@@ -10,7 +10,7 @@ waveform decoding. Models are loaded once and reused across requests, with
 advanced generation and runtime controls available when needed.
 
 Requires CTranslate2 **4.8.3 or higher** and a compatible converted checkpoint.
-The current implementation supports **Drama 3 on CPU**; support for additional
+The current implementation supports **Drama 3 with CPU inference and optional GPU acceleration**; support for additional
 TTS engines is planned. A matching CTranslate2 build exposing `Drama3` is
 currently required. Portable installation and broad speech reliability remain
 unverified.
@@ -58,6 +58,29 @@ and `--local-files-only`. The `hf://` prefix remains supported. Existing local
 directories take precedence; use a `Path` object or `./`, `../`, `~/`, or an
 absolute path to keep missing local paths from being interpreted as Hub IDs.
 Models must already be converted to CTranslate2 format.
+
+## Device and compute type
+
+Select the device and precision using faster-whisper parameter names:
+
+```python
+model = Model("drama-3", device="cuda", device_index=0, compute_type="float16")
+model = Model("drama-3", device="cpu", compute_type="int8")
+model = Model("drama-3", device="auto", compute_type="default")
+```
+
+`device` accepts `"cpu"` (default), `"cuda"`, or `"auto"` (GPU when available,
+otherwise CPU). `device_index` selects one GPU and defaults to `0`; lists of
+indices are unsupported by the native Drama 3 binding. CUDA and ROCm both use
+`"cuda"` and require a matching CTranslate2 build. GPU acceleration covers
+backbone and tower projections; waveform decoding stays on CPU. Supported
+compute types depend on the device and build; `"default"` lets CTranslate2
+choose. `model.info()` reports the selected device and requested compute type.
+
+```bash
+python -m faster_tts --device cuda --device-index 0 --compute-type float16 \
+  --text "Hello!" --output hello.wav
+```
 
 ## Results
 

@@ -1,4 +1,4 @@
-"""Thin CPU inference API for converted Drama 3 checkpoints.
+"""Thin inference API for converted Drama 3 checkpoints.
 
 Requires a CTranslate2 build exposing _ext.Drama3. Ordinary upstream wheels may
 not expose that experimental binding. Model names and Hub repository IDs resolve
@@ -37,7 +37,7 @@ def _native_class():
         extension = import_module("ctranslate2._ext")
         return extension.Drama3
     except (ImportError, AttributeError) as exc:
-        raise RuntimeError("This requires the experimental CTranslate2 CPU Drama3 binding; "
+        raise RuntimeError("This requires the experimental CTranslate2 Drama3 binding; "
                            "install a matching build of this repository.") from exc
 
 
@@ -47,7 +47,7 @@ def _positive_int(value, name):
 
 
 class Model:
-    """Load a converted model once, then synthesize plain text on CPU.
+    """Load a converted model once, then synthesize plain text.
 
     Generation is offline, without cloning or reference audio. Seeded categorical
     sampling follows the model distribution but is not bitwise PyTorch RNG parity.
@@ -57,23 +57,39 @@ class Model:
     ``Model()`` loads jordimas/drama-3-ct2 from the Hugging Face cache or Hub.
     ``Model("drama-3")`` selects the same checkpoint. A converted Hub repository
     ID (with optional hf:// prefix) or local directory can also be supplied.
+    ``device`` selects "cpu" (default), "cuda", or "auto"; ``device_index``
+    selects one GPU. CUDA and ROCm builds both use "cuda". GPU acceleration
+    covers backbone/tower projections; waveform decoding remains on CPU.
+    ``compute_type`` is passed to the native loader (default: "default").
     ``revision`` can pin a commit; ``local_files_only=True`` prevents downloads.
     """
 
     def __init__(self, model_path=DEFAULT_MODEL, intra_threads=8, compute_type="default", prefill_chunk_size=16,
-                 *, revision=None, cache_dir=None, local_files_only=False):
+                 *, device="cpu", device_index=0, revision=None, cache_dir=None, local_files_only=False):
         _positive_int(intra_threads, "intra_threads")
         _positive_int(prefill_chunk_size, "prefill_chunk_size")
         if not isinstance(compute_type, str) or not compute_type:
             raise ValueError("compute_type must be a nonempty string")
+        if device not in ("cpu", "cuda", "auto"):
+            raise ValueError('device must be "cpu", "cuda", or "auto"')
+        if (not isinstance(device_index, int) or isinstance(device_index, bool)
+                or not 0 <= device_index <= np.iinfo(np.int32).max):
+            raise ValueError("device_index must be a nonnegative int32 integer")
         directory = resolve_model_path(model_path, revision=revision, cache_dir=cache_dir,
                                        local_files_only=local_files_only)
         metadata = json.loads((directory / "config.json").read_text(encoding="utf-8"))
         self._prompt = Drama3PromptBuilder(directory)
         self._prefill_chunk_size = prefill_chunk_size
-        self._backend = _native_class()(str(directory), intra_threads=intra_threads, compute_type=compute_type)
+        backend_class = _native_class()
+        resolved_device = device
+        if device == "auto":
+            resolved_device = "cuda" if import_module("ctranslate2").get_cuda_device_count() > 0 else "cpu"
+        self._backend = backend_class(str(directory), intra_threads=intra_threads,
+                                      compute_type=compute_type, device=resolved_device,
+                                      device_index=device_index)
         self._info = {
-            "backend": "cpu", "codec_device": "cpu", "mode": "offline", "gpu_supported": False,
+            "backend": resolved_device, "codec_device": "cpu", "mode": "offline", "gpu_supported": True,
+            "device": resolved_device, "device_index": device_index,
             "compute_type": compute_type, "intra_threads": intra_threads,
             "prefill_chunk_size": prefill_chunk_size, "model_path": str(directory),
             "source_revision": metadata.get("source_revision"),
@@ -83,7 +99,7 @@ class Model:
         }
 
     def info(self):
-        """Return CPU/offline execution settings and recorded checkpoint metadata.
+        """Return device/offline execution settings and recorded checkpoint metadata.
 
         Missing revision/quantization fields are returned as None; older converted
         assets may not record them. This does not scan weights or run inference.

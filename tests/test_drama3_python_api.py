@@ -39,7 +39,7 @@ class Drama3PythonAPITest(unittest.TestCase):
 
     def test_reuses_loaded_backend_and_passes_contiguous_int32_prompt(self):
         model = Model(self.root, intra_threads=3, prefill_chunk_size=2)
-        self.constructor.assert_called_once_with(str(self.root.resolve()), intra_threads=3, compute_type="default")
+        self.constructor.assert_called_once_with(str(self.root.resolve()), intra_threads=3, compute_type="default", device="cpu", device_index=0)
         first = model.synthesize("Hello", max_frames=1)
         second = model.synthesize("Hello", max_frames=2)
         self.assertIsInstance(first, SynthesisResult)
@@ -56,6 +56,44 @@ class Drama3PythonAPITest(unittest.TestCase):
         self.assertEqual(self.backend.generate.call_args.kwargs, {"max_frames": 2, "prefill_chunk_size": 2,
                                                                   "temperature": .7, "top_k": 30, "top_p": .7,
                                                                   "seed": 0, "greedy": False})
+
+    def test_device_selection_and_compute_type(self):
+        model = Model(self.root, device="cuda", device_index=2, compute_type="float16")
+        self.constructor.assert_called_once_with(str(self.root.resolve()), intra_threads=8,
+                                                 compute_type="float16", device="cuda", device_index=2)
+        self.assertEqual(model.info()["device"], "cuda")
+        self.assertEqual(model.info()["device_index"], 2)
+        self.assertEqual(model.info()["codec_device"], "cpu")
+
+    def test_auto_selects_gpu_when_available_and_cpu_otherwise(self):
+        for count, expected in ((0, "cpu"), (2, "cuda")):
+            with self.subTest(count=count), patch("faster_tts.model.import_module",
+                    return_value=Mock(get_cuda_device_count=Mock(return_value=count))):
+                self.constructor.reset_mock()
+                model = Model(self.root, device="auto")
+                self.assertEqual(self.constructor.call_args.kwargs["device"], expected)
+                self.assertEqual(model.info()["backend"], expected)
+
+    def test_invalid_devices_are_rejected_before_loading(self):
+        for args in ({"device": "invalid"}, {"device": None}, {"device_index": -1},
+                     {"device_index": True}, {"device_index": [0, 1]}, {"device_index": 1.5},
+                     {"device_index": 2 ** 31}):
+            with self.subTest(args=args), self.assertRaises(ValueError):
+                Model(self.root, **args)
+        self.constructor.assert_not_called()
+
+    def test_cli_device_and_compute_type(self):
+        fake = Mock()
+        fake.return_value.synthesize.return_value = SynthesisResult(
+            np.zeros(2048, np.float32), 44100, np.zeros((1, 10), np.int32), "eos")
+        arguments = ["faster-tts", str(self.root), "--device", "cuda", "--device-index", "2",
+                     "--compute-type", "float16", "--text", "Hello",
+                     "--output", str(self.root / "gpu.wav")]
+        with patch("faster_tts.__main__.Model", fake), patch.object(sys, "argv", arguments), patch("builtins.print"):
+            main()
+        self.assertEqual(fake.call_args.kwargs["device"], "cuda")
+        self.assertEqual(fake.call_args.kwargs["device_index"], 2)
+        self.assertEqual(fake.call_args.kwargs["compute_type"], "float16")
 
     def test_multi_sentence_joins_outputs_and_conditions_later_sentence(self):
         model = Model(self.root)
@@ -160,7 +198,7 @@ class Drama3PythonAPITest(unittest.TestCase):
         self.assertEqual(snapshot.call_args.kwargs["cache_dir"], str(cache_dir))
         self.assertTrue(snapshot.call_args.kwargs["local_files_only"])
         self.constructor.assert_called_once_with(str(self.root.resolve()), intra_threads=8,
-                                                  compute_type="default")
+                                                  compute_type="default", device="cpu", device_index=0)
         self.backend.generate.assert_not_called()
         self.assertIsNotNone(model)
 
@@ -170,7 +208,7 @@ class Drama3PythonAPITest(unittest.TestCase):
             Model()
         self.assertEqual(snapshot.call_args.kwargs["repo_id"], "jordimas/drama-3-ct2")
         self.constructor.assert_called_once_with(str(self.root.resolve()), intra_threads=8,
-                                                  compute_type="default")
+                                                  compute_type="default", device="cpu", device_index=0)
 
     def test_cli_default_model(self):
         fake = Mock()
@@ -183,7 +221,8 @@ class Drama3PythonAPITest(unittest.TestCase):
 
     def test_info_reports_actual_configuration_without_inference(self):
         model = Model(self.root, intra_threads=3, compute_type="float32", prefill_chunk_size=2)
-        expected = {"backend": "cpu", "codec_device": "cpu", "mode": "offline", "gpu_supported": False,
+        expected = {"backend": "cpu", "codec_device": "cpu", "mode": "offline", "gpu_supported": True,
+                    "device": "cpu", "device_index": 0,
                     "compute_type": "float32", "intra_threads": 3, "prefill_chunk_size": 2,
                     "model_path": str(self.root.resolve()), "source_revision": "source-commit",
                     "quantization_policy": "all_matrices_int8", "matrix_dtype": "int8", "activation_dtype": "float32"}
@@ -223,7 +262,7 @@ class Drama3PythonAPITest(unittest.TestCase):
             Model(self.root / "absent")
         self.native_patch.stop()
         with patch("faster_tts.model.import_module", side_effect=ImportError("no extension")):
-            with self.assertRaisesRegex(RuntimeError, "experimental CTranslate2 CPU Drama3 binding"):
+            with self.assertRaisesRegex(RuntimeError, "experimental CTranslate2 Drama3 binding"):
                 Model(self.root)
         self.native_patch.start()
 
@@ -330,7 +369,7 @@ class Drama3PythonAPITest(unittest.TestCase):
         with patch("faster_tts.__main__.Model", fake), patch.object(sys, "argv", arguments), patch("builtins.print"):
             main()
         fake.assert_called_once_with("hf://organization/converted-drama3", intra_threads=8,
-                                     compute_type="default", revision="pinned-commit",
+                                     compute_type="default", device="cpu", device_index=0, revision="pinned-commit",
                                      cache_dir=self.root / "cache", local_files_only=True)
         fake.return_value.synthesize.assert_called_once_with(
             "Hello", max_frames=512, temperature=.7, top_k=30, top_p=.7,

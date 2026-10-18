@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "faster-tts-ct2"
 version = "0.0.1"
-description = "Experimental CPU Drama 3 inference through CTranslate2"
+description = "Experimental Drama 3 inference through CTranslate2"
 requires-python = ">=3.10"
 dependencies = ["ctranslate2>=4.8.3", "numpy>=1.23", "tokenizers>=0.20", "huggingface-hub>=0.24"]
 

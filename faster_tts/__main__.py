@@ -1,4 +1,4 @@
-"""CPU synthesis: python -m faster_tts [MODEL] --text TEXT --output out.wav.
+"""Speech synthesis: python -m faster_tts [MODEL] --text TEXT --output out.wav.
 
 MODEL defaults to jordimas/drama-3-ct2. Accepts drama-3, a converted Hub repository
 ID (optionally prefixed with hf://), or a local converted directory.
@@ -26,6 +26,8 @@ def main():
     parser.add_argument("--output", required=True, type=Path)
     parser.add_argument("--max-frames", type=int, default=512)
     parser.add_argument("--threads", type=int, default=8)
+    parser.add_argument("--device", choices=("cpu", "cuda", "auto"), default="cpu")
+    parser.add_argument("--device-index", type=int, default=0)
     parser.add_argument("--compute-type", default="default")
     parser.add_argument("--temperature", type=float, default=.7)
     parser.add_argument("--top-k", type=int, default=30)
@@ -35,6 +37,7 @@ def main():
     parser.add_argument("--greedy", action="store_true", help="diagnostic greedy decoding instead of sampling")
     args = parser.parse_args()
     model = Model(args.model, intra_threads=args.threads, compute_type=args.compute_type,
+                   device=args.device, device_index=args.device_index,
                    revision=args.revision, cache_dir=args.cache_dir,
                    local_files_only=args.local_files_only)
     started = time.perf_counter()
