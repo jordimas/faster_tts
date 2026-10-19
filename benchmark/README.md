@@ -71,11 +71,13 @@ also consume system RAM and are not included in the reported process RSS.
 
 ### Memory configurations
 
-CPU runs use default mapped-weight loading where supported. There is no CPU
-process cap or `--cpu-memory-gb` setting. Weight quantization, prompt/history size,
-`max_frames`, and `prefill_chunk_size` control individual allocations, without a
-guaranteed total RAM ceiling. Optional `CT2_DRAMA_CPU_MLOCK=1` keeps mapped expert
-pages resident, subject to the OS locked-memory allowance.
+CPU runs use mapped weights where supported, without a process memory cap.
+The default FP8 checkpoint works directly; no separate INT8 model is required.
+Compute type, prompt/history size, `max_frames`, and `prefill_chunk_size` affect
+individual allocations, without guaranteeing a total RAM ceiling. Optional
+`CT2_DRAMA_CPU_MLOCK=1` keeps mapped expert pages resident, subject to the OS
+locked-memory allowance. The benchmark does not invoke systemd or configure
+cgroups.
 
 Each GPU benchmarks `default` (uncapped expert cache) and `limited`
 (`CT2_DRAMA3_GPU_EXPERT_CACHE_GB=4`) in separate processes. This limits cached
