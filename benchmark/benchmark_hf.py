@@ -14,6 +14,8 @@ from time import perf_counter
 import unicodedata
 import wave
 
+from benchmark_results import Results, run_logged
+
 
 def main():
     tts = Path(__file__).resolve().parents[2]
@@ -29,11 +31,14 @@ def main():
                         help='default: benchmark CPU and every available GPU')
     parser.add_argument('--device-index', type=int, default=0)
     parser.add_argument('--compute-type', choices=('bfloat16', 'float16', 'float32'),
-                        help='default: benchmark all three floating-point types; expert storage stays FP8')
+                        help='default: benchmark all three floating-point types')
     parser.add_argument('--compute-worker', action='store_true', help=argparse.SUPPRESS)
     parser.add_argument('--show-progress', action='store_true')
     parser.add_argument('--check-quality', action='store_true')
     parser.add_argument('--check', choices=('quality',), help='alias for --check-quality')
+    parser.add_argument("--output-json", type=Path, default=Path("hf.json"),
+                        help="JSON output (default: ./hf.json; overwritten on each invocation)")
+    parser.add_argument("--log-worker", action="store_true", help=argparse.SUPPRESS)
     args = parser.parse_args()
     args.check_quality = args.check_quality or args.check == 'quality'
     if args.runs < 1 or args.threads < 1 or args.device_index < 0:
@@ -48,13 +53,18 @@ def main():
             parser.error('quality checking requires at least one reference word')
     if not args.show_progress:
         os.environ['HF_HUB_DISABLE_PROGRESS_BARS'] = '1'
+        os.environ['TQDM_DISABLE'] = '1'
+
+    run_logged(args, "hf")
 
     import torch
+
+    results = Results(args, "hf", torch.__version__)
 
     def sweep(configurations):
         failed = False
         for options in configurations:
-            status = subprocess.run([sys.executable, '-u', *sys.argv, *options]).returncode
+            status = results.run(options)
             if status:
                 print(f"{' '.join(options)} failed (exit {status})", flush=True)
                 failed = True
@@ -74,6 +84,16 @@ def main():
     if args.compute_type is None:
         sweep([['--compute-type', dtype, '--compute-worker']
                for dtype in ('bfloat16', 'float16', 'float32')])
+    if args.device == 'cuda':
+        properties = torch.cuda.get_device_properties(args.device_index)
+        results.gpu_hardware = {
+            'name': properties.name,
+            'runtime': 'rocm' if torch.version.hip else 'cuda',
+            'runtime_version': torch.version.hip or torch.version.cuda,
+            'total_memory_bytes': properties.total_memory,
+            'total_memory_gib': properties.total_memory / 2**30,
+        }
+    results.start()
     if not (args.source / 'fish_speech').is_dir():
         parser.error(f'official Fish Speech source not found: {args.source}')
     if not (args.model / 'codec.pth').is_file():
@@ -96,6 +116,7 @@ def main():
         FishOmniModel, iter_checkpoint_tensors, AUDIO_DECODER_PREFIXES,
     )
     from fish_speech.models.text2semantic.fish_omni.generate import build_drama3_prompt, generate_drama3
+    from fish_speech.models.text2semantic.fish_omni.fp8_moe import fp8_gemm_supported
     from fish_speech.models.text2semantic.inference import load_codec_model, decode_to_audio
 
     torch.set_num_threads(args.threads)
@@ -108,8 +129,12 @@ def main():
     print(f'\nCompute type: {args.compute_type}', flush=True)
 
     with torch.inference_mode():
+        # Retain the sample runner's CPU selected-expert dequantization path.
+        # GPU FP8 kernels require hardware supported by the official source.
+        fp8_experts = config.fp8_experts and (args.device == 'cpu' or fp8_gemm_supported([device]))
+        print(f'Expert storage: {"FP8" if fp8_experts else args.compute_type}', flush=True)
         with torch.device('meta'):
-            backbone = FishOmniBackbone(config.text, fp8_experts=config.fp8_experts, dtype=dtype)
+            backbone = FishOmniBackbone(config.text, fp8_experts=fp8_experts, dtype=dtype)
             tower = FishOmniAudioDecoder(config, dtype=dtype)
         backbone.materialize([device])
         load_backbone_weights(backbone, iter_checkpoint_tensors(
@@ -154,6 +179,7 @@ def main():
         synthesize()  # Exclude model/codec loading and one full warmup.
         synchronize()
         times, durations = [], []
+        run_results = []
         with tempfile.TemporaryDirectory() as audio_dir:
             for i in range(args.runs):
                 synchronize()
@@ -167,6 +193,8 @@ def main():
                           f'RTF={elapsed / duration:.3f}, finish_reason={finish}')
                 if finish != 'eos':
                     raise SystemExit('Frame limit reached; shorten --text.')
+                run_results.append({'time_seconds': elapsed, 'audio_seconds': duration,
+                                    'rtf': elapsed / duration, 'finish_reason': finish})
                 times.append(elapsed)
                 durations.append(duration)
                 if args.check_quality:
@@ -180,6 +208,7 @@ def main():
             peak_gib = peak_rss / (1024**3 if sys.platform == 'darwin' else 1024**2)
             print(f'Mean: {mean(times):.3f}s; std: {stdev(times) if len(times) > 1 else 0:.3f}s; '
                   f'RTF: {sum(times) / sum(durations):.3f}; peak RSS: {peak_gib:.3f} GiB', flush=True)
+            results.success(run_results, peak_gib)
             del model, backbone, tower, codec
             if args.check_quality:
                 subprocess.run([sys.executable, str(Path(__file__).with_name('check_quality.py')),

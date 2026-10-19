@@ -41,14 +41,14 @@ wheels = [
 
 [[package]]
 name = "ctranslate2"
-version = "4.8.3+rocm.5ef5b50b.mkl.2"
-source = { path = "dist/ctranslate2-4.8.3+rocm.5ef5b50b.mkl.2-cp314-cp314-linux_x86_64.whl" }
+version = "4.8.3"
+source = { path = "../../python/dist/amd-lzNjsoc1/cpython-314/ctranslate2-4.8.3-cp314-cp314-linux_x86_64.whl" }
 dependencies = [
     { name = "numpy", marker = "python_full_version == '3.14.*'" },
     { name = "pyyaml", marker = "python_full_version == '3.14.*'" },
 ]
 wheels = [
-    { filename = "ctranslate2-4.8.3+rocm.5ef5b50b.mkl.2-cp314-cp314-linux_x86_64.whl", hash = "sha256:ef9a957b56707a57d6de8ef31a5949011be87e91f76fae30715e318bd08a7c8a" },
+    { filename = "ctranslate2-4.8.3-cp314-cp314-linux_x86_64.whl", hash = "sha256:043a4be5e50271848f978e2cc67fec6d2ccfb2ae19241f91b29e52c6acf532e3" },
 ]
 
 [package.metadata]
@@ -75,7 +75,7 @@ hub = [
 
 [package.metadata]
 requires-dist = [
-    { name = "ctranslate2", path = "dist/ctranslate2-4.8.3+rocm.5ef5b50b.mkl.2-cp314-cp314-linux_x86_64.whl" },
+    { name = "ctranslate2", path = "../../python/dist/amd-lzNjsoc1/cpython-314/ctranslate2-4.8.3-cp314-cp314-linux_x86_64.whl" },
     { name = "huggingface-hub", specifier = ">=0.24" },
     { name = "huggingface-hub", marker = "extra == 'hub'", specifier = ">=0.24" },
     { name = "numpy", specifier = ">=1.23" },

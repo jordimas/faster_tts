@@ -16,6 +16,7 @@ from time import perf_counter
 import ctranslate2
 from huggingface_hub.utils import disable_progress_bars, enable_progress_bars
 from faster_tts import Model
+from benchmark_results import Results, run_logged, ct2_gpu_hardware
 
 parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument("model", nargs="?", default="drama-3")
@@ -32,9 +33,12 @@ parser.add_argument("--check-quality", action="store_true",
                     help="transcribe every timed output with faster-whisper medium and report WER")
 parser.add_argument("--check", choices=("quality",), help="alias for --check-quality")
 parser.add_argument("--memory-profile", choices=("default", "limited"),
-                    help="default: CPU defaults; GPU expert-cache-limited configuration")
+                    help="default: CPU defaults; GPU runs both limited and uncapped configurations")
 parser.add_argument("--gpu-expert-cache-gb", type=float, default=12,
                     help="limited profile: GPU expert cache in decimal GB (default: 12)")
+parser.add_argument("--output-json", type=Path, default=Path("ct2.json"),
+                    help="JSON output (default: ./ct2.json; overwritten on each invocation)")
+parser.add_argument("--log-worker", action="store_true", help=argparse.SUPPRESS)
 args = parser.parse_args()
 args.check_quality = args.check_quality or args.check == "quality"
 if args.check_quality and importlib.util.find_spec("faster_whisper") is None:
@@ -52,19 +56,21 @@ if args.device_index < 0:
 if not math.isfinite(args.gpu_expert_cache_gb) or args.gpu_expert_cache_gb <= 0:
     parser.error("memory budgets must be finite and positive")
 
+run_logged(args, "ct2")
+
 if args.show_progress:
     enable_progress_bars()
 else:
     disable_progress_bars()
+
+results = Results(args, "ct2", ctranslate2.__version__)
 
 if args.device is None:
     devices = [("cpu", 0)] + [("cuda", i) for i in range(ctranslate2.get_cuda_device_count())]
     failed = []
     for device, device_index in devices:
         label = "cpu" if device == "cpu" else f"cuda:{device_index}"
-        status = subprocess.run([sys.executable, "-u", *sys.argv,
-                                 "--device", device,
-                                 "--device-index", str(device_index)]).returncode
+        status = results.run(["--device", device, "--device-index", str(device_index)])
         if status:
             print(f"{label} failed (exit {status})", flush=True)
             failed.append(label)
@@ -74,10 +80,9 @@ if args.device == "auto":
     args.device = "cuda" if ctranslate2.get_cuda_device_count() else "cpu"
 if args.memory_profile is None:
     failed = []
-    profiles = ("default",) if args.device == "cpu" else ("limited",)
+    profiles = ("default",) if args.device == "cpu" else ("limited", "default")
     for profile in profiles:
-        status = subprocess.run([sys.executable, "-u", *sys.argv,
-                                 "--memory-profile", profile]).returncode
+        status = results.run(["--memory-profile", profile])
         if status:
             print(f"{args.device}:{args.device_index} / {profile} failed (exit {status})", flush=True)
             failed.append(profile)
@@ -89,12 +94,16 @@ if args.memory_profile == "limited":
     if args.device == "cpu":
         print("SKIP limited CPU profile: CPU uses allocated weights and allocation controls, "
               "without a total RAM cap.", flush=True)
+        results.skipped("CPU has no limited memory profile")
         raise SystemExit(0)
     os.environ["CT2_DRAMA3_GPU_EXPERT_CACHE_GB"] = f"{args.gpu_expert_cache_gb:g}"
 memory_label = ("uncapped" if args.memory_profile == "default"
                 else f"GPU expert cache={args.gpu_expert_cache_gb:g} GB")
 
 if args.device == "cuda":
+    # HIP asynchronous memory-pool teardown can segfault after synthesis.
+    # Keep this workaround local to the benchmark and honor explicit overrides.
+    os.environ.setdefault("CT2_CUDA_ALLOCATOR", "cub_caching")
     # Half-precision expert weights persist across synthesis calls. The CUB
     # default rounds allocations to powers of four, inflating their footprint.
     # Use finer bins before the first allocation; keep explicit user settings.
@@ -109,13 +118,16 @@ if args.compute_type is None:
     failed = []
     for compute_type in compute_types:
         # Process exit releases native allocator caches as well as model weights.
-        status = subprocess.run([sys.executable, "-u", *sys.argv,
-                                 "--compute-type", compute_type, "--compute-worker"]).returncode
+        status = results.run(["--compute-type", compute_type, "--compute-worker"])
         if status:
             print(f"{compute_type} failed (exit {status})", flush=True)
             failed.append(compute_type)
     raise SystemExit(1 if failed else 0)
 for compute_type in compute_types:
+    if args.device == "cuda":
+        results.gpu_hardware = ct2_gpu_hardware(args.device_index)
+    results.start()
+    run_results = []
     quality_audio = tempfile.TemporaryDirectory() if args.check_quality else None
     model = Model(args.model, cpu_threads=args.threads,
                   device=args.device, device_index=args.device_index, compute_type=compute_type)
@@ -128,10 +140,13 @@ for compute_type in compute_types:
         result = model.synthesize(args.text)
         elapsed = perf_counter() - start
         duration = result.audio.size / result.sample_rate
-        print(f"Run {i + 1}: {elapsed:.3f}s, audio={duration:.3f}s, "
-              f"RTF={elapsed / duration:.3f}, finish_reason={result.finish_reason}")
+        if args.runs > 1:
+            print(f"Run {i + 1}: {elapsed:.3f}s, audio={duration:.3f}s, "
+                  f"RTF={elapsed / duration:.3f}, finish_reason={result.finish_reason}")
         if result.finish_reason != "eos":
             raise SystemExit("Frame limit reached; shorten --text.")
+        run_results.append({"time_seconds": elapsed, "audio_seconds": duration,
+                            "rtf": elapsed / duration, "finish_reason": result.finish_reason})
         total_time += elapsed
         times.append(elapsed)
         total_audio += duration
@@ -150,6 +165,7 @@ for compute_type in compute_types:
     peak_gib = peak_rss / (1024**3 if sys.platform == "darwin" else 1024**2)
     print(f"Mean: {mean(times):.3f}s; std: {stdev(times) if len(times) > 1 else 0:.3f}s; "
           f"RTF: {total_time / total_audio:.3f}; peak RSS: {peak_gib:.3f} GiB", flush=True)
+    results.success(run_results, peak_gib)
     del model
     if quality_audio is not None:
         # Capture and flush synthesis peak RSS before starting ASR. The checker

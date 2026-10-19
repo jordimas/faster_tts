@@ -7,7 +7,12 @@ name = "faster-tts-ct2"
 version = "0.0.1"
 description = "Experimental Drama 3 inference through CTranslate2"
 requires-python = ">=3.10"
-dependencies = ["ctranslate2>=4.8.3", "numpy>=1.23", "tokenizers>=0.20", "huggingface-hub>=0.24"]
+dependencies = [
+    "ctranslate2>=4.8.3",
+    "numpy>=1.23",
+    "tokenizers>=0.20",
+    "huggingface-hub>=0.24",
+]
 
 [project.optional-dependencies]
 hub = ["huggingface-hub>=0.24"]
@@ -23,4 +28,4 @@ include = ["faster_tts*"]
 environments = ["python_version == '3.14'"]
 
 [tool.uv.sources]
-ctranslate2 = { path = "dist/ctranslate2-4.8.3+rocm.5ef5b50b.mkl.2-cp314-cp314-linux_x86_64.whl" }
+ctranslate2 = { path = "../../python/dist/amd-lzNjsoc1/cpython-314/ctranslate2-4.8.3-cp314-cp314-linux_x86_64.whl" }

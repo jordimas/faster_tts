@@ -1,0 +1,275 @@
+{
+  "schema_version": 1,
+  "backend": "hf",
+  "backend_version": "2.8.0+rocm6.4",
+  "created_at": null,
+  "measurement_date": "2026-10-19",
+  "host": {
+    "platform": "Linux 7.0.0-38-generic",
+    "machine": "x86_64",
+    "processor": "AMD Ryzen AI MAX+ PRO 395",
+    "logical_cpu_count": 32,
+    "python_version": "3.13",
+    "system_ram_gib": 122.8,
+    "gpu_name": "AMD Radeon 8060S",
+    "gpu_architecture": "gfx1151",
+    "gpu_addressable_memory_gib": 61.41,
+    "system_ram_bytes": null
+  },
+  "memory_metric": "peak_process_rss_including_load_and_warmup_excluding_gpu",
+  "provenance": {
+    "source_log": "hf.log",
+    "note": "Imported from console logs; timing, RTF, and RSS values were printed to three decimal places. Exact creation time and Python patch version were not recorded. Hardware is from the recorded benchmark environment; exact memory byte counts were not recorded."
+  },
+  "results": [
+    {
+      "model": "/home/jordi/sc/audio/models/drama-3",
+      "source": "/home/jordi/sc/audio/vendor/fish-speech",
+      "device": "cpu",
+      "device_index": 0,
+      "compute_type": "bfloat16",
+      "memory_profile": "default",
+      "gpu_expert_cache_gb": null,
+      "threads": 8,
+      "text": "Hello! Welcome to our application.",
+      "requested_runs": 3,
+      "warmup_runs": 1,
+      "status": "success",
+      "runs": [
+        {
+          "time_seconds": 109.156,
+          "audio_seconds": 3.158,
+          "rtf": 34.566,
+          "finish_reason": "eos"
+        },
+        {
+          "time_seconds": 109.11,
+          "audio_seconds": 3.158,
+          "rtf": 34.551,
+          "finish_reason": "eos"
+        },
+        {
+          "time_seconds": 109.351,
+          "audio_seconds": 3.158,
+          "rtf": 34.628,
+          "finish_reason": "eos"
+        }
+      ],
+      "summary": {
+        "mean_time_seconds": 109.206,
+        "std_time_seconds": 0.128,
+        "mean_audio_seconds": 3.158,
+        "rtf": 34.582,
+        "peak_rss_gib": 45.564
+      },
+      "hardware": {
+        "cpu": {
+          "processor": "AMD Ryzen AI MAX+ PRO 395",
+          "logical_cpu_count": 32,
+          "system_ram_bytes": null,
+          "system_ram_gib": 122.8
+        },
+        "gpu": null
+      }
+    },
+    {
+      "model": "/home/jordi/sc/audio/models/drama-3",
+      "source": "/home/jordi/sc/audio/vendor/fish-speech",
+      "device": "cpu",
+      "device_index": 0,
+      "compute_type": "float16",
+      "memory_profile": "default",
+      "gpu_expert_cache_gb": null,
+      "threads": 8,
+      "text": "Hello! Welcome to our application.",
+      "requested_runs": 3,
+      "warmup_runs": 1,
+      "status": "success",
+      "runs": [
+        {
+          "time_seconds": 181.711,
+          "audio_seconds": 3.158,
+          "rtf": 57.541,
+          "finish_reason": "eos"
+        },
+        {
+          "time_seconds": 187.179,
+          "audio_seconds": 3.158,
+          "rtf": 59.273,
+          "finish_reason": "eos"
+        },
+        {
+          "time_seconds": 192.267,
+          "audio_seconds": 3.158,
+          "rtf": 60.884,
+          "finish_reason": "eos"
+        }
+      ],
+      "summary": {
+        "mean_time_seconds": 187.052,
+        "std_time_seconds": 5.279,
+        "mean_audio_seconds": 3.158,
+        "rtf": 59.233,
+        "peak_rss_gib": 45.566
+      },
+      "hardware": {
+        "cpu": {
+          "processor": "AMD Ryzen AI MAX+ PRO 395",
+          "logical_cpu_count": 32,
+          "system_ram_bytes": null,
+          "system_ram_gib": 122.8
+        },
+        "gpu": null
+      }
+    },
+    {
+      "model": "/home/jordi/sc/audio/models/drama-3",
+      "source": "/home/jordi/sc/audio/vendor/fish-speech",
+      "device": "cpu",
+      "device_index": 0,
+      "compute_type": "float32",
+      "memory_profile": "default",
+      "gpu_expert_cache_gb": null,
+      "threads": 8,
+      "text": "Hello! Welcome to our application.",
+      "requested_runs": 3,
+      "warmup_runs": 1,
+      "status": "success",
+      "runs": [
+        {
+          "time_seconds": 105.616,
+          "audio_seconds": 2.508,
+          "rtf": 42.116,
+          "finish_reason": "eos"
+        },
+        {
+          "time_seconds": 106.435,
+          "audio_seconds": 2.508,
+          "rtf": 42.442,
+          "finish_reason": "eos"
+        },
+        {
+          "time_seconds": 105.613,
+          "audio_seconds": 2.508,
+          "rtf": 42.115,
+          "finish_reason": "eos"
+        }
+      ],
+      "summary": {
+        "mean_time_seconds": 105.888,
+        "std_time_seconds": 0.474,
+        "mean_audio_seconds": 2.508,
+        "rtf": 42.224,
+        "peak_rss_gib": 52.434
+      },
+      "hardware": {
+        "cpu": {
+          "processor": "AMD Ryzen AI MAX+ PRO 395",
+          "logical_cpu_count": 32,
+          "system_ram_bytes": null,
+          "system_ram_gib": 122.8
+        },
+        "gpu": null
+      }
+    },
+    {
+      "model": "/home/jordi/sc/audio/models/drama-3",
+      "source": "/home/jordi/sc/audio/vendor/fish-speech",
+      "device": "cuda",
+      "device_index": 0,
+      "compute_type": "bfloat16",
+      "memory_profile": "default",
+      "gpu_expert_cache_gb": null,
+      "threads": 8,
+      "text": "Hello! Welcome to our application.",
+      "requested_runs": 3,
+      "warmup_runs": 1,
+      "status": "failed",
+      "runs": [],
+      "error": "torch.OutOfMemoryError: HIP out of memory. Tried to allocate 512.00 MiB. GPU 0 has a total capacity of 61.41 GiB of which 446.48 MiB is free. Of the allocated memory 60.96 GiB is allocated by PyTorch, and 14.45 MiB is reserved by PyTorch but unallocated. If reserved but unallocated memory is large try setting PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True to avoid fragmentation.  See documentation for Memory Management  (https://pytorch.org/docs/stable/notes/cuda.html#environment-variables)",
+      "exit_code": 1,
+      "hardware": {
+        "cpu": {
+          "processor": "AMD Ryzen AI MAX+ PRO 395",
+          "logical_cpu_count": 32,
+          "system_ram_bytes": null,
+          "system_ram_gib": 122.8
+        },
+        "gpu": {
+          "name": "AMD Radeon 8060S",
+          "architecture": "gfx1151",
+          "runtime": "rocm",
+          "total_memory_bytes": null,
+          "total_memory_gib": 61.41,
+          "runtime_version": "6.4.43482"
+        }
+      }
+    },
+    {
+      "model": "/home/jordi/sc/audio/models/drama-3",
+      "source": "/home/jordi/sc/audio/vendor/fish-speech",
+      "device": "cuda",
+      "device_index": 0,
+      "compute_type": "float16",
+      "memory_profile": "default",
+      "gpu_expert_cache_gb": null,
+      "threads": 8,
+      "text": "Hello! Welcome to our application.",
+      "requested_runs": 3,
+      "warmup_runs": 1,
+      "status": "failed",
+      "runs": [],
+      "error": "torch.OutOfMemoryError: HIP out of memory. Tried to allocate 512.00 MiB. GPU 0 has a total capacity of 61.41 GiB of which 446.48 MiB is free. Of the allocated memory 60.96 GiB is allocated by PyTorch, and 14.45 MiB is reserved by PyTorch but unallocated. If reserved but unallocated memory is large try setting PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True to avoid fragmentation.  See documentation for Memory Management  (https://pytorch.org/docs/stable/notes/cuda.html#environment-variables)",
+      "exit_code": 1,
+      "hardware": {
+        "cpu": {
+          "processor": "AMD Ryzen AI MAX+ PRO 395",
+          "logical_cpu_count": 32,
+          "system_ram_bytes": null,
+          "system_ram_gib": 122.8
+        },
+        "gpu": {
+          "name": "AMD Radeon 8060S",
+          "architecture": "gfx1151",
+          "runtime": "rocm",
+          "total_memory_bytes": null,
+          "total_memory_gib": 61.41,
+          "runtime_version": "6.4.43482"
+        }
+      }
+    },
+    {
+      "model": "/home/jordi/sc/audio/models/drama-3",
+      "source": "/home/jordi/sc/audio/vendor/fish-speech",
+      "device": "cuda",
+      "device_index": 0,
+      "compute_type": "float32",
+      "memory_profile": "default",
+      "gpu_expert_cache_gb": null,
+      "threads": 8,
+      "text": "Hello! Welcome to our application.",
+      "requested_runs": 3,
+      "warmup_runs": 1,
+      "status": "failed",
+      "runs": [],
+      "error": "torch.OutOfMemoryError: HIP out of memory. Tried to allocate 2.00 GiB. GPU 0 has a total capacity of 61.41 GiB of which 1.00 GiB is free. Of the allocated memory 60.39 GiB is allocated by PyTorch, and 14.17 MiB is reserved by PyTorch but unallocated. If reserved but unallocated memory is large try setting PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True to avoid fragmentation.  See documentation for Memory Management  (https://pytorch.org/docs/stable/notes/cuda.html#environment-variables)",
+      "exit_code": 1,
+      "hardware": {
+        "cpu": {
+          "processor": "AMD Ryzen AI MAX+ PRO 395",
+          "logical_cpu_count": 32,
+          "system_ram_bytes": null,
+          "system_ram_gib": 122.8
+        },
+        "gpu": {
+          "name": "AMD Radeon 8060S",
+          "architecture": "gfx1151",
+          "runtime": "rocm",
+          "total_memory_bytes": null,
+          "total_memory_gib": 61.41,
+          "runtime_version": "6.4.43482"
+        }
+      }
+    }
+  ]
+}
