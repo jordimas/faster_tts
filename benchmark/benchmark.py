@@ -87,7 +87,7 @@ if args.memory_profile is None:
 os.environ.pop("CT2_DRAMA3_GPU_EXPERT_CACHE_GB", None)
 if args.memory_profile == "limited":
     if args.device == "cpu":
-        print("SKIP limited CPU profile: CPU uses mapped weights and allocation controls, "
+        print("SKIP limited CPU profile: CPU uses allocated weights and allocation controls, "
               "without a total RAM cap.", flush=True)
         raise SystemExit(0)
     os.environ["CT2_DRAMA3_GPU_EXPERT_CACHE_GB"] = f"{args.gpu_expert_cache_gb:g}"
