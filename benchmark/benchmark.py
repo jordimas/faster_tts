@@ -102,8 +102,9 @@ if args.device == "cuda":
 compute_types = [args.compute_type] if args.compute_type else sorted(
     ctranslate2.get_supported_compute_types(args.device, args.device_index))
 if not args.compute_worker:
-    print(f"\nDevice: {args.device}:{args.device_index}; "
-          f"Memory profile: {args.memory_profile}; {memory_label}", flush=True)
+    print(f"\nDevice: {args.device}:{args.device_index}"
+          + (f"; Memory profile: {args.memory_profile}; {memory_label}"
+             if args.device != "cpu" else ""), flush=True)
 if args.compute_type is None:
     failed = []
     for compute_type in compute_types:
