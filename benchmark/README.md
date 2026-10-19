@@ -79,21 +79,21 @@ individual allocations, without guaranteeing a total RAM ceiling. Optional
 locked-memory allowance. The benchmark does not invoke systemd or configure
 cgroups.
 
-Each GPU benchmarks `default` (uncapped expert cache) and `limited`
-(`CT2_DRAMA3_GPU_EXPERT_CACHE_GB=4`) in separate processes. This limits cached
+Each GPU uses `limited` by default
+(`CT2_DRAMA3_GPU_EXPERT_CACHE_GB=12`). This limits cached
 expert weights, not total VRAM or system RAM. Other allocations require extra
 memory. Profile settings override an inherited GPU expert-cache setting.
 
-Use `--memory-profile default` or `--memory-profile limited` to select one GPU
-profile. `--gpu-expert-cache-gb` overrides the limited cache budget. An explicit
+Use `--memory-profile default` for an uncapped GPU expert cache.
+`--gpu-expert-cache-gb` overrides the limited cache budget. An explicit
 CPU `limited` profile is reported as skipped. Loading and warmup remain outside
 the timing; failures are reported and the sweep continues.
 
 ### Local CTranslate2 wheel
 
 The uv dependency source currently points to
-`dist/ctranslate2-4.8.3+rocm.1e66308c.mkl.1-cp314-cp314-linux_x86_64.whl`,
-built from CT2 commit `1e66308cb916dd6e5f4bd074848a6ac17b2adf96` with
+`dist/ctranslate2-4.8.3+rocm.5ef5b50b.mkl.2-cp314-cp314-linux_x86_64.whl`,
+built from CT2 commit `5ef5b50bd360fd59a9ec3e98299450b8e7cad32a` with
 ROCm, MKL, and oneDNN. It bundles a freshly built native library and Python
 3.14 bindings. This is a host-specific Linux wheel, not a manylinux release.
 Build provenance and hashes are recorded in the adjacent `.build.json` file.

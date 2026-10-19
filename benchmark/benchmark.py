@@ -32,9 +32,9 @@ parser.add_argument("--check-quality", action="store_true",
                     help="transcribe every timed output with faster-whisper medium and report WER")
 parser.add_argument("--check", choices=("quality",), help="alias for --check-quality")
 parser.add_argument("--memory-profile", choices=("default", "limited"),
-                    help="default: CPU defaults; GPU uncapped and expert-cache-limited configurations")
-parser.add_argument("--gpu-expert-cache-gb", type=float, default=4,
-                    help="limited profile: GPU expert cache in decimal GB (default: 4)")
+                    help="default: CPU defaults; GPU expert-cache-limited configuration")
+parser.add_argument("--gpu-expert-cache-gb", type=float, default=12,
+                    help="limited profile: GPU expert cache in decimal GB (default: 12)")
 args = parser.parse_args()
 args.check_quality = args.check_quality or args.check == "quality"
 if args.check_quality and importlib.util.find_spec("faster_whisper") is None:
@@ -74,7 +74,7 @@ if args.device == "auto":
     args.device = "cuda" if ctranslate2.get_cuda_device_count() else "cpu"
 if args.memory_profile is None:
     failed = []
-    profiles = ("default",) if args.device == "cpu" else ("default", "limited")
+    profiles = ("default",) if args.device == "cpu" else ("limited",)
     for profile in profiles:
         status = subprocess.run([sys.executable, "-u", *sys.argv,
                                  "--memory-profile", profile]).returncode
