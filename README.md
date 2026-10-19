@@ -149,3 +149,54 @@ see the [CTranslate2 Drama 3 guide](https://github.com/jordimas/CTranslate2/blob
 For this library's synthesis options, see the
 [`Model.synthesize()` API documentation](faster_tts/model.py) or run
 `python -m faster_tts --help` for CLI options.
+
+## Benchmark results (2026-10-19)
+
+AMD Ryzen AI MAX+ PRO 395 (16 cores / 32 threads), Radeon 8060S
+(`gfx1151`, ROCm, 61.41 GiB GPU-addressable shared memory), 122.8 GiB system
+RAM; Linux 7.0.0-38-generic. Eight CPU threads, text
+`Hello! Welcome to our application.`, one full warmup and three timed runs
+per configuration. HF ran first, then CT2; configurations run sequentially.
+GPU expert caches are uncapped; capped profiles were skipped.
+
+Time is mean synthesis latency, excluding model loading and warmup. Peak
+memory is process RSS including loading and warmup; it excludes GPU
+allocations, which also consume shared system RAM on this integrated GPU.
+Audio duration varies by backend and precision, so compare RTF alongside time.
+No quality checks were enabled.
+
+CTranslate2 4.8.3, Python 3.14; PyTorch/torchaudio 2.8.0+rocm6.4,
+Python 3.13. CT2 checkpoint: `jordimas/drama-3-ct2` revision
+`9aba67191f7f44b915c63ae3bfa08dde5eafdd84`. HF checkpoint:
+`/home/jordi/sc/audio/models/drama-3`; Fish Speech source revision
+`541566932abbaebcb0a40e562a1f846738383f38`. Both decode audio on CPU float32.
+
+| Backend | Device | Compute type | Mean time (s) | Std (s) | Audio (s) | RTF | Peak RSS (GiB) |
+| --- | --- | --- | ---: | ---: | ---: | ---: | ---: |
+| HF / PyTorch | CPU | bfloat16 | 109.206 | 0.128 | 3.158 | 34.582 | 45.564 |
+| HF / PyTorch | CPU | float16 | 187.052 | 5.279 | 3.158 | 59.233 | 45.566 |
+| HF / PyTorch | CPU | float32 | 105.888 | 0.474 | 2.508 | 42.224 | 52.434 |
+| CT2 | CPU | float32 | 135.560 | 0.676 | 2.508 | 54.056 | 45.263 |
+| CT2 | CPU | int8 | 27.462 | 0.145 | 2.554 | 10.752 | 44.752 |
+| CT2 | CPU | int8_float32 | 27.862 | 0.354 | 2.554 | 10.908 | 44.751 |
+| CT2 | ROCm GPU (cuda:0) | bfloat16 | 26.362 | 0.059 | 2.508 | 10.512 | 46.764 |
+| CT2 | ROCm GPU (cuda:0) | float16 | 29.794 | 0.457 | 3.111 | 9.576 | 47.038 |
+| CT2 | ROCm GPU (cuda:0) | float32 | 43.638 | 0.949 | 2.508 | 17.401 | 46.968 |
+| CT2 | ROCm GPU (cuda:0) | int8 | 12.312 | 0.653 | 3.158 | 3.899 | 45.705 |
+| CT2 | ROCm GPU (cuda:0) | int8_bfloat16 | 29.212 | 0.474 | 3.158 | 9.250 | 48.735 |
+
+HF GPU bfloat16, float16, and float32 all failed during model allocation
+with HIP out-of-memory errors, before warmup or timing. PyTorch reported
+60.96 GiB allocated for bfloat16/float16 and 60.39 GiB for float32 against a
+61.41 GiB GPU capacity; these are allocation-failure diagnostics, not measured
+peak RSS. The official ROCm path expands FP8 experts to the requested floating
+precision. No GPU timing is available for HF.
+
+Commands from `benchmark/`:
+
+```bash
+/tmp/faster-tts-hf-rocm/bin/python -u benchmark_hf.py /home/jordi/sc/audio/models/drama-3 --runs 3
+HF_HUB_OFFLINE=1 ../.venv/bin/python -u benchmark.py --memory-profile default --runs 3
+```
+
+Results above include all completed configurations (8/10 CT2); the remaining CT2 GPU configurations are still running.
