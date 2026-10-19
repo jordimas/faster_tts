@@ -150,53 +150,90 @@ For this library's synthesis options, see the
 [`Model.synthesize()` API documentation](faster_tts/model.py) or run
 `python -m faster_tts --help` for CLI options.
 
-## Benchmark results (2026-10-19)
+## Benchmark
 
-AMD Ryzen AI MAX+ PRO 395 (16 cores / 32 threads), Radeon 8060S
-(`gfx1151`, ROCm, 61.41 GiB GPU-addressable shared memory), 122.8 GiB system
-RAM; Linux 7.0.0-38-generic. Eight CPU threads, text
-`Hello! Welcome to our application.`, one full warmup and three timed runs
-per configuration. HF ran first, then CT2; configurations run sequentially.
-GPU expert caches are uncapped; capped profiles were skipped.
+Time and memory required to synthesize `Hello! Welcome to our application.`
+with Drama 3, measured on 2026-10-19. Each result is the mean of three runs
+after one full warmup; model loading and warmup are excluded from time.
 
-Time is mean synthesis latency, excluding model loading and warmup. Peak
-memory is process RSS including loading and warmup; it excludes GPU
-allocations, which also consume shared system RAM on this integrated GPU.
-Audio duration varies by backend and precision, so compare RTF alongside time.
-No quality checks were enabled.
+### Drama 3 on GPU
 
-CTranslate2 4.8.3, Python 3.14; PyTorch/torchaudio 2.8.0+rocm6.4,
-Python 3.13. CT2 checkpoint: `jordimas/drama-3-ct2` revision
-`9aba67191f7f44b915c63ae3bfa08dde5eafdd84`. HF checkpoint:
-`/home/jordi/sc/audio/models/drama-3`; Fish Speech source revision
-`541566932abbaebcb0a40e562a1f846738383f38`. Both decode audio on CPU float32.
+| Implementation | Precision (compute_type) | Time | RAM usage (peak RSS) | RTF |
+| --- | --- | ---: | ---: | ---: |
+| Fish Speech (PyTorch) | bfloat16 | Out of memory | — | — |
+| Fish Speech (PyTorch) | float16 | Out of memory | — | — |
+| Fish Speech (PyTorch) | float32 | Out of memory | — | — |
+| faster_tts (CT2) | bfloat16 | 26.362s | 46.764 GiB | 10.512 |
+| faster_tts (CT2) | float16 | 29.794s | 47.038 GiB | 9.576 |
+| faster_tts (CT2) | float32 | 43.638s | 46.968 GiB | 17.401 |
+| faster_tts (CT2) | int8 | **12.312s** | 45.705 GiB | 3.899 |
+| faster_tts (CT2) | int8_bfloat16 | 29.212s | 48.735 GiB | 9.250 |
+| faster_tts (CT2) | int8_float16 | 43.077s | 49.663 GiB | 8.209 |
+| faster_tts (CT2) | int8_float32 | 12.705s | 45.626 GiB | 4.023 |
 
-| Backend | Device | Compute type | Mean time (s) | Std (s) | Audio (s) | RTF | Peak RSS (GiB) |
-| --- | --- | --- | ---: | ---: | ---: | ---: | ---: |
-| HF / PyTorch | CPU | bfloat16 | 109.206 | 0.128 | 3.158 | 34.582 | 45.564 |
-| HF / PyTorch | CPU | float16 | 187.052 | 5.279 | 3.158 | 59.233 | 45.566 |
-| HF / PyTorch | CPU | float32 | 105.888 | 0.474 | 2.508 | 42.224 | 52.434 |
-| CT2 | CPU | float32 | 135.560 | 0.676 | 2.508 | 54.056 | 45.263 |
-| CT2 | CPU | int8 | 27.462 | 0.145 | 2.554 | 10.752 | 44.752 |
-| CT2 | CPU | int8_float32 | 27.862 | 0.354 | 2.554 | 10.908 | 44.751 |
-| CT2 | ROCm GPU (cuda:0) | bfloat16 | 26.362 | 0.059 | 2.508 | 10.512 | 46.764 |
-| CT2 | ROCm GPU (cuda:0) | float16 | 29.794 | 0.457 | 3.111 | 9.576 | 47.038 |
-| CT2 | ROCm GPU (cuda:0) | float32 | 43.638 | 0.949 | 2.508 | 17.401 | 46.968 |
-| CT2 | ROCm GPU (cuda:0) | int8 | 12.312 | 0.653 | 3.158 | 3.899 | 45.705 |
-| CT2 | ROCm GPU (cuda:0) | int8_bfloat16 | 29.212 | 0.474 | 3.158 | 9.250 | 48.735 |
+Executed on AMD Radeon 8060S (`gfx1151`, ROCm, device `cuda:0`), with
+61.41 GiB GPU-addressable memory shared with system RAM. All GPU runs are
+uncapped. **RAM usage measures process RSS, excluding GPU allocations; it is
+not VRAM usage or total shared memory consumption.**
 
-HF GPU bfloat16, float16, and float32 all failed during model allocation
-with HIP out-of-memory errors, before warmup or timing. PyTorch reported
-60.96 GiB allocated for bfloat16/float16 and 60.39 GiB for float32 against a
-61.41 GiB GPU capacity; these are allocation-failure diagnostics, not measured
-peak RSS. The official ROCm path expands FP8 experts to the requested floating
-precision. No GPU timing is available for HF.
+Fish Speech expands FP8 experts to the selected floating precision on ROCm.
+All three GPU precisions ran out of memory during model allocation, before
+warmup or timing. PyTorch reported 60.96 GiB allocated for bfloat16/float16
+and 60.39 GiB for float32 against the 61.41 GiB capacity.
 
-Commands from `benchmark/`:
+### Drama 3 on CPU
+
+| Implementation | Precision (compute_type) | Time | RAM usage (peak RSS) | RTF |
+| --- | --- | ---: | ---: | ---: |
+| Fish Speech (PyTorch) | bfloat16 | 109.206s | 45.564 GiB | 34.582 |
+| Fish Speech (PyTorch) | float16 | 187.052s | 45.566 GiB | 59.233 |
+| Fish Speech (PyTorch) | float32 | 105.888s | 52.434 GiB | 42.224 |
+| faster_tts (CT2) | float32 | 135.560s | 45.263 GiB | 54.056 |
+| faster_tts (CT2) | int8 | **27.462s** | 44.752 GiB | 10.752 |
+| faster_tts (CT2) | int8_float32 | 27.862s | 44.751 GiB | 10.908 |
+
+Executed with 8 threads on AMD Ryzen AI MAX+ PRO 395 (16 cores / 32 threads),
+122.8 GiB system RAM, Linux 7.0.0-38-generic.
+
+Lower time and RTF are better; RTF below 1 means faster than real time.
+Sampling can produce different audio lengths across implementations and
+precisions. These measurements do not establish equivalent audio quality;
+no ASR quality checks were run. Both implementations decode audio on CPU float32.
+Peak RSS includes model loading and warmup.
+
+<details>
+<summary>Run variation, audio duration, and reproduction</summary>
+
+| Device | Implementation | Precision | Time std (s) | Mean audio (s) |
+| --- | --- | --- | ---: | ---: |
+| CPU | Fish Speech (PyTorch) | bfloat16 | 0.128 | 3.158 |
+| CPU | Fish Speech (PyTorch) | float16 | 5.279 | 3.158 |
+| CPU | Fish Speech (PyTorch) | float32 | 0.474 | 2.508 |
+| CPU | faster_tts (CT2) | float32 | 0.676 | 2.508 |
+| CPU | faster_tts (CT2) | int8 | 0.145 | 2.554 |
+| CPU | faster_tts (CT2) | int8_float32 | 0.354 | 2.554 |
+| GPU | faster_tts (CT2) | bfloat16 | 0.059 | 2.508 |
+| GPU | faster_tts (CT2) | float16 | 0.457 | 3.111 |
+| GPU | faster_tts (CT2) | float32 | 0.949 | 2.508 |
+| GPU | faster_tts (CT2) | int8 | 0.653 | 3.158 |
+| GPU | faster_tts (CT2) | int8_bfloat16 | 0.474 | 3.158 |
+| GPU | faster_tts (CT2) | int8_float16 | 1.901 | 5.248 |
+| GPU | faster_tts (CT2) | int8_float32 | 0.106 | 3.158 |
+
+Software and checkpoints:
+
+- CTranslate2 4.8.3 (local ROCm build), Python 3.14;
+  `jordimas/drama-3-ct2` revision `9aba67191f7f44b915c63ae3bfa08dde5eafdd84`.
+- PyTorch/torchaudio 2.8.0+rocm6.4, Python 3.13;
+  official checkpoint `/home/jordi/sc/audio/models/drama-3`, Fish Speech source
+  revision `541566932abbaebcb0a40e562a1f846738383f38`.
+
+HF ran first, followed by CT2, with all configurations sequential.
+Capped profiles were skipped. Commands from `benchmark/`:
 
 ```bash
 /tmp/faster-tts-hf-rocm/bin/python -u benchmark_hf.py /home/jordi/sc/audio/models/drama-3 --runs 3
 HF_HUB_OFFLINE=1 ../.venv/bin/python -u benchmark.py --memory-profile default --runs 3
 ```
 
-Results above include all completed configurations (8/10 CT2); the remaining CT2 GPU configurations are still running.
+</details>

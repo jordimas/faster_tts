@@ -1,0 +1,205 @@
+
+Backend: HF (PyTorch)
+Device: cpu:0
+
+Compute type: bfloat16
+Expert storage: FP8
+2026-10-19 16:34:20.013 | INFO     | fish_speech.models.text2semantic.fish_omni.backbone:materialize:151 - FishOmni backbone placement: cpu: layers 0-39; embed on cpu, lm_head on cpu
+2026-10-19 16:34:39.142 | INFO     | fish_speech.models.text2semantic.fish_omni.backbone:load_backbone_weights:397 - FishOmni backbone: loaded 62053 parameter slots
+2026-10-19 16:34:40.804 | INFO     | fish_speech.models.text2semantic.fish_omni.tower:load_audio_decoder_weights:421 - FishOmni tower: loaded 192 tensors on cpu
+/tmp/faster-tts-hf-rocm/lib/python3.13/site-packages/torch/nn/utils/weight_norm.py:144: FutureWarning: `torch.nn.utils.weight_norm` is deprecated in favor of `torch.nn.utils.parametrizations.weight_norm`.
+  WeightNorm.apply(module, name, dim)
+2026-10-19 16:34:48.791 | INFO     | fish_speech.models.text2semantic.inference:load_codec_model:533 - Loaded codec /home/jordi/sc/audio/models/drama-3/codec.pth on cpu (torch.float32)
+2026-10-19 16:34:59.108 | INFO     | fish_speech.models.text2semantic.fish_omni.generate:generate_drama3:248 - Drama 3 prefill: 23 rows in 10.30s
+2026-10-19 16:35:47.887 | INFO     | fish_speech.models.text2semantic.fish_omni.generate:generate_drama3:248 - Drama 3 prefill: 67 rows in 17.12s
+2026-10-19 16:36:50.558 | INFO     | fish_speech.models.text2semantic.fish_omni.generate:generate_drama3:248 - Drama 3 prefill: 23 rows in 11.23s
+2026-10-19 16:37:39.705 | INFO     | fish_speech.models.text2semantic.fish_omni.generate:generate_drama3:248 - Drama 3 prefill: 67 rows in 16.20s
+Run 1: 109.156s, audio=3.158s, RTF=34.566, finish_reason=eos
+2026-10-19 16:38:39.533 | INFO     | fish_speech.models.text2semantic.fish_omni.generate:generate_drama3:248 - Drama 3 prefill: 23 rows in 11.05s
+2026-10-19 16:39:27.883 | INFO     | fish_speech.models.text2semantic.fish_omni.generate:generate_drama3:248 - Drama 3 prefill: 67 rows in 16.41s
+Run 2: 109.110s, audio=3.158s, RTF=34.551, finish_reason=eos
+2026-10-19 16:40:28.736 | INFO     | fish_speech.models.text2semantic.fish_omni.generate:generate_drama3:248 - Drama 3 prefill: 23 rows in 11.14s
+2026-10-19 16:41:17.601 | INFO     | fish_speech.models.text2semantic.fish_omni.generate:generate_drama3:248 - Drama 3 prefill: 67 rows in 16.28s
+Run 3: 109.351s, audio=3.158s, RTF=34.628, finish_reason=eos
+Mean: 109.206s; std: 0.128s; RTF: 34.582; peak RSS: 45.564 GiB
+
+Compute type: float16
+Expert storage: FP8
+2026-10-19 16:42:12.645 | INFO     | fish_speech.models.text2semantic.fish_omni.backbone:materialize:151 - FishOmni backbone placement: cpu: layers 0-39; embed on cpu, lm_head on cpu
+2026-10-19 16:42:18.173 | INFO     | fish_speech.models.text2semantic.fish_omni.backbone:load_backbone_weights:397 - FishOmni backbone: loaded 62053 parameter slots
+2026-10-19 16:42:19.317 | INFO     | fish_speech.models.text2semantic.fish_omni.tower:load_audio_decoder_weights:421 - FishOmni tower: loaded 192 tensors on cpu
+/tmp/faster-tts-hf-rocm/lib/python3.13/site-packages/torch/nn/utils/weight_norm.py:144: FutureWarning: `torch.nn.utils.weight_norm` is deprecated in favor of `torch.nn.utils.parametrizations.weight_norm`.
+  WeightNorm.apply(module, name, dim)
+2026-10-19 16:42:27.116 | INFO     | fish_speech.models.text2semantic.inference:load_codec_model:533 - Loaded codec /home/jordi/sc/audio/models/drama-3/codec.pth on cpu (torch.float32)
+2026-10-19 16:42:41.404 | INFO     | fish_speech.models.text2semantic.fish_omni.generate:generate_drama3:248 - Drama 3 prefill: 23 rows in 14.27s
+2026-10-19 16:43:53.764 | INFO     | fish_speech.models.text2semantic.fish_omni.generate:generate_drama3:248 - Drama 3 prefill: 65 rows in 17.73s
+2026-10-19 16:45:41.726 | INFO     | fish_speech.models.text2semantic.fish_omni.generate:generate_drama3:248 - Drama 3 prefill: 23 rows in 14.99s
+2026-10-19 16:46:54.338 | INFO     | fish_speech.models.text2semantic.fish_omni.generate:generate_drama3:248 - Drama 3 prefill: 65 rows in 18.22s
+Run 1: 181.711s, audio=3.158s, RTF=57.541, finish_reason=eos
+2026-10-19 16:48:43.492 | INFO     | fish_speech.models.text2semantic.fish_omni.generate:generate_drama3:248 - Drama 3 prefill: 23 rows in 15.05s
+2026-10-19 16:49:57.084 | INFO     | fish_speech.models.text2semantic.fish_omni.generate:generate_drama3:248 - Drama 3 prefill: 65 rows in 18.13s
+Run 2: 187.179s, audio=3.158s, RTF=59.273, finish_reason=eos
+2026-10-19 16:51:50.790 | INFO     | fish_speech.models.text2semantic.fish_omni.generate:generate_drama3:248 - Drama 3 prefill: 23 rows in 15.17s
+2026-10-19 16:53:07.094 | INFO     | fish_speech.models.text2semantic.fish_omni.generate:generate_drama3:248 - Drama 3 prefill: 65 rows in 18.35s
+Run 3: 192.267s, audio=3.158s, RTF=60.884, finish_reason=eos
+Mean: 187.052s; std: 5.279s; RTF: 59.233; peak RSS: 45.566 GiB
+
+Compute type: float32
+Expert storage: FP8
+2026-10-19 16:54:54.026 | INFO     | fish_speech.models.text2semantic.fish_omni.backbone:materialize:151 - FishOmni backbone placement: cpu: layers 0-39; embed on cpu, lm_head on cpu
+2026-10-19 16:54:57.924 | INFO     | fish_speech.models.text2semantic.fish_omni.backbone:load_backbone_weights:397 - FishOmni backbone: loaded 62053 parameter slots
+2026-10-19 16:54:59.471 | INFO     | fish_speech.models.text2semantic.fish_omni.tower:load_audio_decoder_weights:421 - FishOmni tower: loaded 192 tensors on cpu
+/tmp/faster-tts-hf-rocm/lib/python3.13/site-packages/torch/nn/utils/weight_norm.py:144: FutureWarning: `torch.nn.utils.weight_norm` is deprecated in favor of `torch.nn.utils.parametrizations.weight_norm`.
+  WeightNorm.apply(module, name, dim)
+2026-10-19 16:55:07.261 | INFO     | fish_speech.models.text2semantic.inference:load_codec_model:533 - Loaded codec /home/jordi/sc/audio/models/drama-3/codec.pth on cpu (torch.float32)
+2026-10-19 16:55:19.890 | INFO     | fish_speech.models.text2semantic.fish_omni.generate:generate_drama3:248 - Drama 3 prefill: 23 rows in 12.61s
+2026-10-19 16:56:03.994 | INFO     | fish_speech.models.text2semantic.fish_omni.generate:generate_drama3:248 - Drama 3 prefill: 55 rows in 21.71s
+2026-10-19 16:57:13.475 | INFO     | fish_speech.models.text2semantic.fish_omni.generate:generate_drama3:248 - Drama 3 prefill: 23 rows in 12.90s
+2026-10-19 16:57:54.629 | INFO     | fish_speech.models.text2semantic.fish_omni.generate:generate_drama3:248 - Drama 3 prefill: 55 rows in 21.28s
+Run 1: 105.616s, audio=2.508s, RTF=42.116, finish_reason=eos
+2026-10-19 16:58:58.960 | INFO     | fish_speech.models.text2semantic.fish_omni.generate:generate_drama3:248 - Drama 3 prefill: 23 rows in 12.76s
+2026-10-19 16:59:39.933 | INFO     | fish_speech.models.text2semantic.fish_omni.generate:generate_drama3:248 - Drama 3 prefill: 55 rows in 20.88s
+Run 2: 106.435s, audio=2.508s, RTF=42.442, finish_reason=eos
+2026-10-19 17:00:44.298 | INFO     | fish_speech.models.text2semantic.fish_omni.generate:generate_drama3:248 - Drama 3 prefill: 23 rows in 11.67s
+2026-10-19 17:01:25.899 | INFO     | fish_speech.models.text2semantic.fish_omni.generate:generate_drama3:248 - Drama 3 prefill: 55 rows in 20.96s
+Run 3: 105.613s, audio=2.508s, RTF=42.115, finish_reason=eos
+Mean: 105.888s; std: 0.474s; RTF: 42.224; peak RSS: 52.434 GiB
+
+Backend: HF (PyTorch)
+Device: cuda:0; Memory profile: default; uncapped
+
+Compute type: bfloat16
+Expert storage: bfloat16
+Traceback (most recent call last):
+  File "/home/jordi/sc/CTranslate2/tts/faster_tts/benchmark/benchmark_hf.py", line 200, in <module>
+    main()
+    ~~~~^^
+  File "/home/jordi/sc/CTranslate2/tts/faster_tts/benchmark/benchmark_hf.py", line 120, in main
+    backbone.materialize([device])
+    ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^
+  File "/home/jordi/sc/audio/vendor/fish-speech/fish_speech/models/text2semantic/fish_omni/backbone.py", line 147, in materialize
+    layer.to_empty(device=device)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^
+  File "/tmp/faster-tts-hf-rocm/lib/python3.13/site-packages/torch/nn/modules/module.py", line 1224, in to_empty
+    return self._apply(
+           ~~~~~~~~~~~^
+        lambda t: torch.empty_like(t, device=device), recurse=recurse
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/tmp/faster-tts-hf-rocm/lib/python3.13/site-packages/torch/nn/modules/module.py", line 928, in _apply
+    module._apply(fn)
+    ~~~~~~~~~~~~~^^^^
+  File "/tmp/faster-tts-hf-rocm/lib/python3.13/site-packages/torch/nn/modules/module.py", line 928, in _apply
+    module._apply(fn)
+    ~~~~~~~~~~~~~^^^^
+  File "/tmp/faster-tts-hf-rocm/lib/python3.13/site-packages/torch/nn/modules/module.py", line 955, in _apply
+    param_applied = fn(param)
+  File "/tmp/faster-tts-hf-rocm/lib/python3.13/site-packages/torch/nn/modules/module.py", line 1225, in <lambda>
+    lambda t: torch.empty_like(t, device=device), recurse=recurse
+              ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^
+  File "/tmp/faster-tts-hf-rocm/lib/python3.13/site-packages/torch/_prims_common/wrappers.py", line 309, in _fn
+    result = fn(*args, **kwargs)
+  File "/tmp/faster-tts-hf-rocm/lib/python3.13/site-packages/torch/_refs/__init__.py", line 5055, in empty_like
+    return torch.empty_permuted(
+           ~~~~~~~~~~~~~~~~~~~~^
+        a.shape,
+        ^^^^^^^^
+    ...<5 lines>...
+        requires_grad=requires_grad,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+torch.OutOfMemoryError: HIP out of memory. Tried to allocate 512.00 MiB. GPU 0 has a total capacity of 61.41 GiB of which 446.48 MiB is free. Of the allocated memory 60.96 GiB is allocated by PyTorch, and 14.45 MiB is reserved by PyTorch but unallocated. If reserved but unallocated memory is large try setting PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True to avoid fragmentation.  See documentation for Memory Management  (https://pytorch.org/docs/stable/notes/cuda.html#environment-variables)
+--compute-type bfloat16 --compute-worker failed (exit 1)
+
+Compute type: float16
+Expert storage: float16
+Traceback (most recent call last):
+  File "/home/jordi/sc/CTranslate2/tts/faster_tts/benchmark/benchmark_hf.py", line 200, in <module>
+    main()
+    ~~~~^^
+  File "/home/jordi/sc/CTranslate2/tts/faster_tts/benchmark/benchmark_hf.py", line 120, in main
+    backbone.materialize([device])
+    ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^
+  File "/home/jordi/sc/audio/vendor/fish-speech/fish_speech/models/text2semantic/fish_omni/backbone.py", line 147, in materialize
+    layer.to_empty(device=device)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^
+  File "/tmp/faster-tts-hf-rocm/lib/python3.13/site-packages/torch/nn/modules/module.py", line 1224, in to_empty
+    return self._apply(
+           ~~~~~~~~~~~^
+        lambda t: torch.empty_like(t, device=device), recurse=recurse
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/tmp/faster-tts-hf-rocm/lib/python3.13/site-packages/torch/nn/modules/module.py", line 928, in _apply
+    module._apply(fn)
+    ~~~~~~~~~~~~~^^^^
+  File "/tmp/faster-tts-hf-rocm/lib/python3.13/site-packages/torch/nn/modules/module.py", line 928, in _apply
+    module._apply(fn)
+    ~~~~~~~~~~~~~^^^^
+  File "/tmp/faster-tts-hf-rocm/lib/python3.13/site-packages/torch/nn/modules/module.py", line 955, in _apply
+    param_applied = fn(param)
+  File "/tmp/faster-tts-hf-rocm/lib/python3.13/site-packages/torch/nn/modules/module.py", line 1225, in <lambda>
+    lambda t: torch.empty_like(t, device=device), recurse=recurse
+              ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^
+  File "/tmp/faster-tts-hf-rocm/lib/python3.13/site-packages/torch/_prims_common/wrappers.py", line 309, in _fn
+    result = fn(*args, **kwargs)
+  File "/tmp/faster-tts-hf-rocm/lib/python3.13/site-packages/torch/_refs/__init__.py", line 5055, in empty_like
+    return torch.empty_permuted(
+           ~~~~~~~~~~~~~~~~~~~~^
+        a.shape,
+        ^^^^^^^^
+    ...<5 lines>...
+        requires_grad=requires_grad,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+torch.OutOfMemoryError: HIP out of memory. Tried to allocate 512.00 MiB. GPU 0 has a total capacity of 61.41 GiB of which 446.48 MiB is free. Of the allocated memory 60.96 GiB is allocated by PyTorch, and 14.45 MiB is reserved by PyTorch but unallocated. If reserved but unallocated memory is large try setting PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True to avoid fragmentation.  See documentation for Memory Management  (https://pytorch.org/docs/stable/notes/cuda.html#environment-variables)
+--compute-type float16 --compute-worker failed (exit 1)
+
+Compute type: float32
+Expert storage: float32
+Traceback (most recent call last):
+  File "/home/jordi/sc/CTranslate2/tts/faster_tts/benchmark/benchmark_hf.py", line 200, in <module>
+    main()
+    ~~~~^^
+  File "/home/jordi/sc/CTranslate2/tts/faster_tts/benchmark/benchmark_hf.py", line 120, in main
+    backbone.materialize([device])
+    ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^
+  File "/home/jordi/sc/audio/vendor/fish-speech/fish_speech/models/text2semantic/fish_omni/backbone.py", line 147, in materialize
+    layer.to_empty(device=device)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^
+  File "/tmp/faster-tts-hf-rocm/lib/python3.13/site-packages/torch/nn/modules/module.py", line 1224, in to_empty
+    return self._apply(
+           ~~~~~~~~~~~^
+        lambda t: torch.empty_like(t, device=device), recurse=recurse
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/tmp/faster-tts-hf-rocm/lib/python3.13/site-packages/torch/nn/modules/module.py", line 928, in _apply
+    module._apply(fn)
+    ~~~~~~~~~~~~~^^^^
+  File "/tmp/faster-tts-hf-rocm/lib/python3.13/site-packages/torch/nn/modules/module.py", line 928, in _apply
+    module._apply(fn)
+    ~~~~~~~~~~~~~^^^^
+  File "/tmp/faster-tts-hf-rocm/lib/python3.13/site-packages/torch/nn/modules/module.py", line 955, in _apply
+    param_applied = fn(param)
+  File "/tmp/faster-tts-hf-rocm/lib/python3.13/site-packages/torch/nn/modules/module.py", line 1225, in <lambda>
+    lambda t: torch.empty_like(t, device=device), recurse=recurse
+              ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^
+  File "/tmp/faster-tts-hf-rocm/lib/python3.13/site-packages/torch/_prims_common/wrappers.py", line 309, in _fn
+    result = fn(*args, **kwargs)
+  File "/tmp/faster-tts-hf-rocm/lib/python3.13/site-packages/torch/_refs/__init__.py", line 5055, in empty_like
+    return torch.empty_permuted(
+           ~~~~~~~~~~~~~~~~~~~~^
+        a.shape,
+        ^^^^^^^^
+    ...<5 lines>...
+        requires_grad=requires_grad,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+torch.OutOfMemoryError: HIP out of memory. Tried to allocate 2.00 GiB. GPU 0 has a total capacity of 61.41 GiB of which 1.00 GiB is free. Of the allocated memory 60.39 GiB is allocated by PyTorch, and 14.17 MiB is reserved by PyTorch but unallocated. If reserved but unallocated memory is large try setting PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True to avoid fragmentation.  See documentation for Memory Management  (https://pytorch.org/docs/stable/notes/cuda.html#environment-variables)
+--compute-type float32 --compute-worker failed (exit 1)
+--device cuda --device-index 0 failed (exit 1)

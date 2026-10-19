@@ -1,0 +1,64 @@
+
+Device: cpu:0
+
+Compute type: float32
+Run 1: 134.871s, audio=2.508s, RTF=53.782, finish_reason=eos
+Run 2: 135.586s, audio=2.508s, RTF=54.067, finish_reason=eos
+Run 3: 136.222s, audio=2.508s, RTF=54.320, finish_reason=eos
+Mean: 135.560s; std: 0.676s; RTF: 54.056; peak RSS: 45.263 GiB
+
+Compute type: int8
+Run 1: 27.615s, audio=2.554s, RTF=10.811, finish_reason=eos
+Run 2: 27.446s, audio=2.554s, RTF=10.746, finish_reason=eos
+Run 3: 27.326s, audio=2.554s, RTF=10.698, finish_reason=eos
+Mean: 27.462s; std: 0.145s; RTF: 10.752; peak RSS: 44.752 GiB
+
+Compute type: int8_float32
+Run 1: 27.574s, audio=2.554s, RTF=10.795, finish_reason=eos
+Run 2: 27.755s, audio=2.554s, RTF=10.866, finish_reason=eos
+Run 3: 28.257s, audio=2.554s, RTF=11.063, finish_reason=eos
+Mean: 27.862s; std: 0.354s; RTF: 10.908; peak RSS: 44.751 GiB
+
+Device: cuda:0; Memory profile: default; uncapped
+
+Compute type: bfloat16
+Run 1: 26.348s, audio=2.508s, RTF=10.507, finish_reason=eos
+Run 2: 26.310s, audio=2.508s, RTF=10.492, finish_reason=eos
+Run 3: 26.427s, audio=2.508s, RTF=10.538, finish_reason=eos
+Mean: 26.362s; std: 0.059s; RTF: 10.512; peak RSS: 46.764 GiB
+
+Compute type: float16
+Run 1: 30.304s, audio=3.111s, RTF=9.739, finish_reason=eos
+Run 2: 29.656s, audio=3.111s, RTF=9.531, finish_reason=eos
+Run 3: 29.423s, audio=3.111s, RTF=9.456, finish_reason=eos
+Mean: 29.794s; std: 0.457s; RTF: 9.576; peak RSS: 47.038 GiB
+
+Compute type: float32
+Run 1: 42.788s, audio=2.508s, RTF=17.062, finish_reason=eos
+Run 2: 44.662s, audio=2.508s, RTF=17.810, finish_reason=eos
+Run 3: 43.464s, audio=2.508s, RTF=17.332, finish_reason=eos
+Mean: 43.638s; std: 0.949s; RTF: 17.401; peak RSS: 46.968 GiB
+
+Compute type: int8
+Run 1: 13.005s, audio=3.158s, RTF=4.118, finish_reason=eos
+Run 2: 12.222s, audio=3.158s, RTF=3.870, finish_reason=eos
+Run 3: 11.709s, audio=3.158s, RTF=3.708, finish_reason=eos
+Mean: 12.312s; std: 0.653s; RTF: 3.899; peak RSS: 45.705 GiB
+
+Compute type: int8_bfloat16
+Run 1: 28.720s, audio=3.158s, RTF=9.094, finish_reason=eos
+Run 2: 29.252s, audio=3.158s, RTF=9.263, finish_reason=eos
+Run 3: 29.665s, audio=3.158s, RTF=9.394, finish_reason=eos
+Mean: 29.212s; std: 0.474s; RTF: 9.250; peak RSS: 48.735 GiB
+
+Compute type: int8_float16
+Run 1: 45.261s, audio=5.248s, RTF=8.625, finish_reason=eos
+Run 2: 42.172s, audio=5.248s, RTF=8.036, finish_reason=eos
+Run 3: 41.797s, audio=5.248s, RTF=7.965, finish_reason=eos
+Mean: 43.077s; std: 1.901s; RTF: 8.209; peak RSS: 49.663 GiB
+
+Compute type: int8_float32
+Run 1: 12.709s, audio=3.158s, RTF=4.024, finish_reason=eos
+Run 2: 12.809s, audio=3.158s, RTF=4.056, finish_reason=eos
+Run 3: 12.597s, audio=3.158s, RTF=3.989, finish_reason=eos
+Mean: 12.705s; std: 0.106s; RTF: 4.023; peak RSS: 45.626 GiB
