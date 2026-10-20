@@ -1,0 +1,424 @@
+{
+  "schema_version": 1,
+  "backend": "ct2",
+  "backend_version": "4.8.3",
+  "created_at": "2026-10-20T13:21:36.259148+00:00",
+  "host": {
+    "platform": "Linux-5.10.0-46-cloud-amd64-x86_64-with-glibc2.31",
+    "machine": "x86_64",
+    "processor": "Intel(R) Xeon(R) CPU @ 2.20GHz",
+    "logical_cpu_count": 8,
+    "system_ram_bytes": 54759976960,
+    "system_ram_gib": 50.999202728271484,
+    "python_version": "3.14.3"
+  },
+  "memory_metric": "peak_process_rss_including_load_and_warmup_excluding_gpu",
+  "results": [
+    {
+      "model": "drama-3",
+      "source": null,
+      "device": "cuda",
+      "device_index": 0,
+      "hardware": {
+        "cpu": {
+          "processor": "Intel(R) Xeon(R) CPU @ 2.20GHz",
+          "logical_cpu_count": 8,
+          "system_ram_bytes": 54759976960,
+          "system_ram_gib": 50.999202728271484
+        },
+        "gpu": {
+          "name": "Tesla T4",
+          "runtime": "cuda",
+          "total_memory_bytes": 15642329088,
+          "total_memory_gib": 14.56805419921875
+        }
+      },
+      "compute_type": "float16",
+      "memory_profile": "limited",
+      "gpu_expert_cache_gb": 8.0,
+      "threads": 8,
+      "text": "Hello! Welcome to our application.",
+      "requested_runs": 1,
+      "warmup_runs": 1,
+      "status": "success",
+      "runs": [
+        {
+          "time_seconds": 38.08717274400033,
+          "audio_seconds": 3.6687528344671203,
+          "rtf": 10.38150414118383,
+          "finish_reason": "eos"
+        }
+      ],
+      "summary": {
+        "mean_time_seconds": 38.08717274400033,
+        "std_time_seconds": 0,
+        "mean_audio_seconds": 3.6687528344671203,
+        "rtf": 10.38150414118383,
+        "peak_rss_gib": 35.85276794433594
+      }
+    },
+    {
+      "model": "drama-3",
+      "source": null,
+      "device": "cuda",
+      "device_index": 0,
+      "hardware": {
+        "cpu": {
+          "processor": "Intel(R) Xeon(R) CPU @ 2.20GHz",
+          "logical_cpu_count": 8,
+          "system_ram_bytes": 54759976960,
+          "system_ram_gib": 50.999202728271484
+        },
+        "gpu": {
+          "name": "Tesla T4",
+          "runtime": "cuda",
+          "total_memory_bytes": 15642329088,
+          "total_memory_gib": 14.56805419921875
+        }
+      },
+      "compute_type": "float32",
+      "memory_profile": "limited",
+      "gpu_expert_cache_gb": 8.0,
+      "threads": 8,
+      "text": "Hello! Welcome to our application.",
+      "requested_runs": 1,
+      "warmup_runs": 1,
+      "status": "success",
+      "runs": [
+        {
+          "time_seconds": 35.07302369099989,
+          "audio_seconds": 2.507755102040816,
+          "rtf": 13.985824876782184,
+          "finish_reason": "eos"
+        }
+      ],
+      "summary": {
+        "mean_time_seconds": 35.07302369099989,
+        "std_time_seconds": 0,
+        "mean_audio_seconds": 2.507755102040816,
+        "rtf": 13.985824876782184,
+        "peak_rss_gib": 34.40879821777344
+      }
+    },
+    {
+      "model": "drama-3",
+      "source": null,
+      "device": "cuda",
+      "device_index": 0,
+      "hardware": {
+        "cpu": {
+          "processor": "Intel(R) Xeon(R) CPU @ 2.20GHz",
+          "logical_cpu_count": 8,
+          "system_ram_bytes": 54759976960,
+          "system_ram_gib": 50.999202728271484
+        },
+        "gpu": {
+          "name": "Tesla T4",
+          "runtime": "cuda",
+          "total_memory_bytes": 15642329088,
+          "total_memory_gib": 14.56805419921875
+        }
+      },
+      "compute_type": "int8",
+      "memory_profile": "limited",
+      "gpu_expert_cache_gb": 8.0,
+      "threads": 8,
+      "text": "Hello! Welcome to our application.",
+      "requested_runs": 1,
+      "warmup_runs": 1,
+      "status": "success",
+      "runs": [
+        {
+          "time_seconds": 35.26973001899978,
+          "audio_seconds": 4.31891156462585,
+          "rtf": 8.16634688884981,
+          "finish_reason": "eos"
+        }
+      ],
+      "summary": {
+        "mean_time_seconds": 35.26973001899978,
+        "std_time_seconds": 0,
+        "mean_audio_seconds": 4.31891156462585,
+        "rtf": 8.16634688884981,
+        "peak_rss_gib": 36.419029235839844
+      }
+    },
+    {
+      "model": "drama-3",
+      "source": null,
+      "device": "cuda",
+      "device_index": 0,
+      "hardware": {
+        "cpu": {
+          "processor": "Intel(R) Xeon(R) CPU @ 2.20GHz",
+          "logical_cpu_count": 8,
+          "system_ram_bytes": 54759976960,
+          "system_ram_gib": 50.999202728271484
+        },
+        "gpu": {
+          "name": "Tesla T4",
+          "runtime": "cuda",
+          "total_memory_bytes": 15642329088,
+          "total_memory_gib": 14.56805419921875
+        }
+      },
+      "compute_type": "int8_float16",
+      "memory_profile": "limited",
+      "gpu_expert_cache_gb": 8.0,
+      "threads": 8,
+      "text": "Hello! Welcome to our application.",
+      "requested_runs": 1,
+      "warmup_runs": 1,
+      "status": "success",
+      "runs": [
+        {
+          "time_seconds": 31.00491063699974,
+          "audio_seconds": 2.972154195011338,
+          "rtf": 10.431797478421695,
+          "finish_reason": "eos"
+        }
+      ],
+      "summary": {
+        "mean_time_seconds": 31.00491063699974,
+        "std_time_seconds": 0,
+        "mean_audio_seconds": 2.972154195011338,
+        "rtf": 10.431797478421695,
+        "peak_rss_gib": 35.70716857910156
+      }
+    },
+    {
+      "model": "drama-3",
+      "source": null,
+      "device": "cuda",
+      "device_index": 0,
+      "hardware": {
+        "cpu": {
+          "processor": "Intel(R) Xeon(R) CPU @ 2.20GHz",
+          "logical_cpu_count": 8,
+          "system_ram_bytes": 54759976960,
+          "system_ram_gib": 50.999202728271484
+        },
+        "gpu": {
+          "name": "Tesla T4",
+          "runtime": "cuda",
+          "total_memory_bytes": 15642329088,
+          "total_memory_gib": 14.56805419921875
+        }
+      },
+      "compute_type": "int8_float32",
+      "memory_profile": "limited",
+      "gpu_expert_cache_gb": 8.0,
+      "threads": 8,
+      "text": "Hello! Welcome to our application.",
+      "requested_runs": 1,
+      "warmup_runs": 1,
+      "status": "success",
+      "runs": [
+        {
+          "time_seconds": 30.74132199199994,
+          "audio_seconds": 4.31891156462585,
+          "rtf": 7.117840115965208,
+          "finish_reason": "eos"
+        }
+      ],
+      "summary": {
+        "mean_time_seconds": 30.74132199199994,
+        "std_time_seconds": 0,
+        "mean_audio_seconds": 4.31891156462585,
+        "rtf": 7.117840115965208,
+        "peak_rss_gib": 36.41132354736328
+      }
+    },
+    {
+      "model": "drama-3",
+      "source": null,
+      "device": "cuda",
+      "device_index": 0,
+      "hardware": {
+        "cpu": {
+          "processor": "Intel(R) Xeon(R) CPU @ 2.20GHz",
+          "logical_cpu_count": 8,
+          "system_ram_bytes": 54759976960,
+          "system_ram_gib": 50.999202728271484
+        },
+        "gpu": {
+          "name": "Tesla T4",
+          "runtime": "cuda",
+          "total_memory_bytes": 15642329088,
+          "total_memory_gib": 14.56805419921875
+        }
+      },
+      "compute_type": "float16",
+      "memory_profile": "limited",
+      "gpu_expert_cache_gb": 12.0,
+      "threads": 8,
+      "text": "Hello! Welcome to our application.",
+      "requested_runs": 1,
+      "warmup_runs": 1,
+      "status": "failed",
+      "error": "Configuration did not complete; see console output.",
+      "exit_code": 1
+    },
+    {
+      "model": "drama-3",
+      "source": null,
+      "device": "cuda",
+      "device_index": 0,
+      "hardware": {
+        "cpu": {
+          "processor": "Intel(R) Xeon(R) CPU @ 2.20GHz",
+          "logical_cpu_count": 8,
+          "system_ram_bytes": 54759976960,
+          "system_ram_gib": 50.999202728271484
+        },
+        "gpu": {
+          "name": "Tesla T4",
+          "runtime": "cuda",
+          "total_memory_bytes": 15642329088,
+          "total_memory_gib": 14.56805419921875
+        }
+      },
+      "compute_type": "float32",
+      "memory_profile": "limited",
+      "gpu_expert_cache_gb": 12.0,
+      "threads": 8,
+      "text": "Hello! Welcome to our application.",
+      "requested_runs": 1,
+      "warmup_runs": 1,
+      "status": "success",
+      "runs": [
+        {
+          "time_seconds": 50.124833916999705,
+          "audio_seconds": 2.507755102040816,
+          "rtf": 19.98793019151193,
+          "finish_reason": "eos"
+        }
+      ],
+      "summary": {
+        "mean_time_seconds": 50.124833916999705,
+        "std_time_seconds": 0,
+        "mean_audio_seconds": 2.507755102040816,
+        "rtf": 19.98793019151193,
+        "peak_rss_gib": 34.36833190917969
+      }
+    },
+    {
+      "model": "drama-3",
+      "source": null,
+      "device": "cpu",
+      "device_index": 0,
+      "hardware": {
+        "cpu": {
+          "processor": "Intel(R) Xeon(R) CPU @ 2.20GHz",
+          "logical_cpu_count": 8,
+          "system_ram_bytes": 54759976960,
+          "system_ram_gib": 50.999202728271484
+        },
+        "gpu": null
+      },
+      "compute_type": "int8",
+      "memory_profile": "default",
+      "gpu_expert_cache_gb": null,
+      "threads": 8,
+      "text": "Hello! Welcome to our application.",
+      "requested_runs": 1,
+      "warmup_runs": 1,
+      "status": "success",
+      "runs": [
+        {
+          "time_seconds": 67.93023925099988,
+          "audio_seconds": 3.250793650793651,
+          "rtf": 20.896509144594688,
+          "finish_reason": "eos"
+        }
+      ],
+      "summary": {
+        "mean_time_seconds": 67.93023925099988,
+        "std_time_seconds": 0,
+        "mean_audio_seconds": 3.250793650793651,
+        "rtf": 20.896509144594688,
+        "peak_rss_gib": 44.696964263916016
+      }
+    },
+    {
+      "model": "drama-3",
+      "source": null,
+      "device": "cuda",
+      "device_index": 0,
+      "hardware": {
+        "cpu": {
+          "processor": "Intel(R) Xeon(R) CPU @ 2.20GHz",
+          "logical_cpu_count": 8,
+          "system_ram_bytes": 54759976960,
+          "system_ram_gib": 50.999202728271484
+        },
+        "gpu": {
+          "name": "Tesla T4",
+          "runtime": "cuda",
+          "total_memory_bytes": 15642329088,
+          "total_memory_gib": 14.56805419921875
+        }
+      },
+      "compute_type": "int8",
+      "memory_profile": "limited",
+      "gpu_expert_cache_gb": 12.0,
+      "threads": 8,
+      "text": "Hello! Welcome to our application.",
+      "requested_runs": 1,
+      "warmup_runs": 1,
+      "status": "success",
+      "runs": [
+        {
+          "time_seconds": 25.32850939400032,
+          "audio_seconds": 4.31891156462585,
+          "rtf": 5.864558469187953,
+          "finish_reason": "eos"
+        }
+      ],
+      "summary": {
+        "mean_time_seconds": 25.32850939400032,
+        "std_time_seconds": 0,
+        "mean_audio_seconds": 4.31891156462585,
+        "rtf": 5.864558469187953,
+        "peak_rss_gib": 36.4444694519043
+      }
+    }
+  ],
+  "provenance": {
+    "sources": [
+      {
+        "file": "ct2.json",
+        "created_at": "2026-10-20T13:21:36.259148+00:00",
+        "result_indices": [
+          0,
+          1,
+          2,
+          3,
+          4
+        ]
+      },
+      {
+        "file": "ct2-12gb.json",
+        "created_at": "2026-10-20T13:34:55.689261+00:00",
+        "result_indices": [
+          5,
+          6
+        ]
+      },
+      {
+        "file": "ct2-int8-cpu.json",
+        "created_at": "2026-10-20T14:15:18.230558+00:00",
+        "result_indices": [
+          7
+        ]
+      },
+      {
+        "file": "ct2-int8-gpu-12gb.json",
+        "created_at": "2026-10-20T14:22:37.559027+00:00",
+        "result_indices": [
+          8
+        ]
+      }
+    ]
+  }
+}
