@@ -1,7 +1,9 @@
 # faster_tts
 
 `faster_tts` is a Python text-to-speech library built on CTranslate2, currently
-supporting **Drama 3 on CPU and GPU**.
+supporting **Drama 3 on CPU and GPU**. Its goal is to provide simple Python
+access to Drama 3 and future
+CTranslate2 (CT2) text-to-speech engines.
 
 Key features:
 
@@ -11,7 +13,7 @@ Key features:
 - ✅ Automatic or explicit GPU expert-cache budgets
 - ✅ Command-line synthesis with WAV output
 
-Requires CTranslate2 **4.8.3 or higher**, a build exposing `Drama3`, and a compatible
+Requires CTranslate2 **4.8.4 or higher** and a compatible
 converted checkpoint. Portable installation remains unverified.
 
 ## Quick start
