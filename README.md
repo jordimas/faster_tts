@@ -6,13 +6,9 @@ supporting **Drama 3 on CPU and GPU**.
 Key features:
 
 - ✅ Automatic model downloading and caching from Hugging Face, plus local checkpoints
-- ✅ Plain-text synthesis with tokenization, speaker tags, and prompt preparation
-- ✅ Sentence and clause splitting with history conditioning and joined audio
-- ✅ Concurrent requests using CT2's native worker pool
-- ✅ Automatic or explicit GPU expert-cache budgets across workers
-- ✅ Input, context-length, and output validation
-- ✅ Optional retry for length-capped generation, with attempt timings
-- ✅ Python results with audio, sample rate, codec codes, and generation metadata
+- ✅ Plain-text synthesis with speaker tags and prompt preparation
+- ✅ Sentence splitting with history conditioning and joined audio
+- ✅ Automatic or explicit GPU expert-cache budgets
 - ✅ Command-line synthesis with WAV output
 
 Requires CTranslate2 **4.8.3 or higher**, a build exposing `Drama3`, and a compatible
