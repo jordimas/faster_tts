@@ -14,13 +14,13 @@ import json
 import math
 import time
 from numbers import Real
-from queue import Queue
 
 import numpy as np
 
 from .prompt import Drama3PromptBuilder
 from .cache import DEFAULT_MODEL, resolve_model_path
 from .chunking import split_text
+from .memory import expert_cache_budget, validate_cache_budget
 
 
 @dataclass(frozen=True)
@@ -65,12 +65,19 @@ class Model:
     ``revision`` can pin a commit; ``local_files_only=True`` prevents downloads.
     ``cpu_threads`` sets the CPU thread count (default: 8), overriding the
     legacy ``intra_threads`` argument when supplied.
-    ``num_workers`` (default: 1) allows concurrent calls from Python threads.
-    Each worker loads a separate native model and uses ``cpu_threads`` threads.
+    ``num_workers`` (default: 1) configures CT2's native ``inter_threads`` pool
+    for concurrent calls. Replicas share CPU checkpoint weights and each uses
+    ``cpu_threads`` threads and its own GPU expert cache.
+    ``gpu_expert_cache_gb`` optionally caps GPU expert weights across all workers,
+    in decimal GB. "auto" reserves at least 2 GB and 30% of currently free GPU
+    memory for other allocations. None preserves CT2's environment configuration.
+    This is not a total GPU or system memory limit.
     """
 
     def __init__(self, model_path=DEFAULT_MODEL, intra_threads=8, compute_type="default", prefill_chunk_size=16,
-                 *, cpu_threads=None, num_workers=1, device="cpu", device_index=0, revision=None, cache_dir=None, local_files_only=False):
+                 *, cpu_threads=None, num_workers=1, device="cpu", device_index=0, revision=None, cache_dir=None, local_files_only=False,
+                 gpu_expert_cache_gb=None):
+        validate_cache_budget(gpu_expert_cache_gb)
         if cpu_threads is not None:
             _positive_int(cpu_threads, "cpu_threads")
             intra_threads = cpu_threads
@@ -93,17 +100,18 @@ class Model:
         resolved_device = device
         if device == "auto":
             resolved_device = "cuda" if import_module("ctranslate2").get_cuda_device_count() > 0 else "cpu"
-        self._workers = Queue(maxsize=num_workers)
-        for _ in range(num_workers):
-            self._workers.put(backend_class(str(directory), intra_threads=intra_threads,
-                                           compute_type=compute_type, device=resolved_device,
-                                           device_index=device_index))
+        with expert_cache_budget(gpu_expert_cache_gb, resolved_device, device_index, num_workers) as cache_gb:
+            self._model = backend_class(str(directory), intra_threads=intra_threads,
+                                        inter_threads=num_workers, compute_type=compute_type,
+                                        device=resolved_device, device_index=device_index)
         self._info = {
             "backend": resolved_device, "codec_device": "cpu", "mode": "offline", "gpu_supported": True,
             "device": resolved_device, "device_index": device_index,
             "compute_type": compute_type, "intra_threads": intra_threads,
             "cpu_threads": intra_threads, "num_workers": num_workers,
             "prefill_chunk_size": prefill_chunk_size, "model_path": str(directory),
+            "gpu_expert_cache_gb": cache_gb * num_workers if cache_gb is not None else None,
+            "gpu_expert_cache_gb_per_worker": cache_gb,
             "source_revision": metadata.get("source_revision"),
             "quantization_policy": metadata.get("quantization_policy"),
             "matrix_dtype": metadata.get("matrix_dtype"),
@@ -176,13 +184,11 @@ class Model:
         for attempt in range(1 + (max_retries if not greedy else 0)):
             attempt_seed = (seed + attempt) % (2 ** 64)
             started = time.perf_counter()
-            worker = self._workers.get()
-            try:
-                result = worker.generate(rows, max_frames=max_frames, prefill_chunk_size=self._prefill_chunk_size,
-                                         temperature=float(temperature), top_k=top_k, top_p=float(top_p),
-                                         seed=attempt_seed, greedy=greedy)
-            finally:
-                self._workers.put(worker)
+            result = self._model.generate(rows, max_frames=max_frames, prefill_chunk_size=self._prefill_chunk_size,
+                                          temperature=float(temperature), top_k=top_k, top_p=float(top_p),
+                                          seed=attempt_seed, greedy=greedy)
+            if callable(getattr(result, "to_dict", None)):
+                result = result.to_dict()
             if not isinstance(result, dict):
                 raise RuntimeError("native Drama3 returned a malformed result")
             audio, codes = result.get("audio"), result.get("codes")

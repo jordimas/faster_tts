@@ -1,10 +1,11 @@
 """Python API boundary tests with a fake native engine; no model inference claims."""
 import json
+import os
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 import sys
 import tempfile
-from threading import Barrier, Lock
+from threading import Barrier
 import unittest
 from unittest.mock import Mock, patch
 import wave
@@ -41,7 +42,8 @@ class Drama3PythonAPITest(unittest.TestCase):
 
     def test_reuses_loaded_backend_and_passes_contiguous_int32_prompt(self):
         model = Model(self.root, intra_threads=3, prefill_chunk_size=2)
-        self.constructor.assert_called_once_with(str(self.root.resolve()), intra_threads=3, compute_type="default", device="cpu", device_index=0)
+        self.constructor.assert_called_once_with(str(self.root.resolve()), intra_threads=3, inter_threads=1,
+                                                 compute_type="default", device="cpu", device_index=0)
         first = model.synthesize("Hello", max_frames=1)
         second = model.synthesize("Hello", max_frames=2)
         self.assertIsInstance(first, SynthesisResult)
@@ -65,48 +67,104 @@ class Drama3PythonAPITest(unittest.TestCase):
             self.assertEqual(self.constructor.call_args.kwargs["intra_threads"], 4)
             self.assertEqual(model.info()["intra_threads"], 4)
 
+    def test_cache_budget_is_shared_by_workers_and_environment_restored(self):
+        key = "CT2_DRAMA3_GPU_EXPERT_CACHE_GB"
+        observed = []
+        self.constructor.side_effect = lambda *a, **kw: observed.append(os.environ[key]) or self.backend
+        with patch.dict(os.environ, {key: "3"}):
+            model = Model(self.root, device="cuda", num_workers=2, gpu_expert_cache_gb=12)
+            self.assertEqual(os.environ[key], "3")
+        self.assertEqual(observed, ["6"])
+        self.assertEqual(self.constructor.call_args.kwargs["inter_threads"], 2)
+        self.assertEqual(model.info()["gpu_expert_cache_gb"], 12)
+        self.assertEqual(model.info()["gpu_expert_cache_gb_per_worker"], 6)
+
+    def test_auto_cache_budget_reserves_headroom(self):
+        for free, expected in ((20e9, 14), (5e9, 3)):
+            with self.subTest(free=free), patch("faster_tts.memory.free_gpu_memory", return_value=free) as query:
+                model = Model(self.root, device="cuda", device_index=2,
+                              num_workers=2, gpu_expert_cache_gb="auto")
+                query.assert_called_once_with(2)
+                self.assertEqual(model.info()["gpu_expert_cache_gb"], expected)
+                self.assertEqual(model.info()["gpu_expert_cache_gb_per_worker"], expected / 2)
+
+    def test_cache_budget_validation_and_cpu_rejection(self):
+        for value in (0, -1, True, "12", "bad", float("nan"), float("inf")):
+            with self.subTest(value=value), self.assertRaisesRegex(ValueError, "gpu_expert_cache_gb"):
+                Model(self.root, gpu_expert_cache_gb=value)
+        with self.assertRaisesRegex(ValueError, "requires GPU"):
+            Model(self.root, gpu_expert_cache_gb="auto")
+        self.constructor.assert_not_called()
+
+    def test_auto_cache_budget_fails_before_loading_if_memory_unavailable(self):
+        with patch("faster_tts.memory.free_gpu_memory", return_value=1e9):
+            with self.assertRaisesRegex(RuntimeError, "Insufficient"):
+                Model(self.root, device="cuda", gpu_expert_cache_gb="auto")
+        with patch("faster_tts.memory.free_gpu_memory", side_effect=RuntimeError("query failed")):
+            with self.assertRaisesRegex(RuntimeError, "query failed"):
+                Model(self.root, device="cuda", gpu_expert_cache_gb="auto")
+        self.constructor.assert_not_called()
+
+    def test_cache_environment_restored_on_loading_failure(self):
+        key = "CT2_DRAMA3_GPU_EXPERT_CACHE_GB"
+        self.constructor.side_effect = RuntimeError("loading failed")
+        with patch.dict(os.environ):
+            os.environ.pop(key, None)
+            with self.assertRaisesRegex(RuntimeError, "loading failed"):
+                Model(self.root, device="cuda", gpu_expert_cache_gb=12)
+            self.assertNotIn(key, os.environ)
+
+    def test_cache_environment_inherited_without_override(self):
+        key = "CT2_DRAMA3_GPU_EXPERT_CACHE_GB"
+        with patch.dict(os.environ, {key: "3"}):
+            model = Model(self.root, device="cuda", num_workers=2)
+            self.assertEqual(os.environ[key], "3")
+        self.assertEqual(model.info()["gpu_expert_cache_gb"], 6)
+
     def test_cpu_threads_validation(self):
         for value in (0, -1, True, 1.5, 2 ** 31):
             with self.subTest(value=value), self.assertRaisesRegex(ValueError, "cpu_threads"):
                 Model(self.root, cpu_threads=value)
         self.constructor.assert_not_called()
 
-    def test_workers_run_concurrently_without_reusing_a_busy_instance(self):
+    def test_concurrent_calls_use_one_native_pool(self):
         barrier = Barrier(2)
-        active = set()
-        lock = Lock()
 
-        def generate(index, *args, **kwargs):
-            with lock:
-                self.assertNotIn(index, active)
-                active.add(index)
-            try:
-                barrier.wait(timeout=5)
-                return self.result
-            finally:
-                with lock:
-                    active.remove(index)
+        def generate(*args, **kwargs):
+            barrier.wait(timeout=5)
+            return self.result
 
-        workers = [Mock(), Mock()]
-        for index, worker in enumerate(workers):
-            worker.generate.side_effect = lambda *a, index=index, **kw: generate(index, *a, **kw)
-        self.constructor.side_effect = workers
+        self.backend.generate.side_effect = generate
         model = Model(self.root, cpu_threads=2, num_workers=2)
-        self.assertEqual(self.constructor.call_count, 2)
-        self.assertTrue(all(c.kwargs["intra_threads"] == 2 for c in self.constructor.call_args_list))
-        with ThreadPoolExecutor(max_workers=4) as executor:
+        self.constructor.assert_called_once_with(str(self.root.resolve()), intra_threads=2,
+                                                 inter_threads=2, compute_type="default",
+                                                 device="cpu", device_index=0)
+        with ThreadPoolExecutor(max_workers=2) as executor:
             results = list(executor.map(lambda _: model.synthesize("Hello"), range(4)))
         self.assertTrue(all(result.finish_reason == "eos" for result in results))
         self.assertEqual(model.info()["num_workers"], 2)
-        self.assertEqual(model._workers.qsize(), 2)
+        self.assertEqual(self.backend.generate.call_count, 4)
 
-    def test_worker_is_returned_after_native_failure(self):
+    def test_native_pool_remains_usable_after_failure(self):
         model = Model(self.root)
         self.backend.generate.side_effect = [RuntimeError("native failure"), self.result]
         with self.assertRaisesRegex(RuntimeError, "native failure"):
             model.synthesize("Hello")
-        self.assertEqual(model._workers.qsize(), 1)
         self.assertEqual(model.synthesize("Hello").finish_reason, "eos")
+        self.assertEqual(self.constructor.call_count, 1)
+
+    def test_typed_native_result_is_converted_and_validated(self):
+        native_result = Mock()
+        native_result.to_dict.return_value = dict(self.result, timings={"codec_seconds": .2})
+        self.backend.generate.return_value = native_result
+        result = Model(self.root).synthesize("Hello")
+        native_result.to_dict.assert_called_once_with()
+        self.assertIs(result.audio, self.result["audio"])
+        self.assertIs(result.codes, self.result["codes"])
+        self.assertEqual(result.timings, {"codec_seconds": .2})
+        native_result.to_dict.return_value = dict(self.result, audio=np.zeros(1, np.float32))
+        with self.assertRaisesRegex(RuntimeError, "audio length"):
+            Model(self.root).synthesize("Hello")
 
     def test_num_workers_validation_before_loading(self):
         for value in (0, -1, True, 1.5, 2 ** 31):
@@ -117,7 +175,7 @@ class Drama3PythonAPITest(unittest.TestCase):
     def test_device_selection_and_compute_type(self):
         model = Model(self.root, device="cuda", device_index=2, compute_type="float16")
         self.constructor.assert_called_once_with(str(self.root.resolve()), intra_threads=8,
-                                                 compute_type="float16", device="cuda", device_index=2)
+                                                 inter_threads=1, compute_type="float16", device="cuda", device_index=2)
         self.assertEqual(model.info()["device"], "cuda")
         self.assertEqual(model.info()["device_index"], 2)
         self.assertEqual(model.info()["codec_device"], "cpu")
@@ -144,13 +202,14 @@ class Drama3PythonAPITest(unittest.TestCase):
         fake.return_value.synthesize.return_value = SynthesisResult(
             np.zeros(2048, np.float32), 44100, np.zeros((1, 10), np.int32), "eos")
         arguments = ["faster-tts", str(self.root), "--device", "cuda", "--device-index", "2",
-                     "--compute-type", "float16", "--text", "Hello",
+                     "--compute-type", "float16", "--gpu-expert-cache-gb", "auto", "--text", "Hello",
                      "--output", str(self.root / "gpu.wav")]
         with patch("faster_tts.__main__.Model", fake), patch.object(sys, "argv", arguments), patch("builtins.print"):
             main()
         self.assertEqual(fake.call_args.kwargs["device"], "cuda")
         self.assertEqual(fake.call_args.kwargs["device_index"], 2)
         self.assertEqual(fake.call_args.kwargs["compute_type"], "float16")
+        self.assertEqual(fake.call_args.kwargs["gpu_expert_cache_gb"], "auto")
 
     def test_multi_sentence_joins_outputs_and_conditions_later_sentence(self):
         model = Model(self.root)
@@ -255,7 +314,7 @@ class Drama3PythonAPITest(unittest.TestCase):
         self.assertEqual(snapshot.call_args.kwargs["cache_dir"], str(cache_dir))
         self.assertTrue(snapshot.call_args.kwargs["local_files_only"])
         self.constructor.assert_called_once_with(str(self.root.resolve()), intra_threads=8,
-                                                  compute_type="default", device="cpu", device_index=0)
+                                                  inter_threads=1, compute_type="default", device="cpu", device_index=0)
         self.backend.generate.assert_not_called()
         self.assertIsNotNone(model)
 
@@ -265,7 +324,7 @@ class Drama3PythonAPITest(unittest.TestCase):
             Model()
         self.assertEqual(snapshot.call_args.kwargs["repo_id"], "jordimas/drama-3-ct2")
         self.constructor.assert_called_once_with(str(self.root.resolve()), intra_threads=8,
-                                                  compute_type="default", device="cpu", device_index=0)
+                                                  inter_threads=1, compute_type="default", device="cpu", device_index=0)
 
     def test_cli_default_model(self):
         fake = Mock()
@@ -282,6 +341,7 @@ class Drama3PythonAPITest(unittest.TestCase):
                     "device": "cpu", "device_index": 0,
                     "compute_type": "float32", "intra_threads": 3, "cpu_threads": 3,
                     "num_workers": 1, "prefill_chunk_size": 2,
+                    "gpu_expert_cache_gb": None, "gpu_expert_cache_gb_per_worker": None,
                     "model_path": str(self.root.resolve()), "source_revision": "source-commit",
                     "quantization_policy": "all_matrices_int8", "matrix_dtype": "int8", "activation_dtype": "float32"}
         self.assertEqual(model.info(), expected)
@@ -428,7 +488,7 @@ class Drama3PythonAPITest(unittest.TestCase):
             main()
         fake.assert_called_once_with("hf://organization/converted-drama3", intra_threads=8,
                                      compute_type="default", device="cpu", device_index=0, revision="pinned-commit",
-                                     cache_dir=self.root / "cache", local_files_only=True)
+                                 cache_dir=self.root / "cache", local_files_only=True, gpu_expert_cache_gb=None)
         fake.return_value.synthesize.assert_called_once_with(
             "Hello", max_frames=512, temperature=.7, top_k=30, top_p=.7,
             seed=0, greedy=False, split_sentences=True)

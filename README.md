@@ -1,22 +1,24 @@
 # faster_tts
 
-`faster_tts` is a Python text-to-speech library built on CTranslate2. Its goal is
-to provide a common interface for multiple TTS engines supported by CTranslate2:
-load a model, synthesize text, and use the returned audio.
+`faster_tts` is a Python text-to-speech library built on CTranslate2, currently
+supporting **Drama 3 on CPU and GPU**.
 
-The library handles model downloading and caching, tokenization, prompt
-preparation, text chunking, and audio output. CTranslate2 runs inference and
-waveform decoding. Models are loaded once and reused across requests, with
-advanced generation and runtime controls available when needed.
+Key features:
 
-Requires CTranslate2 **4.8.3 or higher** and a compatible converted checkpoint.
-The current implementation supports **Drama 3 with CPU inference and optional GPU acceleration**; support for additional
-TTS engines is planned. A matching CTranslate2 build exposing `Drama3` is
-currently required. Portable installation remains unverified.
+- ✅ Automatic model downloading and caching from Hugging Face, plus local checkpoints
+- ✅ Plain-text synthesis with tokenization, speaker tags, and prompt preparation
+- ✅ Sentence and clause splitting with history conditioning and joined audio
+- ✅ Concurrent requests using CT2's native worker pool
+- ✅ Automatic or explicit GPU expert-cache budgets across workers
+- ✅ Input, context-length, and output validation
+- ✅ Optional retry for length-capped generation, with attempt timings
+- ✅ Python results with audio, sample rate, codec codes, and generation metadata
+- ✅ Command-line synthesis with WAV output
+
+Requires CTranslate2 **4.8.3 or higher**, a build exposing `Drama3`, and a compatible
+converted checkpoint. Portable installation remains unverified.
 
 ## Quick start
-
-Load the default model and generate speech:
 
 ```python
 from faster_tts import Model
@@ -30,10 +32,9 @@ sample_rate = result.sample_rate
 
 `Model()` downloads or reuses the cached
 [`jordimas/drama-3-ct2`](https://huggingface.co/jordimas/drama-3-ct2) checkpoint.
-Reuse the same model for subsequent `synthesize()` calls. `result.audio` is a
-NumPy array; use `result.sample_rate` when playing or saving it.
+Reuse the model across calls. Audio is a NumPy array with the returned sample rate.
 
-To save speech directly to a WAV file, use the CLI:
+Save a WAV with the CLI:
 
 ```bash
 python -m faster_tts \
@@ -52,33 +53,14 @@ model = Model("/path/to/converted-model")
 model = Model(local_files_only=True)  # Use only cached assets.
 ```
 
-Like faster-whisper, `faster_tts` maps recognized short names to predefined
-Hugging Face repositories, then downloads or reuses the cached checkpoint:
-
-| Short name | Hugging Face repository |
-| --- | --- |
-| `drama-3` | `jordimas/drama-3-ct2` |
-
-`Model()` uses this same default repository. An explicit Hub repository ID or
-local directory lets you load a compatible custom checkpoint without adding an
-internal alias. A custom checkpoint must use an engine and converted layout
-supported by the installed library and CTranslate2 build.
-
-As additional TTS engines are added, the same `Model(...).synthesize(...)` API
-will remain the entry point. Aliases will select checkpoints, and the
-checkpoint's `config.json` `model_type` field will select the engine adapter.
-Currently, only Drama 3 (`model_type="drama3"`) is implemented; automatic
-dispatch between multiple engines is planned.
-
-The CLI accepts the same optional model argument, plus `--revision`, `--cache-dir`,
-and `--local-files-only`. The `hf://` prefix remains supported. Existing local
-directories take precedence; use a `Path` object or `./`, `../`, `~/`, or an
-absolute path to keep missing local paths from being interpreted as Hub IDs.
-Models must already be converted to CTranslate2 format.
+The CLI accepts the same model argument and cache options; Hub IDs may use an
+`hf://` prefix. Existing local directories take precedence. Use a `Path` object
+or an explicit path (`./`, `../`, `~/`, or absolute) to avoid interpreting missing
+local paths as Hub IDs. Custom checkpoints must use the supported Drama 3 layout.
 
 ## Device and compute type
 
-Select the device and precision using faster-whisper parameter names:
+Select the device and precision:
 
 ```python
 model = Model("drama-3", device="cuda", device_index=0, compute_type="float16")
@@ -86,18 +68,37 @@ model = Model("drama-3", device="cpu", compute_type="int8")
 model = Model("drama-3", device="auto", compute_type="default")
 ```
 
-`device` accepts `"cpu"` (default), `"cuda"`, or `"auto"` (GPU when available,
-otherwise CPU). `device_index` selects one GPU and defaults to `0`; lists of
-indices are unsupported by the native Drama 3 binding. CUDA and ROCm both use
-`"cuda"` and require a matching CTranslate2 build. GPU acceleration covers
-backbone and tower projections; waveform decoding stays on CPU. Supported
-compute types depend on the device and build; `"default"` lets CTranslate2
-choose. `model.info()` reports the selected device and requested compute type.
+The default device is `"cpu"`; `"auto"` selects GPU when available. CUDA and ROCm
+both use `"cuda"` with a matching CT2 build. `device_index` selects a single GPU
+(default: `0`). Waveform decoding stays on CPU. Compute types depend on the
+device and build; `"default"` lets CT2 choose. Inspect settings with `model.info()`.
 
 ```bash
 python -m faster_tts --device cuda --device-index 0 --compute-type float16 \
   --text "Hello!" --output hello.wav
 ```
+
+## GPU expert-cache budget
+
+Limit cached GPU expert weights with an explicit budget in decimal GB or automatic sizing:
+
+```python
+model = Model(device="cuda", gpu_expert_cache_gb="auto")
+model = Model(device="cuda", gpu_expert_cache_gb=12, num_workers=2)
+```
+
+Budgets are shared across workers (6 GB each in the second example). `"auto"`
+reserves at least 2 GB and 30% of free GPU memory for other allocations.
+This caps expert weights, not total VRAM or RAM, so out-of-memory errors remain possible.
+`model.info()` reports the selected budgets.
+
+```bash
+python -m faster_tts --device cuda --gpu-expert-cache-gb auto --text "Hello!" --output hello.wav
+```
+
+The default (`None`) preserves `CT2_DRAMA3_GPU_EXPERT_CACHE_GB`, which applies
+per worker; unset or zero means uncapped. Requires GPU execution and a CT2 build
+supporting this setting. If automatic memory detection fails, use an explicit budget.
 
 ## Threads and concurrent requests
 
@@ -107,11 +108,10 @@ Set the CPU thread count with `cpu_threads` (default: 8):
 model = Model("drama-3", cpu_threads=4, num_workers=2)
 ```
 
-The CLI and benchmark accept `--threads 4`. The existing `intra_threads`
-argument remains supported; `cpu_threads` takes precedence when both are supplied.
+The CLI and benchmark use `--threads`. `cpu_threads` overrides the legacy
+`intra_threads` argument.
 
-Like faster-whisper, `num_workers` (default: 1) enables parallel inference when
-you call `synthesize()` from multiple Python threads:
+`num_workers` (default: 1) enables concurrent calls from Python threads:
 
 ```python
 from concurrent.futures import ThreadPoolExecutor
@@ -120,37 +120,26 @@ with ThreadPoolExecutor(max_workers=2) as executor:
     results = list(executor.map(model.synthesize, ["Hello!", "How are you?"]))
 ```
 
-Each worker uses the configured CPU thread count. Drama 3 currently lacks a
-native worker pool, so the library pools separate native model instances, each
-with its own weights and runtime memory. Calls wait when all workers are busy.
-Workers improve concurrent throughput; a single request still runs sequentially.
-`model.info()` reports both settings. The standalone benchmark measures sequential
-latency with one worker.
+`num_workers` maps to CT2's `inter_threads`; `cpu_threads` maps to `intra_threads`.
+Native replicas share CPU checkpoint weights, while GPU expert caches and runtime
+state are per worker. A single blocking request still runs sequentially.
 
 ## Results
 
 `Model.synthesize()` returns a `SynthesisResult` with `audio`, `sample_rate`,
-`codes`, `finish_reason`, `timings`, and `attempts`. Audio format, codec codes,
-languages, and generation options depend on the supported engine.
+`codes`, `finish_reason`, `timings`, and `attempts`.
 
 `finish_reason="length"` means generation exhausted its frame budget and may be
 truncated; `"eos"` does not guarantee complete speech. The CLI saves the WAV and
 exits with status 1 on `length`.
 
-## Performance benchmarking
-
-See [benchmark instructions](benchmark/README.md).
-
-## Engine documentation
-
-For Drama 3 conversion, native runtime options, precision, and memory requirements,
-see the [CTranslate2 Drama 3 guide](https://github.com/jordimas/CTranslate2/blob/feat/drama3-cpu/docs/guides/drama3.md).
-
-For this library's synthesis options, see the
-[`Model.synthesize()` API documentation](faster_tts/model.py) or run
-`python -m faster_tts --help` for CLI options.
+See [`Model.synthesize()`](faster_tts/model.py) or `python -m faster_tts --help`
+for options, and the [CT2 Drama 3 guide](https://github.com/jordimas/CTranslate2/blob/feat/drama3-cpu/docs/guides/drama3.md)
+for conversion and native runtime details.
 
 ## Benchmark
+
+See [benchmark instructions](benchmark/README.md) to run your own measurements.
 
 Time and memory required to synthesize `Hello! Welcome to our application.`
 with Drama 3, measured on 2026-10-19. Each result is the mean of three runs
@@ -176,10 +165,8 @@ Executed on AMD Radeon 8060S (`gfx1151`, ROCm, device `cuda:0`), with
 uncapped. **RAM usage measures process RSS, excluding GPU allocations; it is
 not VRAM usage or total shared memory consumption.**
 
-Fish Speech expands FP8 experts to the selected floating precision on ROCm.
-All three GPU precisions ran out of memory during model allocation, before
-warmup or timing. PyTorch reported 60.96 GiB allocated for bfloat16/float16
-and 60.39 GiB for float32 against the 61.41 GiB capacity.
+Fish Speech expands FP8 experts to the selected floating precision on ROCm;
+all three precisions ran out of memory during model allocation, before timing.
 
 ### Drama 3 on CPU
 
