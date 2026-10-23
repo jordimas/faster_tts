@@ -27,5 +27,3 @@ include = ["faster_tts*"]
 [tool.uv]
 environments = ["python_version == '3.14'"]
 
-[tool.uv.sources]
-ctranslate2 = { path = "../../python/dist/amd-lzNjsoc1/cpython-314/ctranslate2-4.8.3-cp314-cp314-linux_x86_64.whl" }

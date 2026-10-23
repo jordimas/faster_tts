@@ -39,6 +39,9 @@ python -m faster_tts \
   --text "Hello, how are you?" --output hello.wav
 ```
 
+Hear three short [Drama 3 samples](sample/README.md): expressive delivery,
+two speakers, and multilingual speech.
+
 ## Model loading
 
 Model loading accepts a short name, a compatible converted Hub repository ID,
