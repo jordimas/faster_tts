@@ -53,13 +53,15 @@ class Drama3PythonAPITest(unittest.TestCase):
         self.backend.generate.return_value = self.result
         self.constructor = Mock(return_value=self.backend)
         self.native_patch = patch(
-            "faster_tts.model._native_class", return_value=self.constructor
+            "faster_tts.engines.drama3._native_class", return_value=self.constructor
         )
         self.native_patch.start()
         self.addCleanup(self.native_patch.stop)
 
     def test_reuses_loaded_backend_and_passes_contiguous_int32_prompt(self):
-        model = Model(self.root, intra_threads=3, prefill_chunk_size=2)
+        model = Model(
+            self.root, intra_threads=3, engine_options={"prefill_chunk_size": 2}
+        )
         self.constructor.assert_called_once_with(
             str(self.root.resolve()),
             intra_threads=3,
@@ -68,8 +70,8 @@ class Drama3PythonAPITest(unittest.TestCase):
             device="cpu",
             device_index=0,
         )
-        first = model.synthesize("Hello", max_frames=1)
-        second = model.synthesize("Hello", max_frames=2)
+        first = model.synthesize("Hello", engine_options={"max_frames": 1})
+        second = model.synthesize("Hello", engine_options={"max_frames": 2})
         self.assertIsInstance(first, SynthesisResult)
         self.assertEqual(second.finish_reason, "eos")
         self.assertEqual(second.sample_rate, 44100)
@@ -117,7 +119,7 @@ class Drama3PythonAPITest(unittest.TestCase):
                 patch("faster_tts.memory.sys.platform", "linux"),
                 patch("faster_tts.memory.available_cpu_memory", return_value=1e9),
                 patch(
-                    "faster_tts.model.import_module",
+                    "faster_tts.engines.drama3.import_module",
                     return_value=Mock(
                         get_cuda_device_count=Mock(return_value=gpu_count)
                     ),
@@ -136,7 +138,10 @@ class Drama3PythonAPITest(unittest.TestCase):
         )
         with patch.dict(os.environ, {key: "3"}):
             model = Model(
-                self.root, device="cuda", num_workers=2, gpu_expert_cache_gb=12
+                self.root,
+                device="cuda",
+                num_workers=2,
+                engine_options={"gpu_expert_cache_gb": 12},
             )
             self.assertEqual(os.environ[key], "3")
         self.assertEqual(observed, ["6"])
@@ -155,7 +160,7 @@ class Drama3PythonAPITest(unittest.TestCase):
                     device="cuda",
                     device_index=2,
                     num_workers=2,
-                    gpu_expert_cache_gb="auto",
+                    engine_options={"gpu_expert_cache_gb": "auto"},
                 )
                 query.assert_called_once_with(2)
                 self.assertEqual(model.info()["gpu_expert_cache_gb"], expected)
@@ -169,21 +174,22 @@ class Drama3PythonAPITest(unittest.TestCase):
                 self.subTest(value=value),
                 self.assertRaisesRegex(ValueError, "gpu_expert_cache_gb"),
             ):
-                Model(self.root, gpu_expert_cache_gb=value)
+                Model(self.root, engine_options={"gpu_expert_cache_gb": value})
         with self.assertRaisesRegex(ValueError, "requires GPU"):
-            Model(self.root, gpu_expert_cache_gb="auto")
+            Model(self.root, engine_options={"gpu_expert_cache_gb": "auto"})
         self.constructor.assert_not_called()
 
     def test_auto_cache_budget_fails_before_loading_if_memory_unavailable(self):
+        options = {"gpu_expert_cache_gb": "auto"}
         with patch("faster_tts.memory.free_gpu_memory", return_value=1e9):
             with self.assertRaisesRegex(RuntimeError, "Insufficient"):
-                Model(self.root, device="cuda", gpu_expert_cache_gb="auto")
+                Model(self.root, device="cuda", engine_options=options)
         with patch(
             "faster_tts.memory.free_gpu_memory",
             side_effect=RuntimeError("query failed"),
         ):
             with self.assertRaisesRegex(RuntimeError, "query failed"):
-                Model(self.root, device="cuda", gpu_expert_cache_gb="auto")
+                Model(self.root, device="cuda", engine_options=options)
         self.constructor.assert_not_called()
 
     def test_cache_environment_restored_on_loading_failure(self):
@@ -192,7 +198,11 @@ class Drama3PythonAPITest(unittest.TestCase):
         with patch.dict(os.environ):
             os.environ.pop(key, None)
             with self.assertRaisesRegex(RuntimeError, "loading failed"):
-                Model(self.root, device="cuda", gpu_expert_cache_gb=12)
+                Model(
+                    self.root,
+                    device="cuda",
+                    engine_options={"gpu_expert_cache_gb": 12},
+                )
             self.assertNotIn(key, os.environ)
 
     def test_cache_environment_inherited_without_override(self):
@@ -290,7 +300,7 @@ class Drama3PythonAPITest(unittest.TestCase):
             with (
                 self.subTest(count=count),
                 patch(
-                    "faster_tts.model.import_module",
+                    "faster_tts.engines.drama3.import_module",
                     return_value=Mock(get_cuda_device_count=Mock(return_value=count)),
                 ),
             ):
@@ -343,7 +353,9 @@ class Drama3PythonAPITest(unittest.TestCase):
         self.assertEqual(fake.call_args.kwargs["device"], "cuda")
         self.assertEqual(fake.call_args.kwargs["device_index"], 2)
         self.assertEqual(fake.call_args.kwargs["compute_type"], "float16")
-        self.assertEqual(fake.call_args.kwargs["gpu_expert_cache_gb"], "auto")
+        self.assertEqual(
+            fake.call_args.kwargs["engine_options"], {"gpu_expert_cache_gb": "auto"}
+        )
 
     def test_multi_sentence_joins_outputs_and_conditions_later_sentence(self):
         model = Model(self.root)
@@ -354,7 +366,7 @@ class Drama3PythonAPITest(unittest.TestCase):
             self.result, audio=np.full(2048, 0.2, np.float32), timings={"native": 3.0}
         )
         self.backend.generate.side_effect = [first, second]
-        result = model.synthesize("Hello. Hello?", max_frames=3)
+        result = model.synthesize("Hello. Hello?", engine_options={"max_frames": 3})
         self.assertEqual(result.finish_reason, "eos")
         np.testing.assert_array_equal(
             result.audio, np.concatenate([first["audio"], second["audio"]])
@@ -363,14 +375,16 @@ class Drama3PythonAPITest(unittest.TestCase):
         self.assertEqual(result.timings, {"native": 5.0})
         calls = self.backend.generate.call_args_list
         self.assertEqual([call.kwargs["max_frames"] for call in calls], [3, 2])
-        begin = model._prompt.config["semantic_start_token_id"]
+        begin = model._engine._prompt.config["semantic_start_token_id"]
         self.assertEqual(np.count_nonzero(calls[1].args[0][:, 0] == begin), 1)
         self.assertEqual([a["chunk_index"] for a in result.attempts], [0, 1])
         self.assertEqual([a["text"] for a in result.attempts], ["Hello.", "Hello?"])
 
     def test_chunk_budget_exhaustion_never_reports_full_success_or_skips_ahead(self):
         model = Model(self.root)
-        result = model.synthesize("Hello. Hello! Hello?", max_frames=2)
+        result = model.synthesize(
+            "Hello. Hello! Hello?", engine_options={"max_frames": 2}
+        )
         self.assertEqual(result.finish_reason, "length")
         self.assertEqual(result.codes.shape[0], 2)
         self.assertEqual(self.backend.generate.call_count, 2)
@@ -379,14 +393,16 @@ class Drama3PythonAPITest(unittest.TestCase):
             self.result,
             dict(self.result, finish_reason="length"),
         ]
-        result = model.synthesize("Hello. Hello! Hello?", max_frames=4)
+        result = model.synthesize(
+            "Hello. Hello! Hello?", engine_options={"max_frames": 4}
+        )
         self.assertEqual(result.finish_reason, "length")
         self.assertEqual(self.backend.generate.call_count, 2)
 
     def test_chunk_history_is_bounded_and_not_retained_between_requests(self):
         model = Model(self.root)
         model.synthesize("Hello. Hello! Hello? Hello.")
-        begin = model._prompt.config["semantic_start_token_id"]
+        begin = model._engine._prompt.config["semantic_start_token_id"]
         self.assertEqual(
             [
                 np.count_nonzero(c.args[0][:, 0] == begin)
@@ -411,8 +427,8 @@ class Drama3PythonAPITest(unittest.TestCase):
             [a["text"] for a in result.attempts],
             ["<|speaker:2|> Hello.", "<|speaker:2|> Hello?"],
         )
-        speaker = model._prompt.tokenizer.token_to_id("<|speaker:2|>")
-        default = model._prompt.tokenizer.token_to_id("<|speaker:0|>")
+        speaker = model._engine._prompt.tokenizer.token_to_id("<|speaker:2|>")
+        default = model._engine._prompt.tokenizer.token_to_id("<|speaker:0|>")
         calls = self.backend.generate.call_args_list
         self.assertEqual(
             [np.count_nonzero(c.args[0][:, 0] == speaker) for c in calls], [1, 2]
@@ -435,16 +451,21 @@ class Drama3PythonAPITest(unittest.TestCase):
     def test_history_is_forwarded_as_audio_rows_without_changing_output_contract(self):
         model = Model(self.root)
         codes = np.zeros((2, 10), np.int32)
-        result = model.synthesize("Hello", max_frames=1, history=[("Hello", codes)])
+        result = model.synthesize(
+            "Hello", engine_options={"max_frames": 1, "history": [("Hello", codes)]}
+        )
         rows = self.backend.generate.call_args.args[0]
-        begin = model._prompt.config["semantic_start_token_id"]
+        begin = model._engine._prompt.config["semantic_start_token_id"]
         self.assertEqual(np.count_nonzero(rows[:, 0] == begin), 2)
         self.assertEqual(rows.dtype, np.int32)
         self.assertTrue(rows.flags.c_contiguous)
         self.assertEqual(result.finish_reason, "eos")
         self.backend.generate.reset_mock()
         with self.assertRaises(ValueError):
-            model.synthesize("Hello", history=[("Hello", np.zeros((1, 9), np.int32))])
+            model.synthesize(
+                "Hello",
+                engine_options={"history": [("Hello", np.zeros((1, 9), np.int32))]},
+            )
         self.backend.generate.assert_not_called()
 
     def test_sampling_parameters_are_validated_and_forwarded_in_greedy_mode_too(self):
@@ -469,7 +490,7 @@ class Drama3PythonAPITest(unittest.TestCase):
         self.backend.generate.assert_not_called()
         model.synthesize(
             "Hello",
-            max_frames=1,
+            engine_options={"max_frames": 1},
             temperature=0.6,
             top_k=7,
             top_p=0.95,
@@ -556,9 +577,21 @@ class Drama3PythonAPITest(unittest.TestCase):
 
     def test_info_reports_actual_configuration_without_inference(self):
         model = Model(
-            self.root, intra_threads=3, compute_type="float32", prefill_chunk_size=2
+            self.root,
+            intra_threads=3,
+            compute_type="float32",
+            engine_options={"prefill_chunk_size": 2},
         )
         expected = {
+            "engine": "drama3",
+            "capabilities": (
+                "synthesis",
+                "history",
+                "sentence_splitting",
+                "retries",
+                "gpu_expert_cache",
+                "cpu_expert_mmap",
+            ),
             "backend": "cpu",
             "codec_device": "cpu",
             "mode": "offline",
@@ -599,16 +632,23 @@ class Drama3PythonAPITest(unittest.TestCase):
         for args in (
             {"intra_threads": 0},
             {"intra_threads": True},
-            {"prefill_chunk_size": -1},
+            {"engine_options": {"prefill_chunk_size": -1}},
         ):
             with self.subTest(args=args), self.assertRaises(ValueError):
                 Model(self.root, **args)
+        with self.assertRaisesRegex(ValueError, "Unknown engine_options"):
+            Model(self.root, engine_options={"not_a_real_option": 1})
         model = Model(self.root)
+        for duration in (0, -1, True, float("nan"), float("inf")):
+            with self.subTest(duration=duration), self.assertRaises(ValueError):
+                model.synthesize("Hello", max_duration_s=duration)
         for frames in (0, -1, True, 1.5, 2**31):
             with self.subTest(frames=frames), self.assertRaises(ValueError):
-                model.synthesize("Hello", max_frames=frames)
+                model.synthesize("Hello", engine_options={"max_frames": frames})
         with self.assertRaises(ValueError):
-            model.synthesize("Hello", max_frames=8192)
+            model.synthesize("Hello", engine_options={"max_frames": 8192})
+        with self.assertRaisesRegex(ValueError, "Unknown engine_options"):
+            model.synthesize("Hello", engine_options={"not_a_real_option": 1})
         with self.assertRaises(ValueError):
             model.synthesize("<|im_end|>")
         self.backend.generate.assert_not_called()
@@ -618,7 +658,8 @@ class Drama3PythonAPITest(unittest.TestCase):
             Model(self.root / "absent")
         self.native_patch.stop()
         with patch(
-            "faster_tts.model.import_module", side_effect=ImportError("no extension")
+            "faster_tts.engines.drama3.import_module",
+            side_effect=ImportError("no extension"),
         ):
             with self.assertRaisesRegex(
                 RuntimeError, "experimental CTranslate2 Drama3 binding"
@@ -640,10 +681,11 @@ class Drama3PythonAPITest(unittest.TestCase):
         ):
             self.backend.generate.return_value = dict(self.result, **update)
             with self.subTest(update=list(update)), self.assertRaises(RuntimeError):
-                model.synthesize("Hello", max_frames=1)
+                model.synthesize("Hello", engine_options={"max_frames": 1})
         self.backend.generate.return_value = dict(self.result, finish_reason="length")
         self.assertEqual(
-            model.synthesize("Hello", max_frames=1).finish_reason, "length"
+            model.synthesize("Hello", engine_options={"max_frames": 1}).finish_reason,
+            "length",
         )
         self.backend.generate.return_value = {
             "audio": np.empty(0, np.float32),
@@ -666,10 +708,13 @@ class Drama3PythonAPITest(unittest.TestCase):
         )
         self.backend.generate.side_effect = [first, second]
         with patch.object(
-            model._prompt, "prepare", wraps=model._prompt.prepare
+            model._engine._prompt, "prepare", wraps=model._engine._prompt.prepare
         ) as prepare:
             result = model.synthesize(
-                "Hello", max_frames=1, seed=2**64 - 1, max_retries=1
+                "Hello",
+                engine_options={"max_frames": 1},
+                seed=2**64 - 1,
+                max_retries=1,
             )
         prepare.assert_called_once_with("Hello", history=())
         calls = self.backend.generate.call_args_list
@@ -695,11 +740,15 @@ class Drama3PythonAPITest(unittest.TestCase):
         self.backend.generate.return_value = dict(self.result, finish_reason="length")
         for kwargs in ({}, {"max_retries": 0}, {"max_retries": 1, "greedy": True}):
             self.backend.generate.reset_mock()
-            result = model.synthesize("Hello", max_frames=1, **kwargs)
+            result = model.synthesize(
+                "Hello", engine_options={"max_frames": 1}, **kwargs
+            )
             self.assertEqual(self.backend.generate.call_count, 1)
             self.assertEqual(len(result.attempts), 1)
         self.backend.generate.reset_mock()
-        result = model.synthesize("Hello", max_frames=1, seed=17, max_retries=1)
+        result = model.synthesize(
+            "Hello", engine_options={"max_frames": 1}, seed=17, max_retries=1
+        )
         self.assertEqual(self.backend.generate.call_count, 2)
         self.assertEqual(result.finish_reason, "length")
         self.assertEqual([a["seed"] for a in result.attempts], [17, 18])
@@ -726,7 +775,9 @@ class Drama3PythonAPITest(unittest.TestCase):
             self.backend.generate.reset_mock()
             self.backend.generate.side_effect = [first, self.result]
             with self.subTest(first=type(first)), self.assertRaises(RuntimeError):
-                model.synthesize("Hello", max_frames=1, max_retries=1)
+                model.synthesize(
+                    "Hello", engine_options={"max_frames": 1}, max_retries=1
+                )
             self.backend.generate.assert_called_once()
         self.backend.generate.reset_mock()
         self.backend.generate.side_effect = [
@@ -734,7 +785,7 @@ class Drama3PythonAPITest(unittest.TestCase):
             dict(self.result, sample_rate=1),
         ]
         with self.assertRaises(RuntimeError):
-            model.synthesize("Hello", max_frames=1, max_retries=1)
+            model.synthesize("Hello", engine_options={"max_frames": 1}, max_retries=1)
         self.assertEqual(self.backend.generate.call_count, 2)
 
     def test_cli_writes_mono_pcm16_with_clipping(self):
@@ -805,11 +856,11 @@ class Drama3PythonAPITest(unittest.TestCase):
             revision="pinned-commit",
             cache_dir=self.root / "cache",
             local_files_only=True,
-            gpu_expert_cache_gb=None,
+            engine_options=None,
         )
         fake.return_value.synthesize.assert_called_once_with(
             "Hello",
-            max_frames=512,
+            max_duration_s=24.0,
             temperature=0.7,
             top_k=30,
             top_p=0.7,
@@ -828,7 +879,7 @@ class Drama3PythonAPITest(unittest.TestCase):
         self.assertEqual(broken.strides, (0,))
         self.backend.generate.return_value = dict(self.result, audio=broken)
         with self.assertRaisesRegex(RuntimeError, "invalid audio/code metadata"):
-            model.synthesize("Hello", max_frames=1)
+            model.synthesize("Hello", engine_options={"max_frames": 1})
 
 
 if __name__ == "__main__":

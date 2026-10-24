@@ -10,6 +10,8 @@ import re
 from importlib import import_module
 from pathlib import Path
 
+from .base import get_engine_class
+
 DEFAULT_MODEL = "jordimas/drama-3-ct2"
 MODEL_ALIASES = {"drama-3": DEFAULT_MODEL}
 
@@ -33,11 +35,11 @@ ALLOW_PATTERNS = (
 
 def _validate(directory):
     directory = Path(directory).expanduser().resolve()
-    for name in ("model.bin", "config.json", "tokenizer.json"):
+    for name in ("model.bin", "config.json"):
         path = directory / name
         if not path.is_file() or path.stat().st_size == 0:
             raise FileNotFoundError(
-                f"Missing or empty converted Drama 3 asset: {path}. "
+                f"Missing or empty converted model asset: {path}. "
                 "Provide a complete CTranslate2-converted checkpoint; official "
                 "safetensors and GGUF checkpoints cannot be loaded directly."
             )
@@ -47,35 +49,10 @@ def _validate(directory):
         raise ValueError(
             f"Invalid converted model config: {directory / 'config.json'}"
         ) from exc
-    source = config.get("source_config") if isinstance(config, dict) else None
-    if (
-        not isinstance(config, dict)
-        or config.get("model_type") != "drama3"
-        or type(config.get("ct2_layout_version")) is not int
-        or config["ct2_layout_version"] != 1
-        or not isinstance(source, dict)
-        or not isinstance(source.get("text_config"), dict)
-        or not source["text_config"]
-        or not isinstance(source.get("audio_decoder_config"), dict)
-        or not source["audio_decoder_config"]
-    ):
-        raise ValueError(
-            f"Unsupported converted Drama 3 config in {directory}: expected "
-            "model_type='drama3', ct2_layout_version=1 and source_config with "
-            "text_config/audio_decoder_config. Convert the checkpoint with the matching converter."
-        )
-    try:
-        tokenizer = json.loads(
-            (directory / "tokenizer.json").read_text(encoding="utf-8")
-        )
-        if not isinstance(tokenizer, dict) or not isinstance(
-            tokenizer.get("model"), dict
-        ):
-            raise ValueError("tokenizer model object missing")  # noqa: TRY004 - invalid JSON content
-    except (ValueError, UnicodeError) as exc:
-        raise ValueError(
-            f"Invalid tokenizer JSON: {directory / 'tokenizer.json'}"
-        ) from exc
+    if not isinstance(config, dict):
+        raise ValueError(f"Invalid converted model config: {directory / 'config.json'}")  # noqa: TRY004 - invalid checkpoint data
+    engine_class = get_engine_class(config.get("model_type"))
+    engine_class.validate_checkpoint(directory, config)
     return directory
 
 

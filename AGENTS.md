@@ -8,7 +8,8 @@
 ## Public API
 
 - The supported top-level API is listed in `faster_tts/__init__.py::__all__`:
-  `Model`, `SynthesisResult`, `Drama3Prompt`, and `Drama3PromptBuilder`.
+  `Model` and `SynthesisResult`. Engine-specific helpers under
+  `faster_tts.engines.<name>` are internal and not part of the stable surface.
 - Preserve public names, constructor/method signatures, parameter defaults,
   result fields, array shapes/dtypes, and documented behavior unless the task
   explicitly calls for a breaking change. Explicitly flag any changes to public

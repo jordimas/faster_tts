@@ -14,16 +14,16 @@ generator = runpy.run_path(
 
 class DocsTest(unittest.TestCase):
     def test_reference_covers_exports_and_inherited_methods_without_loading(self):
-        with patch("faster_tts.model._native_class", side_effect=AssertionError):
+        with patch(
+            "faster_tts.engines.drama3._native_class", side_effect=AssertionError
+        ):
             markdown = generator["generate"]()
         for name in faster_tts.__all__:
             self.assertIn(f"## {name}\n", markdown)
             self.assertIn(f"[{name}](#{name.lower()})", markdown)
         self.assertIn("### Model.info\n", markdown)
         self.assertIn("### Model.synthesize\n", markdown)
-        self.assertIn("### Drama3PromptBuilder.prepare\n", markdown)
         self.assertIn("- **audio**:", markdown)
-        self.assertIn("- **rows**:", markdown)
         self.assertNotIn("### Model.__init__", markdown)
         self.assertNotIn("0x", markdown)
 

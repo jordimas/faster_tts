@@ -12,7 +12,7 @@ from tokenizers import normalizers
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
-from faster_tts import Drama3PromptBuilder
+from faster_tts.prompt import Drama3PromptBuilder
 
 
 class Drama3PromptTest(unittest.TestCase):

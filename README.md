@@ -31,6 +31,13 @@ sample_rate = result.sample_rate
 [`jordimas/drama-3-ct2`](https://huggingface.co/jordimas/drama-3-ct2) checkpoint.
 Reuse the model across calls. Audio is a NumPy array with the returned sample rate.
 
+`Model(path_or_hub_id)` selects the engine from the converted checkpoint's
+`model_type`. `model.info()` reports `engine` and supported `capabilities`.
+Only Drama 3 is implemented today; Qwen TTS support is not yet included.
+Codec dimensions, sample rate, and available features depend on the engine.
+Engine-specific knobs are passed through `engine_options={…}` on both
+`Model(...)` and `model.synthesize(...)`; unknown keys raise `ValueError`.
+
 Save a WAV with the CLI:
 
 ```bash
@@ -56,7 +63,8 @@ model = Model(local_files_only=True)  # Use only cached assets.
 The CLI accepts the same model argument and cache options; Hub IDs may use an
 `hf://` prefix. Existing local directories take precedence. Use a `Path` object
 or an explicit path (`./`, `../`, `~/`, or absolute) to avoid interpreting missing
-local paths as Hub IDs. Custom checkpoints must use the supported Drama 3 layout.
+local paths as Hub IDs. Custom checkpoints must match the resolved engine's
+layout; `cache.py` delegates checkpoint validation to the registered engine.
 
 ## Device and compute type
 
@@ -78,19 +86,26 @@ python -m faster_tts --device cuda --device-index 0 --compute-type float16 \
   --text "Hello!" --output hello.wav
 ```
 
-## Expert memory on GPU and CPU
+## Expert memory on GPU and CPU (Drama 3)
+
+Drama 3 accepts `gpu_expert_cache_gb` via `engine_options`. Other engines
+ignore the `CT2_DRAMA3_*` environment variables and reject
+`gpu_expert_cache_gb` as an unknown option.
 
 On GPU, `"auto"` sizes the expert cache from free memory, reserving at least
 2 GB and 30% for other allocations. Override it with a total budget in decimal GB:
 
 ```python
-model = Model(device="cuda", gpu_expert_cache_gb="auto")
-model = Model(device="cuda", gpu_expert_cache_gb=12, num_workers=2)
+model = Model(device="cuda", engine_options={"gpu_expert_cache_gb": "auto"})
+model = Model(
+    device="cuda", num_workers=2, engine_options={"gpu_expert_cache_gb": 12}
+)
 ```
 
 Budgets are divided across workers (6 GB each above); `model.info()` reports them.
-The default, `None`, uses `CT2_DRAMA3_GPU_EXPERT_CACHE_GB` per worker; unset or
-zero means uncapped. CLI: `--gpu-expert-cache-gb auto` or a numeric budget.
+Omitting the option (or passing `None`) uses `CT2_DRAMA3_GPU_EXPERT_CACHE_GB`
+per worker; unset or zero means uncapped. CLI:
+`--gpu-expert-cache-gb auto` or a numeric budget.
 
 When `device="auto"` selects CPU, expert memory mapping is enabled if `model.bin`
 exceeds available RAM after reserving at least 2 GB and 30% headroom. The OS
@@ -134,7 +149,7 @@ for conversion and native runtime details.
 
 ## Benchmark
 
-See [benchmark instructions](benchmark/README.md) to run your own measurements.
+Drama 3 only. See [benchmark instructions](benchmark/README.md) to run your own measurements.
 
 <!-- current-benchmarks -->
 ### Benchmark results (2026-10-24)

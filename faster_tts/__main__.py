@@ -49,7 +49,7 @@ def main():
     )
     parser.add_argument("--text", required=True)
     parser.add_argument("--output", required=True, type=Path)
-    parser.add_argument("--max-frames", type=int, default=512)
+    parser.add_argument("--max-duration-s", type=float, default=24.0)
     parser.add_argument("--threads", type=int, default=8)
     parser.add_argument("--device", choices=("cpu", "cuda", "auto"), default="cpu")
     parser.add_argument("--device-index", type=int, default=0)
@@ -57,7 +57,7 @@ def main():
     parser.add_argument(
         "--gpu-expert-cache-gb",
         type=_cache_budget,
-        help='GPU expert cache budget across all workers in decimal GB, or "auto"; not total VRAM',
+        help='GPU expert cache budget across all workers in decimal GB, or "auto"; Drama 3 only',
     )
     parser.add_argument("--temperature", type=float, default=0.7)
     parser.add_argument("--top-k", type=int, default=30)
@@ -74,6 +74,9 @@ def main():
         help="diagnostic greedy decoding instead of sampling",
     )
     args = parser.parse_args()
+    engine_options = {}
+    if args.gpu_expert_cache_gb is not None:
+        engine_options["gpu_expert_cache_gb"] = args.gpu_expert_cache_gb
     model = Model(
         args.model,
         intra_threads=args.threads,
@@ -83,12 +86,12 @@ def main():
         revision=args.revision,
         cache_dir=args.cache_dir,
         local_files_only=args.local_files_only,
-        gpu_expert_cache_gb=args.gpu_expert_cache_gb,
+        engine_options=engine_options or None,
     )
     started = time.perf_counter()
     result = model.synthesize(
         args.text,
-        max_frames=args.max_frames,
+        max_duration_s=args.max_duration_s,
         temperature=args.temperature,
         top_k=args.top_k,
         top_p=args.top_p,
