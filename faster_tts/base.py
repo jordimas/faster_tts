@@ -11,6 +11,7 @@ expert-cache budget) belong on the engine subclass, not here.
 """
 
 from copy import deepcopy
+from importlib import import_module
 
 import numpy as np
 
@@ -37,6 +38,9 @@ def register_engine(model_type):
 
 def get_engine_class(model_type):
     """Look up the engine class previously registered for ``model_type``."""
+    import_module(".engines.drama3", __package__)
+    if not isinstance(model_type, str):
+        raise ValueError("Converted checkpoint must specify a string model_type")  # noqa: TRY004 - invalid checkpoint data
     try:
         return _ENGINE_REGISTRY[model_type]
     except KeyError:
@@ -59,11 +63,16 @@ class BaseModel:
     """Shared surface across CT2 TTS engines.
 
     Subclasses set ``self._info`` in their constructor and implement
-    ``synthesize``. The base class provides a stable :meth:`info` contract so
-    callers can introspect any engine the same way.
+    ``validate_checkpoint(directory, config)`` and ``synthesize``. Constructors
+    receive a resolved directory, checkpoint metadata, and the public loader's
+    settings. Engines must reject unsupported nondefault synthesis options and
+    return a SynthesisResult with engine-specific codec dimensions. Declare
+    supported features in ``capabilities``. The base class adds engine identity
+    and capabilities to an independent copy of ``_info``.
     """
 
     engine_model_type: str
+    capabilities = ("synthesis",)
 
     def info(self):
         """Return device/offline execution settings and recorded checkpoint metadata.
@@ -83,4 +92,8 @@ class BaseModel:
                 `quantization_policy`, `matrix_dtype`, and `activation_dtype`,
                 which may be None. Compute type is the requested loader setting.
         """
-        return deepcopy(self._info)
+        return dict(
+            deepcopy(self._info),
+            engine=self.engine_model_type,
+            capabilities=self.capabilities,
+        )

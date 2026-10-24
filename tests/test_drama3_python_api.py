@@ -53,7 +53,7 @@ class Drama3PythonAPITest(unittest.TestCase):
         self.backend.generate.return_value = self.result
         self.constructor = Mock(return_value=self.backend)
         self.native_patch = patch(
-            "faster_tts.model._native_class", return_value=self.constructor
+            "faster_tts.engines.drama3._native_class", return_value=self.constructor
         )
         self.native_patch.start()
         self.addCleanup(self.native_patch.stop)
@@ -117,7 +117,7 @@ class Drama3PythonAPITest(unittest.TestCase):
                 patch("faster_tts.memory.sys.platform", "linux"),
                 patch("faster_tts.memory.available_cpu_memory", return_value=1e9),
                 patch(
-                    "faster_tts.model.import_module",
+                    "faster_tts.engines.drama3.import_module",
                     return_value=Mock(
                         get_cuda_device_count=Mock(return_value=gpu_count)
                     ),
@@ -290,7 +290,7 @@ class Drama3PythonAPITest(unittest.TestCase):
             with (
                 self.subTest(count=count),
                 patch(
-                    "faster_tts.model.import_module",
+                    "faster_tts.engines.drama3.import_module",
                     return_value=Mock(get_cuda_device_count=Mock(return_value=count)),
                 ),
             ):
@@ -363,7 +363,7 @@ class Drama3PythonAPITest(unittest.TestCase):
         self.assertEqual(result.timings, {"native": 5.0})
         calls = self.backend.generate.call_args_list
         self.assertEqual([call.kwargs["max_frames"] for call in calls], [3, 2])
-        begin = model._prompt.config["semantic_start_token_id"]
+        begin = model._engine._prompt.config["semantic_start_token_id"]
         self.assertEqual(np.count_nonzero(calls[1].args[0][:, 0] == begin), 1)
         self.assertEqual([a["chunk_index"] for a in result.attempts], [0, 1])
         self.assertEqual([a["text"] for a in result.attempts], ["Hello.", "Hello?"])
@@ -386,7 +386,7 @@ class Drama3PythonAPITest(unittest.TestCase):
     def test_chunk_history_is_bounded_and_not_retained_between_requests(self):
         model = Model(self.root)
         model.synthesize("Hello. Hello! Hello? Hello.")
-        begin = model._prompt.config["semantic_start_token_id"]
+        begin = model._engine._prompt.config["semantic_start_token_id"]
         self.assertEqual(
             [
                 np.count_nonzero(c.args[0][:, 0] == begin)
@@ -411,8 +411,8 @@ class Drama3PythonAPITest(unittest.TestCase):
             [a["text"] for a in result.attempts],
             ["<|speaker:2|> Hello.", "<|speaker:2|> Hello?"],
         )
-        speaker = model._prompt.tokenizer.token_to_id("<|speaker:2|>")
-        default = model._prompt.tokenizer.token_to_id("<|speaker:0|>")
+        speaker = model._engine._prompt.tokenizer.token_to_id("<|speaker:2|>")
+        default = model._engine._prompt.tokenizer.token_to_id("<|speaker:0|>")
         calls = self.backend.generate.call_args_list
         self.assertEqual(
             [np.count_nonzero(c.args[0][:, 0] == speaker) for c in calls], [1, 2]
@@ -437,7 +437,7 @@ class Drama3PythonAPITest(unittest.TestCase):
         codes = np.zeros((2, 10), np.int32)
         result = model.synthesize("Hello", max_frames=1, history=[("Hello", codes)])
         rows = self.backend.generate.call_args.args[0]
-        begin = model._prompt.config["semantic_start_token_id"]
+        begin = model._engine._prompt.config["semantic_start_token_id"]
         self.assertEqual(np.count_nonzero(rows[:, 0] == begin), 2)
         self.assertEqual(rows.dtype, np.int32)
         self.assertTrue(rows.flags.c_contiguous)
@@ -559,6 +559,15 @@ class Drama3PythonAPITest(unittest.TestCase):
             self.root, intra_threads=3, compute_type="float32", prefill_chunk_size=2
         )
         expected = {
+            "engine": "drama3",
+            "capabilities": (
+                "synthesis",
+                "history",
+                "sentence_splitting",
+                "retries",
+                "gpu_expert_cache",
+                "cpu_expert_mmap",
+            ),
             "backend": "cpu",
             "codec_device": "cpu",
             "mode": "offline",
@@ -618,7 +627,8 @@ class Drama3PythonAPITest(unittest.TestCase):
             Model(self.root / "absent")
         self.native_patch.stop()
         with patch(
-            "faster_tts.model.import_module", side_effect=ImportError("no extension")
+            "faster_tts.engines.drama3.import_module",
+            side_effect=ImportError("no extension"),
         ):
             with self.assertRaisesRegex(
                 RuntimeError, "experimental CTranslate2 Drama3 binding"
@@ -666,7 +676,7 @@ class Drama3PythonAPITest(unittest.TestCase):
         )
         self.backend.generate.side_effect = [first, second]
         with patch.object(
-            model._prompt, "prepare", wraps=model._prompt.prepare
+            model._engine._prompt, "prepare", wraps=model._engine._prompt.prepare
         ) as prepare:
             result = model.synthesize(
                 "Hello", max_frames=1, seed=2**64 - 1, max_retries=1

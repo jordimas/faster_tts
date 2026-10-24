@@ -31,6 +31,11 @@ sample_rate = result.sample_rate
 [`jordimas/drama-3-ct2`](https://huggingface.co/jordimas/drama-3-ct2) checkpoint.
 Reuse the model across calls. Audio is a NumPy array with the returned sample rate.
 
+`Model(path_or_hub_id)` selects the engine from the converted checkpoint's
+`model_type`. `model.info()` reports `engine` and supported `capabilities`.
+Only Drama 3 is implemented today; Qwen TTS support is not yet included.
+Codec dimensions, sample rate, and available features depend on the engine.
+
 Save a WAV with the CLI:
 
 ```bash

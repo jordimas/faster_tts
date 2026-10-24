@@ -14,7 +14,9 @@ generator = runpy.run_path(
 
 class DocsTest(unittest.TestCase):
     def test_reference_covers_exports_and_inherited_methods_without_loading(self):
-        with patch("faster_tts.model._native_class", side_effect=AssertionError):
+        with patch(
+            "faster_tts.engines.drama3._native_class", side_effect=AssertionError
+        ):
             markdown = generator["generate"]()
         for name in faster_tts.__all__:
             self.assertIn(f"## {name}\n", markdown)

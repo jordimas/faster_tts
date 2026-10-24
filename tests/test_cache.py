@@ -1,6 +1,5 @@
 """Acquisition contract tests; synthetic assets only, no network or native model."""
 
-import importlib.util
 import json
 import tempfile
 import types
@@ -8,10 +7,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import Mock, patch
 
-SOURCE = Path(__file__).resolve().parents[1] / "faster_tts/cache.py"
-SPEC = importlib.util.spec_from_file_location("faster_tts_cache_under_test", SOURCE)
-cache = importlib.util.module_from_spec(SPEC)
-SPEC.loader.exec_module(cache)
+from faster_tts import cache
 
 
 class CacheTests(unittest.TestCase):
@@ -88,7 +84,6 @@ class CacheTests(unittest.TestCase):
 
     def test_official_or_wrong_layout_rejected(self):
         for key, value in (
-            ("model_type", "fish_omni"),
             ("ct2_layout_version", 2),
             ("ct2_layout_version", True),
             ("source_config", {}),
