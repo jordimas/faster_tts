@@ -43,32 +43,32 @@ class Model:
     """Load a converted checkpoint using its registered TTS engine.
 
     The checkpoint's `config.json` selects the engine through `model_type`.
-    Only Drama 3 is currently implemented; Qwen checkpoints are not yet supported.
-    `info()` reports the selected engine and its supported capabilities.
-    Checkpoint validation and synthesis are handled by the selected engine.
+    `info()` reports the selected engine and its supported capabilities;
+    checkpoint validation and synthesis are handled by that engine. Required
+    assets, native backends, GPU acceleration coverage, and compute types
+    depend on the engine. Only Drama 3 is currently implemented; Qwen
+    checkpoints are not yet supported.
 
-    Drama 3 generation is offline, without cloning or reference audio. Seeded
-    sampling follows its model distribution, without bitwise PyTorch RNG parity.
-    Drama checkpoints require model.bin, a layout-version1 config.json with
-    source_config, and frozen tokenizer.json.
-
-    ``Model()`` loads jordimas/drama-3-ct2 from the Hugging Face cache or Hub.
-    ``Model("drama-3")`` selects the same checkpoint. A converted Hub repository
-    ID (with optional hf:// prefix) or local directory can also be supplied.
+    ``Model()`` loads the default checkpoint (``jordimas/drama-3-ct2``) from
+    the Hugging Face cache or Hub. A converted Hub repository ID (with optional
+    ``hf://`` prefix) or local directory can also be supplied.
     ``device`` selects "cpu" (default), "cuda", or "auto"; ``device_index``
-    selects one GPU. CUDA and ROCm builds both use "cuda". For Drama 3, GPU
-    acceleration covers backbone/tower projections; waveform decoding stays on CPU.
+    selects one GPU. CUDA and ROCm builds both use "cuda".
     ``compute_type`` is passed to the native loader (default: "default").
     ``revision`` can pin a commit; ``local_files_only=True`` prevents downloads.
     ``cpu_threads`` sets the CPU thread count (default: 8), overriding the
     legacy ``intra_threads`` argument when supplied.
     ``num_workers`` (default: 1) configures CT2's native ``inter_threads`` pool
-    for concurrent calls. Replicas share CPU checkpoint weights and each uses
-    ``cpu_threads`` threads and its own GPU expert cache.
-    ``gpu_expert_cache_gb`` optionally caps GPU expert weights across all workers,
-    in decimal GB. "auto" reserves at least 2 GB and 30% of currently free GPU
-    memory for other allocations. None preserves CT2's environment configuration.
-    This is not a total GPU or system memory limit.
+    for concurrent calls. Replicas share CPU checkpoint weights.
+
+    Drama 3 engine: generation is offline, without cloning or reference audio.
+    Seeded sampling follows the model distribution, without bitwise PyTorch RNG
+    parity. The checkpoint requires `model.bin`, a layout-version1 `config.json`
+    with `source_config`, and a frozen `tokenizer.json`. GPU acceleration covers
+    backbone/tower projections while waveform decoding stays on CPU. The
+    ``prefill_chunk_size`` and ``gpu_expert_cache_gb`` arguments only apply to
+    this engine; other engines ignore ``CT2_DRAMA3_*`` environment variables
+    and reject ``gpu_expert_cache_gb``.
 
     Args:
         model_path: Default checkpoint, `"drama-3"` alias, converted Hub ID
@@ -77,8 +77,8 @@ class Model:
         intra_threads: Legacy CPU thread count. Defaults to 8.
         compute_type: CT2 precision, such as `"default"`, `"float16"`, or `"int8"`.
             Availability depends on the device and CT2 build.
-        prefill_chunk_size: Positive number of prompt rows processed per prefill
-            chunk. Defaults to 16.
+        prefill_chunk_size: Drama 3 only. Positive number of prompt rows
+            processed per prefill chunk. Defaults to 16.
         cpu_threads: Positive CPU thread count; overrides `intra_threads`.
         num_workers: Positive number of native workers for concurrent calls.
             Defaults to 1. A single call remains blocking and sequential.
@@ -200,29 +200,28 @@ class Model:
     ):
         """Synthesize speech using the selected engine.
 
-        Returns mono float32 audio and int32 codec indices. Sampling and frame
-        budgets are interpreted by the engine. The following history, retry,
-        sentence-splitting, and speaker-tag behavior describes Drama 3; engines
-        without those features must reject unsupported nondefault options.
+        Returns mono float32 audio and codec indices. Codec dimensions, sample
+        rate, and the interpretation of sampling, history, retries, sentence
+        splitting, and speaker tags are engine-specific; engines must reject
+        unsupported nondefault options. ``finish_reason`` is `"eos"` (stop
+        token) or `"length"` (frame budget exhausted, audio may end
+        mid-utterance; `"eos"` does not guarantee complete speech). ``attempts``
+        records per-attempt metadata; discarded retry audio and codes are not
+        retained. ``timings`` sums native phase timings across attempts and
+        chunks, including discarded retries.
 
-        Text is generated by sentence or long clause with completed text/audio
-        history. A single leading speaker tag is preserved on every chunk.
-        max_frames bounds the combined returned frames.
-        split_sentences=False selects one native generation for comparison.
-        Other marked-up text is left intact. Sampling seed/options apply to each chunk;
-        attempts records chunk indices/text and all attempt costs for split input.
-
-        history accepts completed (text, codes[frames,10]) turns for conditioning
-        later chunks. It does not establish speaker continuity or speech quality.
-
-        finish_reason='length' means the frame budget was exhausted and audio may
-        end mid-utterance; 'eos' means the model emitted its stop token.
-        Opt-in max_retries=1 retries a valid length-capped sampled result once,
-        using seed+1 (wrapping uint64) and fresh native state on the loaded model.
-        Greedy decoding never retries. This can double cost and cannot detect
-        incomplete speech ending with EOS. attempts records all attempt metadata;
-        discarded attempt audio/codes are not retained. timings sums native phase
-        timings across attempts; exhausted retries return the last partial result.
+        Drama 3 engine behavior: text is generated by sentence or long clause
+        with completed text/audio history, preserving a single leading speaker
+        tag on each chunk. ``split_sentences=False`` selects one native
+        generation for comparison; other marked-up text is left intact.
+        Sampling seed/options apply per chunk; ``attempts`` records chunk
+        indices/text and all attempt costs for split input. ``history``
+        accepts completed `(text, codes[frames,10])` turns for conditioning
+        later chunks; it does not establish speaker continuity or speech quality.
+        Opt-in ``max_retries=1`` retries a valid length-capped sampled result
+        once, using seed+1 (wrapping uint64) and fresh native state on the
+        loaded model. Greedy decoding never retries. Exhausted retries return
+        the last partial result.
 
         Args:
             text: Nonempty text, optionally containing canonical speaker tags
@@ -239,8 +238,9 @@ class Model:
             max_retries: 0 (default) or 1; retry length-capped sampled generation.
                 Greedy generation never retries.
             history: Iterable of completed `(text, codes)` turns. Codes must be
-                nonempty integer arrays of shape `(frames, 10)` within the codec
-                vocabulary. History consumes context but is not returned as audio.
+                nonempty integer arrays of shape `(frames, codebooks)` within the
+                codec vocabulary (10 codebooks for Drama 3). History consumes
+                context but is not returned as audio.
             split_sentences: Split sentences/long clauses and concatenate audio.
                 Defaults to True. Completed first and latest chunks condition
                 subsequent chunks, together with supplied history.
