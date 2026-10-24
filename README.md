@@ -154,14 +154,16 @@ Drama 3 only. See [benchmark instructions](benchmark/README.md) to run your own 
 <!-- current-benchmarks -->
 ### Benchmark results (2026-10-24, rebuilt CT2)
 
-#### CPU — Intel Xeon @ 2.20 GHz (62 GiB RAM)
+#### CPU — AMD EPYC 7B13 (62 GiB RAM)
+
+Test text: `Hello! Welcome to our application.`
 
 RTF is compute time divided by generated audio duration; lower is better, and 1 means real-time synthesis. Loading and warmup are excluded.
 
-| Implementation | Precision | Exact test text | Mean time (s) | Audio duration (s) | RTF | Peak RAM (GiB RSS) | Status |
-| --- | --- | --- | ---: | ---: | ---: | ---: | --- |
-| HF / PyTorch | bfloat16 | Hello! Welcome to our application. | 300.868 | 2.833 | 106.207 | 44.507 | success |
-| CT2 | bfloat16 | Hello! Welcome to our application. | — | — | — | — | unsupported (no matching precision) |
-| HF / PyTorch | float16 | Hello! Welcome to our application. | 351.489 | 3.204 | 109.691 | 44.671 | success |
-| CT2 | float16 | Hello! Welcome to our application. | — | — | — | — | unsupported (no matching precision) |
-| HF / PyTorch | int8 | Hello! Welcome to our application. | — | — | — | — | unsupported (no matching precision) |
+| Implementation | Precision | Mean time (s) | Audio duration (s) | RTF | Peak RAM (GiB RSS) | Status |
+| --- | --- | ---: | ---: | ---: | ---: | --- |
+| HF / PyTorch | bfloat16 | 300.868 | 2.833 | 106.207 | 44.507 | success |
+| CT2 | bfloat16 | — | — | — | — | unsupported (no matching precision) |
+| HF / PyTorch | float16 | 351.489 | 3.204 | 109.691 | 44.671 | success |
+| CT2 | float16 | — | — | — | — | unsupported (no matching precision) |
+| HF / PyTorch | int8 | — | — | — | — | unsupported (no matching precision) |
