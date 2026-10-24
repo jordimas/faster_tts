@@ -1,0 +1,20 @@
+{
+  "baseline": {
+    "mean_time_seconds": 73.16428191299929,
+    "std_time_seconds": 0,
+    "mean_audio_seconds": 2.786394557823129,
+    "rtf": 26.25768906545629,
+    "peak_rss_gib": 164.48255920410156
+  },
+  "buffer_reuse": {
+    "mean_time_seconds": 73.9596160150013,
+    "std_time_seconds": 0,
+    "mean_audio_seconds": 2.786394557823129,
+    "rtf": 26.54312391163377,
+    "peak_rss_gib": 68.30635070800781
+  },
+  "time_change_seconds": 0.7953341020020162,
+  "time_change_percent": 1.0870524266851422,
+  "peak_rss_change_gib": -96.17620849609375,
+  "peak_rss_reduction_percent": 58.47197961988877
+}

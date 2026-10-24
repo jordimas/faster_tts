@@ -1,0 +1,9 @@
+{
+  "ct2_commit": "613c119cb5ecdd9fb25cab470e991b521fa93890",
+  "wheel": "/home/jupyter/CTranslate2/python/dist/ctranslate2-4.8.3-cp310-cp310-manylinux_2_31_x86_64.whl",
+  "sha256": "58b521b74f288e01d8e94d2ce96bd412d2e1af38dc2dc39e730d889f8bed18eb",
+  "allocator_thresholds": false,
+  "runs": 1,
+  "warmup_runs": 1,
+  "threads": 8
+}
