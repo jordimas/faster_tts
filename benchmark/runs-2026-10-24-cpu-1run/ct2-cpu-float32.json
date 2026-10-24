@@ -35,8 +35,8 @@
       "text": "Hello! Welcome to our application.",
       "requested_runs": 1,
       "warmup_runs": 1,
-      "status": "failed",
-      "error": "Configuration did not complete; see console output."
+      "status": "aborted by user",
+      "error": "Stopped at user request before completing the benchmark."
     }
   ]
 }
