@@ -1,3 +1,9 @@
 Running as unit: faster-tts-ct2-cpu-int8-cpu1run20261024.service
 
 Device: cpu:0
+
+Compute type: int8
+Mean: 73.164s; std: 0.000s; RTF: 26.258; peak RSS: 164.483 GiB
+Started /home/jupyter/faster_tts/.venv/bin/python -u /home/jupyter/faster_tts/benchmark/benchmark.py drama-3 --memory-profile default --device cpu --compute-type int8 --runs 1 --threads 8 --output-json /home/jupyter/faster_tts/benchmark/runs-2026-10-24-cpu-1run/ct2-cpu-int8.json --log-worker.
+faster-tts-ct2-cpu-int8-cpu1run20261024.service: Succeeded.
+faster-tts-ct2-cpu-int8-cpu1run20261024.service: Consumed 56min 34.053s CPU time.

@@ -35,8 +35,22 @@
       "text": "Hello! Welcome to our application.",
       "requested_runs": 1,
       "warmup_runs": 1,
-      "status": "failed",
-      "error": "Configuration did not complete; see console output."
+      "status": "success",
+      "runs": [
+        {
+          "time_seconds": 73.16428191299929,
+          "audio_seconds": 2.786394557823129,
+          "rtf": 26.25768906545629,
+          "finish_reason": "eos"
+        }
+      ],
+      "summary": {
+        "mean_time_seconds": 73.16428191299929,
+        "std_time_seconds": 0,
+        "mean_audio_seconds": 2.786394557823129,
+        "rtf": 26.25768906545629,
+        "peak_rss_gib": 164.48255920410156
+      }
     }
   ]
 }
