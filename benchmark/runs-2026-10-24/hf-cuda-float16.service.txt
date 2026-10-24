@@ -1,1 +1,1 @@
-Result=success
+Result=exit-code

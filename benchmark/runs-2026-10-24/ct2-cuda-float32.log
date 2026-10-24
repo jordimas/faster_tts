@@ -1,1 +1,3 @@
-[0;1;31mUnknown assignment: MemoryOOMGroup=yes[0m
+Running as unit: faster-tts-ct2-cuda-float32-20261024.service
+
+Device: cuda:0; Memory profile: default; uncapped

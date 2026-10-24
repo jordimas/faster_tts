@@ -145,6 +145,8 @@ See [benchmark instructions](benchmark/README.md) to run your own measurements.
 <!-- current-benchmarks -->
 ### Benchmark results (2026-10-24)
 
+
+
 #### CPU — Intel Xeon @ 2.20 GHz (51 GiB RAM)
 
 | Implementation | Precision | Mean time (s) | Peak RAM (GiB RSS) | Status |
@@ -156,5 +158,8 @@ See [benchmark instructions](benchmark/README.md) to run your own measurements.
 
 | Implementation | Precision | Mean time (s) | Peak RAM (GiB RSS) | Status |
 | --- | --- | ---: | ---: | --- |
+| HF / PyTorch | bfloat16 | — | — | failed (see log) |
+| HF / PyTorch | float16 | — | — | failed (see log) |
+| HF / PyTorch | float32 | — | — | failed (see log) |
 
 Reports and logs: [benchmark/runs-2026-10-24](benchmark/runs-2026-10-24). HF: PyTorch 2.6.0+cu124; Fish Speech source `541566932abbaebcb0a40e562a1f846738383f38`. CT2: latest local Python 3.10 wheel, version 4.8.3. Measurements are written as configurations finish.

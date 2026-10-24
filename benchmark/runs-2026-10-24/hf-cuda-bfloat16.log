@@ -2,3 +2,34 @@ Running as unit: faster-tts-hf-cuda-bfloat16-20261024.service
 
 Backend: HF (PyTorch)
 Device: cuda:0; Memory profile: default; uncapped
+
+Compute type: bfloat16
+Expert storage: bfloat16
+Traceback (most recent call last):
+  File "/home/jupyter/faster_tts/benchmark/benchmark_hf.py", line 324, in <module>
+    main()
+  File "/home/jupyter/faster_tts/benchmark/benchmark_hf.py", line 196, in main
+    backbone.materialize([device])
+  File "/home/jupyter/faster_tts/benchmark/fish-speech/fish_speech/models/text2semantic/fish_omni/backbone.py", line 147, in materialize
+    layer.to_empty(device=device)
+  File "/tmp/faster-tts-hf-baseline/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1195, in to_empty
+    return self._apply(
+  File "/tmp/faster-tts-hf-baseline/lib/python3.10/site-packages/torch/nn/modules/module.py", line 903, in _apply
+    module._apply(fn)
+  File "/tmp/faster-tts-hf-baseline/lib/python3.10/site-packages/torch/nn/modules/module.py", line 903, in _apply
+    module._apply(fn)
+  File "/tmp/faster-tts-hf-baseline/lib/python3.10/site-packages/torch/nn/modules/module.py", line 903, in _apply
+    module._apply(fn)
+  File "/tmp/faster-tts-hf-baseline/lib/python3.10/site-packages/torch/nn/modules/module.py", line 930, in _apply
+    param_applied = fn(param)
+  File "/tmp/faster-tts-hf-baseline/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1196, in <lambda>
+    lambda t: torch.empty_like(t, device=device), recurse=recurse
+  File "/tmp/faster-tts-hf-baseline/lib/python3.10/site-packages/torch/_prims_common/wrappers.py", line 291, in _fn
+    result = fn(*args, **kwargs)
+  File "/tmp/faster-tts-hf-baseline/lib/python3.10/site-packages/torch/_refs/__init__.py", line 5003, in empty_like
+    return torch.empty_permuted(
+torch.OutOfMemoryError: CUDA out of memory. Tried to allocate 20.00 MiB. GPU 0 has a total capacity of 14.57 GiB of which 12.75 MiB is free. Including non-PyTorch memory, this process has 14.55 GiB memory in use. Of the allocated memory 14.46 GiB is allocated by PyTorch, and 29.00 KiB is reserved by PyTorch but unallocated. If reserved but unallocated memory is large try setting PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True to avoid fragmentation.  See documentation for Memory Management  (https://pytorch.org/docs/stable/notes/cuda.html#environment-variables)
+Finished with result: exit-code
+Main processes terminated with: code=exited/status=1
+Service runtime: 9.260s
+CPU time consumed: 10.169s
