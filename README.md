@@ -13,8 +13,7 @@ Key features:
 - ✅ Automatic or explicit GPU expert-cache budgets
 - ✅ Command-line synthesis with WAV output
 
-Requires CTranslate2 **4.8.4 or higher** and a compatible
-converted checkpoint. Portable installation remains unverified.
+Requires CTranslate2 **4.8.4 or higher**.
 
 ## Quick start
 
