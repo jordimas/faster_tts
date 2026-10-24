@@ -152,21 +152,13 @@ for conversion and native runtime details.
 Drama 3 only. See [benchmark instructions](benchmark/README.md) to run your own measurements.
 
 <!-- current-benchmarks -->
-### Benchmark results (2026-10-24)
+### Benchmark results (2026-10-24, rebuilt CT2)
 
+Fresh CPU reruns are in progress; completed results will appear below.
 
+#### CPU — Intel Xeon @ 2.20 GHz (62 GiB RAM)
 
-#### CPU — Intel Xeon @ 2.20 GHz (204 GiB RAM)
+RTF is compute time divided by generated audio duration; lower is better, and 1 means real-time synthesis. Loading and warmup are excluded.
 
-| Implementation | Precision | Mean time (s) | Peak RAM (GiB RSS) | Status |
-| --- | --- | ---: | ---: | --- |
-| HF / PyTorch | bfloat16 | 387.633 | 44.329 | success |
-| CT2 | bfloat16 | — | — | unsupported (no matching precision) |
-| HF / PyTorch | float16 | 516.623 | 44.328 | success |
-| CT2 | float16 | — | — | unsupported (no matching precision) |
-| HF / PyTorch | float32 | 141.514 | 51.199 | success |
-| CT2 | float32 | — | — | aborted by user |
-| HF / PyTorch | int8 | — | — | unsupported (no matching precision) |
-| CT2 | int8 | 75.171 | 44.713 | success |
-| HF / PyTorch | int8_float32 | — | — | unsupported (no matching precision) |
-| CT2 | int8_float32 | 74.012 | 44.713 | success |
+| Implementation | Precision | Exact test text | Mean time (s) | Audio duration (s) | RTF | Peak RAM (GiB RSS) | Status |
+| --- | --- | --- | ---: | ---: | ---: | ---: | --- |
