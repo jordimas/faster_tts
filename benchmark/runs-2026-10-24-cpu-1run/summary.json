@@ -88,5 +88,44 @@
     "device": "cpu",
     "compute_type": "float16",
     "status": "unsupported (no matching precision)"
+  },
+  {
+    "model": "/home/jupyter/CTranslate2.jordi/drama-3-official",
+    "source": "/home/jupyter/faster_tts/benchmark/fish-speech",
+    "device": "cpu",
+    "device_index": 0,
+    "hardware": {
+      "cpu": {
+        "processor": "Intel(R) Xeon(R) CPU @ 2.20GHz",
+        "logical_cpu_count": 32,
+        "system_ram_bytes": 219538305024,
+        "system_ram_gib": 204.46097946166992
+      },
+      "gpu": null
+    },
+    "compute_type": "float32",
+    "memory_profile": "default",
+    "gpu_expert_cache_gb": null,
+    "threads": 8,
+    "text": "Hello! Welcome to our application.",
+    "requested_runs": 1,
+    "warmup_runs": 1,
+    "status": "success",
+    "runs": [
+      {
+        "time_seconds": 141.51352487400072,
+        "audio_seconds": 2.972154195011338,
+        "rtf": 47.61311681322809,
+        "finish_reason": "eos"
+      }
+    ],
+    "summary": {
+      "mean_time_seconds": 141.51352487400072,
+      "std_time_seconds": 0,
+      "mean_audio_seconds": 2.972154195011338,
+      "rtf": 47.61311681322809,
+      "peak_rss_gib": 51.19865417480469
+    },
+    "backend": "HF / PyTorch"
   }
 ]
