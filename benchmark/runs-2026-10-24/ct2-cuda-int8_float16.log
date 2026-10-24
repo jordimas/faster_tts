@@ -1,1 +1,7 @@
-[0;1;31mUnknown assignment: MemoryOOMGroup=yes[0m
+Running as unit: faster-tts-ct2-cuda-int8_float16-resume20261024.service
+
+Device: cuda:0; Memory profile: default; uncapped
+Finished with result: oom-kill
+Main processes terminated with: code=killed/status=KILL
+Service runtime: 4min 7.320s
+CPU time consumed: 1min 9.737s

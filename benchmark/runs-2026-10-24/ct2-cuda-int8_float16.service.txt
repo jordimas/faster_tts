@@ -1,1 +1,1 @@
-Result=success
+Result=oom-kill
