@@ -76,5 +76,44 @@
       "peak_rss_gib": 44.715362548828125
     },
     "backend": "CT2"
+  },
+  {
+    "model": "drama-3",
+    "source": null,
+    "device": "cpu",
+    "device_index": 0,
+    "hardware": {
+      "cpu": {
+        "processor": "AMD EPYC 7B13",
+        "logical_cpu_count": 16,
+        "system_ram_bytes": 67441471488,
+        "system_ram_gib": 62.80976486206055
+      },
+      "gpu": null
+    },
+    "compute_type": "int8_float32",
+    "memory_profile": "default",
+    "gpu_expert_cache_gb": null,
+    "threads": 8,
+    "text": "Hello! Welcome to our application.",
+    "requested_runs": 1,
+    "warmup_runs": 1,
+    "status": "success",
+    "runs": [
+      {
+        "time_seconds": 17.880178200000046,
+        "audio_seconds": 2.414875283446712,
+        "rtf": 7.4041828671499585,
+        "finish_reason": "eos"
+      }
+    ],
+    "summary": {
+      "mean_time_seconds": 17.880178200000046,
+      "std_time_seconds": 0,
+      "mean_audio_seconds": 2.414875283446712,
+      "rtf": 7.4041828671499585,
+      "peak_rss_gib": 44.7121696472168
+    },
+    "backend": "CT2"
   }
 ]
