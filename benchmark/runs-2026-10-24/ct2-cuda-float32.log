@@ -1,3 +1,4 @@
 Running as unit: faster-tts-ct2-cuda-float32-20261024.service
 
 Device: cuda:0; Memory profile: default; uncapped
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
