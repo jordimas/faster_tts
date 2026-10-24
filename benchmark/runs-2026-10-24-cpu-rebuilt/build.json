@@ -1,0 +1,18 @@
+{
+  "ct2_commit": "2efa9372062c169cea6f1a9b66830ee37acfe3fd",
+  "wheel": "/home/jupyter/CTranslate2/python/dist/ctranslate2-4.8.3-cp310-cp310-manylinux_2_31_x86_64.whl",
+  "sha256": "9c44e373d70dbd8314ad3d3b8f5d47f7f0cb3acffbdb24c6b75762a534592345",
+  "device": "cpu",
+  "threads": 8,
+  "warmup_runs": 1,
+  "timed_runs": 1,
+  "order": [
+    "bfloat16",
+    "float16",
+    "int8",
+    "int8_float32",
+    "float32"
+  ],
+  "memory_limits": "infinity",
+  "hf_torch": "2.6.0+cu124"
+}

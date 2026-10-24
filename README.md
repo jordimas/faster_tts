@@ -154,11 +154,10 @@ Drama 3 only. See [benchmark instructions](benchmark/README.md) to run your own 
 <!-- current-benchmarks -->
 ### Benchmark results (2026-10-24, rebuilt CT2)
 
-Fresh CPU reruns are in progress; completed results will appear below.
-
 #### CPU — Intel Xeon @ 2.20 GHz (62 GiB RAM)
 
 RTF is compute time divided by generated audio duration; lower is better, and 1 means real-time synthesis. Loading and warmup are excluded.
 
 | Implementation | Precision | Exact test text | Mean time (s) | Audio duration (s) | RTF | Peak RAM (GiB RSS) | Status |
 | --- | --- | --- | ---: | ---: | ---: | ---: | --- |
+| HF / PyTorch | bfloat16 | Hello! Welcome to our application. | 300.868 | 2.833 | 106.207 | 44.507 | success |
