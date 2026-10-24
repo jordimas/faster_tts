@@ -12,16 +12,16 @@ audio, sample_rate = result.audio, result.sample_rate
 
 `Model` selects an engine from the converted checkpoint's `model_type`; only
 Drama 3 is currently supported and remains the default. `SynthesisResult`
-contains audio, codec indices, and generation diagnostics. For lower-level prompt
-inspection without loading model weights, use `Drama3PromptBuilder` and
-`Drama3Prompt`.
+contains audio, codec indices, and generation diagnostics.
 
-This reference covers the four public classes exported from `faster_tts`.
-Importing the package or building these pages does not download a checkpoint
-or initialize a model. Constructing `Model` requires a matching CT2 engine build.
+The public top-level API is engine-agnostic: these two classes are the only
+names exported from `faster_tts`. Engine-specific helpers (prompt builders,
+tokenizers) live under `faster_tts.engines.<name>` and are not part of the
+stable surface. Importing the package or building these pages does not
+download a checkpoint or initialize a model. Constructing `Model` requires
+a matching CT2 engine build.
 """
 
 from .model import Model, SynthesisResult
-from .prompt import Drama3Prompt, Drama3PromptBuilder
 
-__all__ = ["Drama3Prompt", "Drama3PromptBuilder", "Model", "SynthesisResult"]
+__all__ = ["Model", "SynthesisResult"]

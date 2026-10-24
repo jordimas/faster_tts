@@ -135,10 +135,7 @@ class ModelDispatchTest(unittest.TestCase):
                         Model(self.root)
 
     def test_public_signatures_defaults_and_result_fields_remain_compatible(self):
-        self.assertEqual(
-            faster_tts.__all__,
-            ["Drama3Prompt", "Drama3PromptBuilder", "Model", "SynthesisResult"],
-        )
+        self.assertEqual(faster_tts.__all__, ["Model", "SynthesisResult"])
         for obj, expected, keyword_only in (
             (
                 Model,

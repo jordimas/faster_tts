@@ -23,9 +23,7 @@ class DocsTest(unittest.TestCase):
             self.assertIn(f"[{name}](#{name.lower()})", markdown)
         self.assertIn("### Model.info\n", markdown)
         self.assertIn("### Model.synthesize\n", markdown)
-        self.assertIn("### Drama3PromptBuilder.prepare\n", markdown)
         self.assertIn("- **audio**:", markdown)
-        self.assertIn("- **rows**:", markdown)
         self.assertNotIn("### Model.__init__", markdown)
         self.assertNotIn("0x", markdown)
 
