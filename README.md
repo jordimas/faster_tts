@@ -127,7 +127,7 @@ caches and runtime state. A single request still runs sequentially.
 truncated; `"eos"` does not guarantee complete speech. The CLI saves the WAV and
 exits with status 1 on `length`.
 
-See the [HTML API reference](docs/index.html) (open locally in a browser),
+See the [Python API reference](docs/api.md),
 [documentation build instructions](docs/README.md), or `python -m faster_tts --help`
 for options, and the [CT2 Drama 3 guide](https://github.com/jordimas/CTranslate2/blob/feat/drama3-cpu/docs/guides/drama3.md)
 for conversion and native runtime details.

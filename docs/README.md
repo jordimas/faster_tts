@@ -1,21 +1,23 @@
 # API reference
 
-Open [index.html](index.html) in a browser after checking out this repository.
-GitHub's repository view displays HTML source; to read the rendered pages online,
-configure GitHub Pages to publish the `/docs` folder from your default branch.
+Read the [Python API reference](api.md) directly on GitHub.
 
-The HTML is generated from public API signatures and docstrings with pdoc.
-After changing the public API or its docstrings, regenerate it from the repo root:
+Install the pre-commit hook once per checkout:
 
 ```bash
 python -m pip install -e '.[docs]'
-make docs
+pre-commit install
 ```
 
-Use the Python environment where you installed the docs extra. With uv, run
-`uv run --extra docs make docs` instead. Include regenerated HTML in the same
-commit as the API change. Model weights, GPU access, and Drama 3 native bindings
-are not needed to build the reference.
+The hook regenerates Markdown when API sources change. If it updates the file,
+stage `docs/api.md` and retry the commit. CI verifies that the reference is current.
 
-Only the four classes exported by `faster_tts` are included. Internal modules
-are deliberately excluded. `.nojekyll` allows Pages to serve generated assets directly.
+To rebuild manually with the package installed:
+
+```bash
+python scripts/generate_docs.py
+```
+
+`make docs` runs the same script. It reads public signatures and Google-style
+docstrings without downloading weights or initializing the native runtime.
+Edit source docstrings; generated Markdown needs no manual maintenance.

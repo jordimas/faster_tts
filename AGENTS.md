@@ -27,12 +27,11 @@
 - Keep usage examples and setup guidance in `README.md`.
 - Document the public API in Google-style docstrings. Explain parameters,
   defaults, return values, exceptions, array shapes/dtypes, and units where relevant.
-- The API reference under `docs/` is generated HTML and is versioned with the
-  source. Edit docstrings rather than generated pages.
-- Install documentation tools with `python -m pip install -e '.[docs]'`, then
-  run `make docs` in that environment, or use `uv run --extra docs make docs`.
-- Regenerate the HTML after public API or docstring changes and include it with
-  the source changes. Instructions for readers/builds live in `docs/README.md`.
+- The API reference in `docs/api.md` is generated Markdown. Edit source
+  docstrings rather than generated pages. The pre-commit hook regenerates it
+  when API sources change; agents do not need to update it manually.
+- For local previews, run `python scripts/generate_docs.py` or `make docs`
+  with the package installed. Instructions live in `docs/README.md`.
 - Keep documentation builds independent of model downloads, GPU access, and
   initialization of the experimental native Drama 3 runtime.
 
@@ -40,8 +39,8 @@
 
 - Run focused tests appropriate to the change. Some runtime checks require a
   matching experimental CT2 build or local checkpoints; report unavailable checks.
-- CI runs `ruff check faster_tts/ tests/ benchmark/` and
-  `ruff format --check faster_tts/ tests/ benchmark/`.
+- CI runs `ruff check faster_tts/ tests/ benchmark/ scripts/` and
+  `ruff format --check faster_tts/ tests/ benchmark/ scripts/`.
 - For documentation-only changes, build the reference and check its local links
   and public API coverage; model synthesis is not required.
 - Preserve unrelated work, especially local samples, benchmark outputs, and

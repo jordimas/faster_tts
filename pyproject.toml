@@ -16,7 +16,7 @@ dependencies = [
 
 [project.optional-dependencies]
 hub = ["huggingface-hub>=0.24"]
-docs = ["pdoc==16.0.0"]
+docs = ["pre-commit>=4"]
 
 [project.scripts]
 faster-tts = "faster_tts.__main__:main"
