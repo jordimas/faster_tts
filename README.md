@@ -151,5 +151,6 @@ See [benchmark instructions](benchmark/README.md) to run your own measurements.
 | Implementation | Precision | Mean time (s) | Peak RAM (GiB RSS) | Status |
 | --- | --- | ---: | ---: | --- |
 | CT2 | float32 | — | — | RAM limit reached |
+| CT2 | float16 | — | — | RAM limit reached |
 
 Reports and logs: [benchmark/runs-2026-10-24](benchmark/runs-2026-10-24). HF: PyTorch 2.6.0+cu124; Fish Speech source `541566932abbaebcb0a40e562a1f846738383f38`. CT2: latest local Python 3.10 wheel, version 4.8.3. Measurements are written as configurations finish.

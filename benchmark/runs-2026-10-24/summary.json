@@ -171,5 +171,35 @@
     "status": "RAM limit reached",
     "error": "Configuration did not complete; see console output.",
     "backend": "CT2"
+  },
+  {
+    "model": "drama-3",
+    "source": null,
+    "device": "cuda",
+    "device_index": 0,
+    "hardware": {
+      "cpu": {
+        "processor": "Intel(R) Xeon(R) CPU @ 2.20GHz",
+        "logical_cpu_count": 32,
+        "system_ram_bytes": 219538305024,
+        "system_ram_gib": 204.46097946166992
+      },
+      "gpu": {
+        "name": "Tesla T4",
+        "runtime": "cuda",
+        "total_memory_bytes": 15642329088,
+        "total_memory_gib": 14.56805419921875
+      }
+    },
+    "compute_type": "float16",
+    "memory_profile": "default",
+    "gpu_expert_cache_gb": null,
+    "threads": 8,
+    "text": "Hello! Welcome to our application.",
+    "requested_runs": 3,
+    "warmup_runs": 1,
+    "status": "RAM limit reached",
+    "error": "Configuration did not complete; see console output.",
+    "backend": "CT2"
   }
 ]
