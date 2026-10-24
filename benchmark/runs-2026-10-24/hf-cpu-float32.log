@@ -1,0 +1,8 @@
+Running as unit: faster-tts-hf-cpu-float32-20261024.service
+
+Backend: HF (PyTorch)
+Device: cpu:0
+
+Compute type: float32
+Expert storage: FP8
+2026-10-24 05:30:54.073 | INFO     | fish_speech.models.text2semantic.fish_omni.backbone:materialize:151 - FishOmni backbone placement: cpu: layers 0-39; embed on cpu, lm_head on cpu

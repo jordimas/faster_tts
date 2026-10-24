@@ -1,0 +1,42 @@
+{
+  "schema_version": 1,
+  "backend": "hf",
+  "backend_version": "2.6.0+cu124",
+  "created_at": "2026-10-24T05:30:47.740070+00:00",
+  "host": {
+    "platform": "Linux-5.10.0-46-cloud-amd64-x86_64-with-glibc2.31",
+    "machine": "x86_64",
+    "processor": "Intel(R) Xeon(R) CPU @ 2.20GHz",
+    "logical_cpu_count": 8,
+    "system_ram_bytes": 54759976960,
+    "system_ram_gib": 50.999202728271484,
+    "python_version": "3.10.20"
+  },
+  "memory_metric": "peak_process_rss_including_load_and_warmup_excluding_gpu",
+  "results": [
+    {
+      "model": "/home/jupyter/CTranslate2.jordi/drama-3-official",
+      "source": "/home/jupyter/faster_tts/benchmark/fish-speech",
+      "device": "cpu",
+      "device_index": 0,
+      "hardware": {
+        "cpu": {
+          "processor": "Intel(R) Xeon(R) CPU @ 2.20GHz",
+          "logical_cpu_count": 8,
+          "system_ram_bytes": 54759976960,
+          "system_ram_gib": 50.999202728271484
+        },
+        "gpu": null
+      },
+      "compute_type": "float32",
+      "memory_profile": "default",
+      "gpu_expert_cache_gb": null,
+      "threads": 8,
+      "text": "Hello! Welcome to our application.",
+      "requested_runs": 3,
+      "warmup_runs": 1,
+      "status": "failed",
+      "error": "Configuration did not complete; see console output."
+    }
+  ]
+}
