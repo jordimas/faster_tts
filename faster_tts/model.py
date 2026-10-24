@@ -10,13 +10,13 @@ do not themselves establish production speech quality.
 import json
 import math
 import time
-from copy import deepcopy
 from dataclasses import dataclass, field
 from importlib import import_module
 from numbers import Real
 
 import numpy as np
 
+from .base import BaseModel, _positive_int, register_engine
 from .cache import DEFAULT_MODEL, resolve_model_path
 from .chunking import split_text
 from .memory import expert_cache_budget, validate_cache_budget
@@ -44,16 +44,8 @@ def _native_class():
         ) from exc
 
 
-def _positive_int(value, name):
-    if (
-        not isinstance(value, int)
-        or isinstance(value, bool)
-        or not 1 <= value <= np.iinfo(np.int32).max
-    ):
-        raise ValueError(f"{name} must be a positive int32 integer")
-
-
-class Model:
+@register_engine("drama3")
+class Model(BaseModel):
     """Load a converted model once, then synthesize plain text.
 
     Generation is offline, without cloning or reference audio. Seeded categorical
@@ -163,15 +155,6 @@ class Model:
             "matrix_dtype": metadata.get("matrix_dtype"),
             "activation_dtype": metadata.get("activation_dtype"),
         }
-
-    def info(self):
-        """Return device/offline execution settings and recorded checkpoint metadata.
-
-        Missing revision/quantization fields are returned as None; older converted
-        assets may not record them. This does not scan weights or run inference.
-        The compute type is the constructor setting accepted by the native loader.
-        """
-        return deepcopy(self._info)
 
     def synthesize(
         self,
