@@ -178,7 +178,3 @@ Pair conclusions:
 - CPU float32: HF success; CT2 aborted by user. No matched timing comparison available.
 - CPU int8: HF unsupported (no matching precision); CT2 success. No matched timing comparison available.
 - CPU int8_float32: HF unsupported (no matching precision); CT2 success. No matched timing comparison available.
-
-Reports and logs: [benchmark/runs-2026-10-24-cpu-1run](benchmark/runs-2026-10-24-cpu-1run). CPU runs use 1 warmup and 1 timed run, with 8 threads and no service RAM or swap caps. HF: PyTorch 2.6.0+cpu; Fish Speech source `541566932abbaebcb0a40e562a1f846738383f38`. CT2: latest local Python 3.10 wheel, version 4.8.3. Measurements are written as configurations finish.
-
-CT2 CPU int8 with the buffer-reuse fix: peak RSS fell from 164.483 to 68.306 GiB (58.5%); timed synthesis changed from 73.164 to 73.960 s (+1.1%, one timed run per build). No allocator thresholds. [Comparison and reports](benchmark/runs-2026-10-24-buffer-reuse/README.md).
