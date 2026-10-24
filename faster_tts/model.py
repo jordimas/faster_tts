@@ -7,20 +7,20 @@ or external TTS engine fallback is performed. Seeded sampling and diagnostic gre
 do not themselves establish production speech quality.
 """
 
-from copy import deepcopy
-from dataclasses import dataclass, field
-from importlib import import_module
 import json
 import math
 import time
+from copy import deepcopy
+from dataclasses import dataclass, field
+from importlib import import_module
 from numbers import Real
 
 import numpy as np
 
-from .prompt import Drama3PromptBuilder
 from .cache import DEFAULT_MODEL, resolve_model_path
 from .chunking import split_text
 from .memory import expert_cache_budget, validate_cache_budget
+from .prompt import Drama3PromptBuilder
 
 
 @dataclass(frozen=True)
@@ -38,12 +38,18 @@ def _native_class():
         extension = import_module("ctranslate2._ext")
         return extension.Drama3
     except (ImportError, AttributeError) as exc:
-        raise RuntimeError("This requires the experimental CTranslate2 Drama3 binding; "
-                           "install a matching build of this repository.") from exc
+        raise RuntimeError(
+            "This requires the experimental CTranslate2 Drama3 binding; "
+            "install a matching build of this repository."
+        ) from exc
 
 
 def _positive_int(value, name):
-    if not isinstance(value, int) or isinstance(value, bool) or not 1 <= value <= np.iinfo(np.int32).max:
+    if (
+        not isinstance(value, int)
+        or isinstance(value, bool)
+        or not 1 <= value <= np.iinfo(np.int32).max
+    ):
         raise ValueError(f"{name} must be a positive int32 integer")
 
 
@@ -74,9 +80,22 @@ class Model:
     This is not a total GPU or system memory limit.
     """
 
-    def __init__(self, model_path=DEFAULT_MODEL, intra_threads=8, compute_type="default", prefill_chunk_size=16,
-                 *, cpu_threads=None, num_workers=1, device="cpu", device_index=0, revision=None, cache_dir=None, local_files_only=False,
-                 gpu_expert_cache_gb=None):
+    def __init__(
+        self,
+        model_path=DEFAULT_MODEL,
+        intra_threads=8,
+        compute_type="default",
+        prefill_chunk_size=16,
+        *,
+        cpu_threads=None,
+        num_workers=1,
+        device="cpu",
+        device_index=0,
+        revision=None,
+        cache_dir=None,
+        local_files_only=False,
+        gpu_expert_cache_gb=None,
+    ):
         validate_cache_budget(gpu_expert_cache_gb)
         if cpu_threads is not None:
             _positive_int(cpu_threads, "cpu_threads")
@@ -88,29 +107,56 @@ class Model:
             raise ValueError("compute_type must be a nonempty string")
         if device not in ("cpu", "cuda", "auto"):
             raise ValueError('device must be "cpu", "cuda", or "auto"')
-        if (not isinstance(device_index, int) or isinstance(device_index, bool)
-                or not 0 <= device_index <= np.iinfo(np.int32).max):
+        if (
+            not isinstance(device_index, int)
+            or isinstance(device_index, bool)
+            or not 0 <= device_index <= np.iinfo(np.int32).max
+        ):
             raise ValueError("device_index must be a nonnegative int32 integer")
-        directory = resolve_model_path(model_path, revision=revision, cache_dir=cache_dir,
-                                       local_files_only=local_files_only)
+        directory = resolve_model_path(
+            model_path,
+            revision=revision,
+            cache_dir=cache_dir,
+            local_files_only=local_files_only,
+        )
         metadata = json.loads((directory / "config.json").read_text(encoding="utf-8"))
         self._prompt = Drama3PromptBuilder(directory)
         self._prefill_chunk_size = prefill_chunk_size
         backend_class = _native_class()
         resolved_device = device
         if device == "auto":
-            resolved_device = "cuda" if import_module("ctranslate2").get_cuda_device_count() > 0 else "cpu"
-        with expert_cache_budget(gpu_expert_cache_gb, resolved_device, device_index, num_workers) as cache_gb:
-            self._model = backend_class(str(directory), intra_threads=intra_threads,
-                                        inter_threads=num_workers, compute_type=compute_type,
-                                        device=resolved_device, device_index=device_index)
+            resolved_device = (
+                "cuda"
+                if import_module("ctranslate2").get_cuda_device_count() > 0
+                else "cpu"
+            )
+        with expert_cache_budget(
+            gpu_expert_cache_gb, resolved_device, device_index, num_workers
+        ) as cache_gb:
+            self._model = backend_class(
+                str(directory),
+                intra_threads=intra_threads,
+                inter_threads=num_workers,
+                compute_type=compute_type,
+                device=resolved_device,
+                device_index=device_index,
+            )
         self._info = {
-            "backend": resolved_device, "codec_device": "cpu", "mode": "offline", "gpu_supported": True,
-            "device": resolved_device, "device_index": device_index,
-            "compute_type": compute_type, "intra_threads": intra_threads,
-            "cpu_threads": intra_threads, "num_workers": num_workers,
-            "prefill_chunk_size": prefill_chunk_size, "model_path": str(directory),
-            "gpu_expert_cache_gb": cache_gb * num_workers if cache_gb is not None else None,
+            "backend": resolved_device,
+            "codec_device": "cpu",
+            "mode": "offline",
+            "gpu_supported": True,
+            "device": resolved_device,
+            "device_index": device_index,
+            "compute_type": compute_type,
+            "intra_threads": intra_threads,
+            "cpu_threads": intra_threads,
+            "num_workers": num_workers,
+            "prefill_chunk_size": prefill_chunk_size,
+            "model_path": str(directory),
+            "gpu_expert_cache_gb": cache_gb * num_workers
+            if cache_gb is not None
+            else None,
             "gpu_expert_cache_gb_per_worker": cache_gb,
             "source_revision": metadata.get("source_revision"),
             "quantization_policy": metadata.get("quantization_policy"),
@@ -127,8 +173,20 @@ class Model:
         """
         return deepcopy(self._info)
 
-    def synthesize(self, text, max_frames=512, temperature=.7, top_k=30,
-                   top_p=.7, seed=0, greedy=False, *, max_retries=0, history=(), split_sentences=True):
+    def synthesize(
+        self,
+        text,
+        max_frames=512,
+        temperature=0.7,
+        top_k=30,
+        top_p=0.7,
+        seed=0,
+        greedy=False,
+        *,
+        max_retries=0,
+        history=(),
+        split_sentences=True,
+    ):
         """Return mono float32 audio and generated [frames,10] codec indices.
 
         Text is generated by sentence or long clause with completed text/audio
@@ -151,29 +209,52 @@ class Model:
         timings across attempts; exhausted retries return the last partial result.
         """
         _positive_int(max_frames, "max_frames")
-        if (not isinstance(temperature, Real) or isinstance(temperature, bool)
-                or not math.isfinite(temperature) or temperature <= 0):
+        if (
+            not isinstance(temperature, Real)
+            or isinstance(temperature, bool)
+            or not math.isfinite(temperature)
+            or temperature <= 0
+        ):
             raise ValueError("temperature must be positive and finite")
         _positive_int(top_k, "top_k")
-        if (not isinstance(top_p, Real) or isinstance(top_p, bool)
-                or not math.isfinite(top_p) or not 0 < top_p <= 1):
+        if (
+            not isinstance(top_p, Real)
+            or isinstance(top_p, bool)
+            or not math.isfinite(top_p)
+            or not 0 < top_p <= 1
+        ):
             raise ValueError("top_p must be finite and in (0,1]")
-        if not isinstance(seed, int) or isinstance(seed, bool) or not 0 <= seed < 2 ** 64:
+        if not isinstance(seed, int) or isinstance(seed, bool) or not 0 <= seed < 2**64:
             raise ValueError("seed must be a nonnegative uint64 integer")
         if not isinstance(greedy, bool):
-            raise ValueError("greedy must be a boolean")
-        if not isinstance(max_retries, int) or isinstance(max_retries, bool) or max_retries not in (0, 1):
+            raise ValueError("greedy must be a boolean")  # noqa: TRY004 - preserve API validation errors
+        if (
+            not isinstance(max_retries, int)
+            or isinstance(max_retries, bool)
+            or max_retries not in (0, 1)
+        ):
             raise ValueError("max_retries must be 0 or 1")
         if not isinstance(split_sentences, bool):
-            raise ValueError("split_sentences must be a boolean")
+            raise ValueError("split_sentences must be a boolean")  # noqa: TRY004 - preserve API validation errors
         chunks = split_text(text) if split_sentences else [text]
         if len(chunks) > 1:
             # Validate all input before starting any partial synthesis.
             self._prompt.prepare(text)
-            return self._synthesize_chunks(chunks, max_frames, temperature, top_k, top_p,
-                                           seed, greedy, max_retries, history)
+            return self._synthesize_chunks(
+                chunks,
+                max_frames,
+                temperature,
+                top_k,
+                top_p,
+                seed,
+                greedy,
+                max_retries,
+                history,
+            )
         prepared = self._prompt.prepare(text, history=history)
-        maximum = self._prompt.config.get("text_config", {}).get("max_position_embeddings")
+        maximum = self._prompt.config.get("text_config", {}).get(
+            "max_position_embeddings"
+        )
         if isinstance(maximum, int) and len(prepared.rows) + max_frames > maximum:
             raise ValueError("prompt plus max_frames exceeds model context capacity")
         if np.any(prepared.rows < 0) or np.any(prepared.rows > np.iinfo(np.int32).max):
@@ -182,68 +263,131 @@ class Model:
         attempts = []
         aggregate_timings = {}
         for attempt in range(1 + (max_retries if not greedy else 0)):
-            attempt_seed = (seed + attempt) % (2 ** 64)
+            attempt_seed = (seed + attempt) % (2**64)
             started = time.perf_counter()
-            result = self._model.generate(rows, max_frames=max_frames, prefill_chunk_size=self._prefill_chunk_size,
-                                          temperature=float(temperature), top_k=top_k, top_p=float(top_p),
-                                          seed=attempt_seed, greedy=greedy)
+            result = self._model.generate(
+                rows,
+                max_frames=max_frames,
+                prefill_chunk_size=self._prefill_chunk_size,
+                temperature=float(temperature),
+                top_k=top_k,
+                top_p=float(top_p),
+                seed=attempt_seed,
+                greedy=greedy,
+            )
             if callable(getattr(result, "to_dict", None)):
                 result = result.to_dict()
             if not isinstance(result, dict):
-                raise RuntimeError("native Drama3 returned a malformed result")
+                raise RuntimeError("native Drama3 returned a malformed result")  # noqa: TRY004 - preserve API validation errors
             audio, codes = result.get("audio"), result.get("codes")
             rate, reason = result.get("sample_rate"), result.get("finish_reason")
-            if (not isinstance(audio, np.ndarray) or audio.dtype != np.float32 or audio.ndim != 1
-                    or not audio.flags.c_contiguous
-                    or not np.all(np.isfinite(audio)) or not isinstance(codes, np.ndarray)
-                    or codes.dtype != np.int32 or codes.ndim != 2 or codes.shape[1] != 10
-                    or not codes.flags.c_contiguous
-                    or len(codes) > max_frames or np.any(codes < 0) or rate != 44100
-                    or reason not in ("eos", "length")):
+            if (
+                not isinstance(audio, np.ndarray)
+                or audio.dtype != np.float32
+                or audio.ndim != 1
+                or not audio.flags.c_contiguous
+                or not np.all(np.isfinite(audio))
+                or not isinstance(codes, np.ndarray)
+                or codes.dtype != np.int32
+                or codes.ndim != 2
+                or codes.shape[1] != 10
+                or not codes.flags.c_contiguous
+                or len(codes) > max_frames
+                or np.any(codes < 0)
+                or rate != 44100
+                or reason not in ("eos", "length")
+            ):
                 raise RuntimeError("native Drama3 returned invalid audio/code metadata")
             if audio.size != codes.shape[0] * 2048:
-                raise RuntimeError("native Drama3 audio length disagrees with codec frame count")
+                raise RuntimeError(
+                    "native Drama3 audio length disagrees with codec frame count"
+                )
             if not audio.size:
                 raise RuntimeError("Incomplete synthesis: model returned no audio")
             timings = result.get("timings", {})
-            if (not isinstance(timings, dict)
-                    or any(not isinstance(k, str) or not isinstance(v, Real)
-                           or not math.isfinite(v) or v < 0 for k, v in timings.items())):
+            if not isinstance(timings, dict) or any(
+                not isinstance(k, str)
+                or not isinstance(v, Real)
+                or not math.isfinite(v)
+                or v < 0
+                for k, v in timings.items()
+            ):
                 raise RuntimeError("native Drama3 returned invalid timing metadata")
-            attempts.append({"seed": attempt_seed, "finish_reason": reason,
-                             "frames": len(codes), "seconds": time.perf_counter() - started,
-                             "timings": dict(timings)})
+            attempts.append(
+                {
+                    "seed": attempt_seed,
+                    "finish_reason": reason,
+                    "frames": len(codes),
+                    "seconds": time.perf_counter() - started,
+                    "timings": dict(timings),
+                }
+            )
             for phase, seconds in timings.items():
-                aggregate_timings[phase] = aggregate_timings.get(phase, 0.) + seconds
+                aggregate_timings[phase] = aggregate_timings.get(phase, 0.0) + seconds
             if reason != "length" or attempt == max_retries or greedy:
                 break
             # Keep only compact metadata from discarded attempts.
-            del result, audio, codes
-        return SynthesisResult(audio=audio, sample_rate=44100,
-                               codes=codes, finish_reason=reason,
-                               timings=aggregate_timings, attempts=tuple(attempts))
+            result = audio = codes = None
+        return SynthesisResult(
+            audio=audio,
+            sample_rate=44100,
+            codes=codes,
+            finish_reason=reason,
+            timings=aggregate_timings,
+            attempts=tuple(attempts),
+        )
 
-    def _synthesize_chunks(self, chunks, max_frames, temperature, top_k, top_p,
-                           seed, greedy, max_retries, history):
+    def _synthesize_chunks(
+        self,
+        chunks,
+        max_frames,
+        temperature,
+        top_k,
+        top_p,
+        seed,
+        greedy,
+        max_retries,
+        history,
+    ):
         initial = list(history)
         completed, audio, codes, attempts, timings = [], [], [], [], {}
         remaining = max_frames
         for index, text in enumerate(chunks):
             if remaining == 0:
                 break
-            context = initial + completed[:1] + (completed[-1:] if len(completed) > 1 else [])
-            result = self.synthesize(text, remaining, temperature, top_k, top_p, seed, greedy,
-                                     max_retries=max_retries, history=context, split_sentences=False)
+            context = (
+                initial + completed[:1] + (completed[-1:] if len(completed) > 1 else [])
+            )
+            result = self.synthesize(
+                text,
+                remaining,
+                temperature,
+                top_k,
+                top_p,
+                seed,
+                greedy,
+                max_retries=max_retries,
+                history=context,
+                split_sentences=False,
+            )
             audio.append(result.audio)
             codes.append(result.codes)
             remaining -= len(result.codes)
-            attempts.extend(dict(attempt, chunk_index=index, text=text) for attempt in result.attempts)
+            attempts.extend(
+                dict(attempt, chunk_index=index, text=text)
+                for attempt in result.attempts
+            )
             for phase, seconds in result.timings.items():
-                timings[phase] = timings.get(phase, 0.) + seconds
+                timings[phase] = timings.get(phase, 0.0) + seconds
             if result.finish_reason != "eos":
                 break
             completed.append((text, result.codes))
         reason = "eos" if len(completed) == len(chunks) else "length"
-        return SynthesisResult(audio=np.concatenate(audio), sample_rate=44100,
-                               codes=np.concatenate(codes), finish_reason=reason,
-                               timings=timings, attempts=tuple(attempts))
+        return SynthesisResult(
+            audio=np.concatenate(audio),
+            sample_rate=44100,
+            codes=np.concatenate(codes),
+            finish_reason=reason,
+            timings=timings,
+            attempts=tuple(attempts),
+        )

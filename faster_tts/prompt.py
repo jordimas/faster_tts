@@ -8,22 +8,31 @@ boundaries. Optional history contains completed text/audio turns; reference voic
 encoding and waveform synthesis are outside this module.
 """
 
-from dataclasses import dataclass
 import json
-from pathlib import Path
 import re
 import unicodedata
+from dataclasses import dataclass
+from pathlib import Path
 
 import numpy as np
 from tokenizers import Tokenizer
 
-
-_WHITE_SPACE = "".join(chr(value) for value in
-                      list(range(9, 14)) + [32, 133, 160, 5760]
-                      + list(range(8192, 8203)) + [8232, 8233, 8239, 8287, 12288])
+_WHITE_SPACE = "".join(
+    chr(value)
+    for value in list(range(9, 14))
+    + [32, 133, 160, 5760]
+    + list(range(8192, 8203))
+    + [8232, 8233, 8239, 8287, 12288]
+)
 _SPEAKER = re.compile(r"<\|speaker:(?:[0-9]|1[0-5])\|>")
-_RESERVED = ("<|im_start|>", "<|im_end|>", "<|voice|>", "<|text|>",
-             "<|interleave|>", "<|semantic:")
+_RESERVED = (
+    "<|im_start|>",
+    "<|im_end|>",
+    "<|voice|>",
+    "<|text|>",
+    "<|interleave|>",
+    "<|semantic:",
+)
 
 
 @dataclass(frozen=True)
@@ -36,6 +45,7 @@ class Drama3Prompt:
     audio_pad_token_id names a tokenizer special token;
     it is exposed as metadata and is not the filler for codec columns.
     """
+
     rows: np.ndarray
     semantic_mask: np.ndarray
     normalized_text: str
@@ -50,15 +60,23 @@ class Drama3PromptBuilder:
     """Load frozen local tokenizer.json/config.json; perform no downloads."""
 
     def __init__(self, checkpoint_dir, max_prompt_rows=8192):
-        if (not isinstance(max_prompt_rows, int) or isinstance(max_prompt_rows, bool)
-                or not 1 <= max_prompt_rows <= 8192):
+        if (
+            not isinstance(max_prompt_rows, int)
+            or isinstance(max_prompt_rows, bool)
+            or not 1 <= max_prompt_rows <= 8192
+        ):
             raise ValueError("max_prompt_rows must be an integer in 1..8192")
         self.max_prompt_rows = max_prompt_rows
         directory = Path(checkpoint_dir)
-        self.config = json.loads((directory / "config.json").read_text(encoding="utf-8"))
+        self.config = json.loads(
+            (directory / "config.json").read_text(encoding="utf-8")
+        )
         if isinstance(self.config, dict) and "source_config" in self.config:
             self.config = self.config["source_config"]
-        if not isinstance(self.config, dict) or self.config.get("model_type") != "fish_omni":
+        if (
+            not isinstance(self.config, dict)
+            or self.config.get("model_type") != "fish_omni"
+        ):
             raise ValueError("expected a fish_omni checkpoint")
         audio = self.config.get("audio_decoder_config", {})
         if not isinstance(audio, dict) or audio.get("num_codebooks") != 10:
@@ -66,23 +84,41 @@ class Drama3PromptBuilder:
         size = audio.get("vocab_size")
         if not isinstance(size, int) or isinstance(size, bool) or size <= 0:
             raise ValueError("invalid audio codebook vocabulary size")
-        for field in ("semantic_start_token_id", "semantic_end_token_id", "eos_token_id", "audio_pad_token_id"):
+        for field in (
+            "semantic_start_token_id",
+            "semantic_end_token_id",
+            "eos_token_id",
+            "audio_pad_token_id",
+        ):
             value = self.config.get(field)
             if not isinstance(value, int) or isinstance(value, bool) or value < 0:
                 raise ValueError(f"missing or invalid {field}")
-        if self.config["semantic_end_token_id"] - self.config["semantic_start_token_id"] + 1 != size:
+        if (
+            self.config["semantic_end_token_id"]
+            - self.config["semantic_start_token_id"]
+            + 1
+            != size
+        ):
             raise ValueError("semantic ID range disagrees with codebook size")
         self.tokenizer = Tokenizer.from_file(str(directory / "tokenizer.json"))
         self.tokenizer.no_padding()
         self.tokenizer.no_truncation()
-        expected = {"<|im_end|>": self.config["eos_token_id"],
-                    "<|audio_pad|>": self.config["audio_pad_token_id"]}
-        expected.update({f"<|semantic:{index}|>": self.config["semantic_start_token_id"] + index
-                         for index in range(size)})
+        expected = {
+            "<|im_end|>": self.config["eos_token_id"],
+            "<|audio_pad|>": self.config["audio_pad_token_id"],
+        }
+        expected.update(
+            {
+                f"<|semantic:{index}|>": self.config["semantic_start_token_id"] + index
+                for index in range(size)
+            }
+        )
         for literal, token_id in expected.items():
             if self.tokenizer.token_to_id(literal) != token_id:
                 raise ValueError(f"tokenizer/config mismatch: {literal}")
-        for literal in ("<|im_start|>", "<|voice|>") + tuple(f"<|speaker:{i}|>" for i in range(16)):
+        for literal in ("<|im_start|>", "<|voice|>") + tuple(
+            f"<|speaker:{i}|>" for i in range(16)
+        ):
             if self.tokenizer.token_to_id(literal) is None:
                 raise ValueError(f"missing tokenizer special token: {literal}")
 
@@ -102,22 +138,45 @@ class Drama3PromptBuilder:
         for marker in re.finditer(re.escape("<|speaker"), text):
             if _SPEAKER.match(text, marker.start()) is None:
                 raise ValueError("speaker tags must use canonical IDs 0..15")
-        spoken = text if _SPEAKER.match(text.lstrip(_WHITE_SPACE)) else "<|speaker:0|> " + text
-        segments = ("<|im_start|>system\n", "convert the provided text to speech",
-                    "<|im_end|>\n", "<|im_start|>user\n", spoken,
-                    "<|im_end|>\n", "<|im_start|>assistant\n<|voice|>")
+        spoken = (
+            text
+            if _SPEAKER.match(text.lstrip(_WHITE_SPACE))
+            else "<|speaker:0|> " + text
+        )
+        segments = (
+            "<|im_start|>system\n",
+            "convert the provided text to speech",
+            "<|im_end|>\n",
+            "<|im_start|>user\n",
+            spoken,
+            "<|im_end|>\n",
+            "<|im_start|>assistant\n<|voice|>",
+        )
         turns = []
         for previous_text, codes in history:
             previous = self.prepare(previous_text)
             codes = np.asarray(codes)
             audio = self.config["audio_decoder_config"]
-            if (codes.ndim != 2 or codes.shape[1] != audio["num_codebooks"]
-                    or not codes.size or not np.issubdtype(codes.dtype, np.integer)
-                    or np.any(codes < 0) or np.any(codes >= audio["vocab_size"])):
-                raise ValueError("history codes must be nonempty integer [frames,10] within vocabulary")
+            if (
+                codes.ndim != 2
+                or codes.shape[1] != audio["num_codebooks"]
+                or not codes.size
+                or not np.issubdtype(codes.dtype, np.integer)
+                or np.any(codes < 0)
+                or np.any(codes >= audio["vocab_size"])
+            ):
+                raise ValueError(
+                    "history codes must be nonempty integer [frames,10] within vocabulary"
+                )
             if len(codes) > self.max_prompt_rows:
                 raise ValueError("history exceeds prompt row limit")
-            turns.extend((*previous.segments[3:], codes.astype(np.int64, copy=False), "<|im_end|>\n"))
+            turns.extend(
+                (
+                    *previous.segments[3:],
+                    codes.astype(np.int64, copy=False),
+                    "<|im_end|>\n",
+                )
+            )
         segments = segments[:3] + tuple(turns) + segments[3:]
         blocks, count = [], 0
         for segment in segments:
@@ -126,16 +185,29 @@ class Drama3PromptBuilder:
                 block = np.zeros((len(ids), 11), dtype=np.int64)
                 block[:, 0] = ids
             else:
-                block = np.column_stack((segment[:, 0] + self.config["semantic_start_token_id"], segment))
+                block = np.column_stack(
+                    (segment[:, 0] + self.config["semantic_start_token_id"], segment)
+                )
             count += len(block)
             if count > self.max_prompt_rows:
                 raise ValueError(f"prompt exceeds {self.max_prompt_rows} rows")
             blocks.append(block)
         rows = np.ascontiguousarray(np.concatenate(blocks), dtype=np.int64)
-        semantic = ((rows[:, 0] >= self.config["semantic_start_token_id"])
-                    & (rows[:, 0] <= self.config["semantic_end_token_id"]))
-        return Drama3Prompt(rows=rows, semantic_mask=semantic,
-                            normalized_text=text, segments=segments,
-                            **{field: self.config[field] for field in
-                               ("semantic_start_token_id", "semantic_end_token_id",
-                                "eos_token_id", "audio_pad_token_id")})
+        semantic = (rows[:, 0] >= self.config["semantic_start_token_id"]) & (
+            rows[:, 0] <= self.config["semantic_end_token_id"]
+        )
+        return Drama3Prompt(
+            rows=rows,
+            semantic_mask=semantic,
+            normalized_text=text,
+            segments=segments,
+            **{
+                field: self.config[field]
+                for field in (
+                    "semantic_start_token_id",
+                    "semantic_end_token_id",
+                    "eos_token_id",
+                    "audio_pad_token_id",
+                )
+            },
+        )

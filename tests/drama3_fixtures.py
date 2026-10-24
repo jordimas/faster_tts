@@ -1,4 +1,5 @@
 """Synthetic tokenizer and source config shared by prompt and API tests."""
+
 from tokenizers import AddedToken, Tokenizer, models, pre_tokenizers
 
 

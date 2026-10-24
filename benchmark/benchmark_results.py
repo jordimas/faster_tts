@@ -2,91 +2,105 @@
 
 import copy
 import ctypes
-from datetime import datetime, timezone
 import json
 import os
-from pathlib import Path
 import platform
-from statistics import mean, stdev
 import subprocess
 import sys
 import tempfile
+from datetime import datetime, timezone
+from pathlib import Path
+from statistics import mean, stdev
 
 
 def host_hardware():
     processor = platform.processor() or None
     try:
-        for line in Path('/proc/cpuinfo').read_text().splitlines():
-            if line.startswith(('model name', 'Hardware')):
-                processor = line.split(':', 1)[1].strip()
+        for line in Path("/proc/cpuinfo").read_text().splitlines():
+            if line.startswith(("model name", "Hardware")):
+                processor = line.split(":", 1)[1].strip()
                 break
     except OSError:
         pass
     try:
-        memory_bytes = os.sysconf('SC_PHYS_PAGES') * os.sysconf('SC_PAGE_SIZE')
+        memory_bytes = os.sysconf("SC_PHYS_PAGES") * os.sysconf("SC_PAGE_SIZE")
     except (ValueError, OSError, AttributeError):
         memory_bytes = None
     return {
-        'platform': platform.platform(),
-        'machine': platform.machine(),
-        'processor': processor,
-        'logical_cpu_count': os.cpu_count(),
-        'system_ram_bytes': memory_bytes,
-        'system_ram_gib': memory_bytes / 2**30 if memory_bytes is not None else None,
-        'python_version': platform.python_version(),
+        "platform": platform.platform(),
+        "machine": platform.machine(),
+        "processor": processor,
+        "logical_cpu_count": os.cpu_count(),
+        "system_ram_bytes": memory_bytes,
+        "system_ram_gib": memory_bytes / 2**30 if memory_bytes is not None else None,
+        "python_version": platform.python_version(),
     }
 
 
 def ct2_gpu_hardware(index):
     """Query the runtime already used by CT2, preserving visible-device indices."""
     try:
-        maps = Path('/proc/self/maps').read_text()
-        hip_paths = [line.split()[-1] for line in maps.splitlines() if 'libamdhip64.so' in line]
+        maps = Path("/proc/self/maps").read_text()
+        hip_paths = [
+            line.split()[-1] for line in maps.splitlines() if "libamdhip64.so" in line
+        ]
         if hip_paths:
-            runtime = 'rocm'
+            runtime = "rocm"
             library = ctypes.CDLL(hip_paths[0])
             name_function = library.hipDeviceGetName
             memory_function = library.hipDeviceTotalMem
             device = index
         else:
-            runtime = 'cuda'
-            library = ctypes.CDLL('libcuda.so.1')
+            runtime = "cuda"
+            library = ctypes.CDLL("libcuda.so.1")
             if library.cuInit(0) != 0:
-                raise RuntimeError('CUDA driver initialization failed')
+                raise RuntimeError("CUDA driver initialization failed")
             handle = ctypes.c_int()
             if library.cuDeviceGet(ctypes.byref(handle), index) != 0:
-                raise RuntimeError('CUDA device lookup failed')
+                raise RuntimeError("CUDA device lookup failed")
             device = handle.value
             name_function = library.cuDeviceGetName
             memory_function = library.cuDeviceTotalMem_v2
         name = ctypes.create_string_buffer(256)
         memory = ctypes.c_size_t()
         if name_function(name, len(name), device) != 0:
-            raise RuntimeError('GPU name query failed')
+            raise RuntimeError("GPU name query failed")
         if memory_function(ctypes.byref(memory), device) != 0:
-            raise RuntimeError('GPU memory query failed')
-        return {'name': name.value.decode(), 'runtime': runtime,
-                'total_memory_bytes': memory.value, 'total_memory_gib': memory.value / 2**30}
+            raise RuntimeError("GPU memory query failed")
+        return {
+            "name": name.value.decode(),
+            "runtime": runtime,
+            "total_memory_bytes": memory.value,
+            "total_memory_gib": memory.value / 2**30,
+        }
     except (OSError, AttributeError, RuntimeError) as error:
-        return {'name': None, 'runtime': None, 'total_memory_bytes': None,
-                'total_memory_gib': None, 'query_error': str(error)}
+        return {
+            "name": None,
+            "runtime": None,
+            "total_memory_bytes": None,
+            "total_memory_gib": None,
+            "query_error": str(error),
+        }
 
 
 def run_logged(args, backend):
     """Run the sweep once under a console/log tee; children inherit the marker."""
     if args.log_worker:
         return
-    with open(f'{backend}.log', 'wb') as log:
-        with subprocess.Popen(
-            [sys.executable, '-u', *sys.argv, '--log-worker'],
-            stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
-        ) as worker:
-            for chunk in iter(worker.stdout.read1, b''):
-                log.write(chunk)
-                log.flush()
-                sys.stdout.buffer.write(chunk)
-                sys.stdout.buffer.flush()
-            status = worker.wait()
+    with (
+        open(f"{backend}.log", "wb") as log,
+        subprocess.Popen(
+            [sys.executable, "-u", *sys.argv, "--log-worker"],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+        ) as worker,
+    ):
+        for chunk in iter(worker.stdout.read1, b""):
+            log.write(chunk)
+            log.flush()
+            sys.stdout.buffer.write(chunk)
+            sys.stdout.buffer.flush()
+        status = worker.wait()
     raise SystemExit(status)
 
 
@@ -96,40 +110,52 @@ class Results:
         self.path = args.output_json
         self.gpu_hardware = None
         self.document = {
-            'schema_version': 1,
-            'backend': backend,
-            'backend_version': version,
-            'created_at': datetime.now(timezone.utc).isoformat(),
-            'host': host_hardware(),
-            'memory_metric': 'peak_process_rss_including_load_and_warmup_excluding_gpu',
-            'results': [],
+            "schema_version": 1,
+            "backend": backend,
+            "backend_version": version,
+            "created_at": datetime.now(timezone.utc).isoformat(),
+            "host": host_hardware(),
+            "memory_metric": "peak_process_rss_including_load_and_warmup_excluding_gpu",
+            "results": [],
         }
         self.save()
 
     def configuration(self, options=()):
         args = copy.copy(self.args)
-        for flag in ('device', 'device-index', 'compute-type', 'memory-profile'):
-            option = '--' + flag
+        for flag in ("device", "device-index", "compute-type", "memory-profile"):
+            option = "--" + flag
             if option in options:
-                setattr(args, flag.replace('-', '_'), options[options.index(option) + 1])
+                setattr(
+                    args, flag.replace("-", "_"), options[options.index(option) + 1]
+                )
         return {
-            'model': str(args.model),
-            'source': str(args.source) if hasattr(args, 'source') else None,
-            'device': args.device,
-            'device_index': int(args.device_index),
-            'hardware': {
-                'cpu': {key: self.document['host'][key] for key in
-                        ('processor', 'logical_cpu_count', 'system_ram_bytes', 'system_ram_gib')},
-                'gpu': self.gpu_hardware if args.device == 'cuda' else None,
+            "model": str(args.model),
+            "source": str(args.source) if hasattr(args, "source") else None,
+            "device": args.device,
+            "device_index": int(args.device_index),
+            "hardware": {
+                "cpu": {
+                    key: self.document["host"][key]
+                    for key in (
+                        "processor",
+                        "logical_cpu_count",
+                        "system_ram_bytes",
+                        "system_ram_gib",
+                    )
+                },
+                "gpu": self.gpu_hardware if args.device == "cuda" else None,
             },
-            'compute_type': args.compute_type,
-            'memory_profile': getattr(args, 'memory_profile', None) or 'default',
-            'gpu_expert_cache_gb': (args.gpu_expert_cache_gb
-                                    if getattr(args, 'memory_profile', None) == 'limited' else None),
-            'threads': args.threads,
-            'text': args.text,
-            'requested_runs': args.runs,
-            'warmup_runs': 1,
+            "compute_type": args.compute_type,
+            "memory_profile": getattr(args, "memory_profile", None) or "default",
+            "gpu_expert_cache_gb": (
+                args.gpu_expert_cache_gb
+                if getattr(args, "memory_profile", None) == "limited"
+                else None
+            ),
+            "threads": args.threads,
+            "text": args.text,
+            "requested_runs": args.runs,
+            "warmup_runs": 1,
         }
 
     def save(self):
@@ -138,11 +164,13 @@ class Results:
         path = Path(self.path)
         path.parent.mkdir(parents=True, exist_ok=True)
         # Replace atomically so interrupted sweeps leave a readable report.
-        with tempfile.NamedTemporaryFile(mode='w', dir=path.parent, delete=False) as stream:
+        with tempfile.NamedTemporaryFile(
+            mode="w", dir=path.parent, delete=False
+        ) as stream:
             temporary = Path(stream.name)
             try:
                 json.dump(self.document, stream, indent=2, allow_nan=False)
-                stream.write('\n')
+                stream.write("\n")
             except BaseException:
                 temporary.unlink(missing_ok=True)
                 raise
@@ -153,53 +181,67 @@ class Results:
 
     def start(self):
         # A crash/OOM still leaves an entry when this is an explicit single run.
-        self.document['results'] = [{
-            **self.configuration(), 'status': 'failed',
-            'error': 'Configuration did not complete; see console output.',
-        }]
+        self.document["results"] = [
+            {
+                **self.configuration(),
+                "status": "failed",
+                "error": "Configuration did not complete; see console output.",
+            }
+        ]
         self.save()
 
     def skipped(self, reason):
-        self.document['results'] = [{**self.configuration(), 'status': 'skipped', 'reason': reason}]
+        self.document["results"] = [
+            {**self.configuration(), "status": "skipped", "reason": reason}
+        ]
         self.save()
 
     def success(self, runs, peak_rss_gib):
-        times = [run['time_seconds'] for run in runs]
-        durations = [run['audio_seconds'] for run in runs]
-        self.document['results'] = [{
-            **self.configuration(),
-            'status': 'success',
-            'runs': runs,
-            'summary': {
-                'mean_time_seconds': mean(times),
-                'std_time_seconds': stdev(times) if len(times) > 1 else 0,
-                'mean_audio_seconds': mean(durations),
-                'rtf': sum(times) / sum(durations),
-                'peak_rss_gib': peak_rss_gib,
-            },
-        }]
+        times = [run["time_seconds"] for run in runs]
+        durations = [run["audio_seconds"] for run in runs]
+        self.document["results"] = [
+            {
+                **self.configuration(),
+                "status": "success",
+                "runs": runs,
+                "summary": {
+                    "mean_time_seconds": mean(times),
+                    "std_time_seconds": stdev(times) if len(times) > 1 else 0,
+                    "mean_audio_seconds": mean(durations),
+                    "rtf": sum(times) / sum(durations),
+                    "peak_rss_gib": peak_rss_gib,
+                },
+            }
+        ]
         self.save()
 
     def run(self, options):
-        command = [sys.executable, '-u', *sys.argv, *options]
+        command = [sys.executable, "-u", *sys.argv, *options]
         if self.path is None:
-            return subprocess.run(command).returncode
+            return subprocess.run(command, check=False).returncode
         # Each child owns a separate file; nested device/precision sweeps merge
         # results without clobbering earlier configurations or prior failures.
         with tempfile.TemporaryDirectory() as directory:
-            child_path = Path(directory) / 'results.json'
-            status = subprocess.run([*command, '--output-json', str(child_path)]).returncode
+            child_path = Path(directory) / "results.json"
+            status = subprocess.run(
+                [*command, "--output-json", str(child_path)], check=False
+            ).returncode
             if child_path.exists():
-                entries = json.loads(child_path.read_text())['results']
+                entries = json.loads(child_path.read_text())["results"]
             else:
                 entries = []
             if not entries:
-                entries = [{**self.configuration(options), 'status': 'failed',
-                            'error': 'Worker produced no results; see console output.'}]
+                entries = [
+                    {
+                        **self.configuration(options),
+                        "status": "failed",
+                        "error": "Worker produced no results; see console output.",
+                    }
+                ]
             if status:
                 for entry in entries:
-                    if entry['status'] == 'failed':
-                        entry.setdefault('exit_code', status)
-            self.document['results'].extend(entries)
+                    if entry["status"] == "failed":
+                        entry.setdefault("exit_code", status)
+            self.document["results"].extend(entries)
             self.save()
             return status

@@ -14,35 +14,59 @@ from statistics import mean, stdev
 from time import perf_counter
 
 import ctranslate2
+from benchmark_results import Results, ct2_gpu_hardware, run_logged
 from huggingface_hub.utils import disable_progress_bars, enable_progress_bars
+
 from faster_tts import Model
-from benchmark_results import Results, run_logged, ct2_gpu_hardware
 
 parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument("model", nargs="?", default="drama-3")
 parser.add_argument("--text", default="Hello! Welcome to our application.")
 parser.add_argument("--runs", type=int, default=1)
 parser.add_argument("--threads", type=int, default=8)
-parser.add_argument("--device", choices=("cpu", "cuda", "auto"),
-                    help="default: benchmark CPU and every available GPU")
-parser.add_argument("--device-index", type=int, default=0, help="GPU index for an explicit --device")
+parser.add_argument(
+    "--device",
+    choices=("cpu", "cuda", "auto"),
+    help="default: benchmark CPU and every available GPU",
+)
+parser.add_argument(
+    "--device-index", type=int, default=0, help="GPU index for an explicit --device"
+)
 parser.add_argument("--compute-type", help="default: benchmark all supported types")
 parser.add_argument("--compute-worker", action="store_true", help=argparse.SUPPRESS)
-parser.add_argument("--show-progress", action="store_true", help="show model download progress bars")
-parser.add_argument("--check-quality", action="store_true",
-                    help="transcribe every timed output with faster-whisper medium and report WER")
+parser.add_argument(
+    "--show-progress", action="store_true", help="show model download progress bars"
+)
+parser.add_argument(
+    "--check-quality",
+    action="store_true",
+    help="transcribe every timed output with faster-whisper medium and report WER",
+)
 parser.add_argument("--check", choices=("quality",), help="alias for --check-quality")
-parser.add_argument("--memory-profile", choices=("default", "limited"),
-                    help="default: CPU defaults; GPU runs both limited and uncapped configurations")
-parser.add_argument("--gpu-expert-cache-gb", type=float, default=12,
-                    help="limited profile: GPU expert cache in decimal GB (default: 12)")
-parser.add_argument("--output-json", type=Path, default=Path("ct2.json"),
-                    help="JSON output (default: ./ct2.json; overwritten on each invocation)")
+parser.add_argument(
+    "--memory-profile",
+    choices=("default", "limited"),
+    help="default: CPU defaults; GPU runs both limited and uncapped configurations",
+)
+parser.add_argument(
+    "--gpu-expert-cache-gb",
+    type=float,
+    default=12,
+    help="limited profile: GPU expert cache in decimal GB (default: 12)",
+)
+parser.add_argument(
+    "--output-json",
+    type=Path,
+    default=Path("ct2.json"),
+    help="JSON output (default: ./ct2.json; overwritten on each invocation)",
+)
 parser.add_argument("--log-worker", action="store_true", help=argparse.SUPPRESS)
 args = parser.parse_args()
 args.check_quality = args.check_quality or args.check == "quality"
 if args.check_quality and importlib.util.find_spec("faster_whisper") is None:
-    parser.error("quality checking requires faster-whisper; run with uv run --with faster-whisper")
+    parser.error(
+        "quality checking requires faster-whisper; run with uv run --with faster-whisper"
+    )
 if args.check_quality:
     from check_quality import normalized_words
 
@@ -66,7 +90,9 @@ else:
 results = Results(args, "ct2", ctranslate2.__version__)
 
 if args.device is None:
-    devices = [("cpu", 0)] + [("cuda", i) for i in range(ctranslate2.get_cuda_device_count())]
+    devices = [("cpu", 0)] + [
+        ("cuda", i) for i in range(ctranslate2.get_cuda_device_count())
+    ]
     failed = []
     for device, device_index in devices:
         label = "cpu" if device == "cpu" else f"cuda:{device_index}"
@@ -84,7 +110,10 @@ if args.memory_profile is None:
     for profile in profiles:
         status = results.run(["--memory-profile", profile])
         if status:
-            print(f"{args.device}:{args.device_index} / {profile} failed (exit {status})", flush=True)
+            print(
+                f"{args.device}:{args.device_index} / {profile} failed (exit {status})",
+                flush=True,
+            )
             failed.append(profile)
     raise SystemExit(1 if failed else 0)
 
@@ -92,13 +121,19 @@ if args.memory_profile is None:
 os.environ.pop("CT2_DRAMA3_GPU_EXPERT_CACHE_GB", None)
 if args.memory_profile == "limited":
     if args.device == "cpu":
-        print("SKIP limited CPU profile: CPU uses allocated weights and allocation controls, "
-              "without a total RAM cap.", flush=True)
+        print(
+            "SKIP limited CPU profile: CPU uses allocated weights and allocation controls, "
+            "without a total RAM cap.",
+            flush=True,
+        )
         results.skipped("CPU has no limited memory profile")
         raise SystemExit(0)
     os.environ["CT2_DRAMA3_GPU_EXPERT_CACHE_GB"] = f"{args.gpu_expert_cache_gb:g}"
-memory_label = ("uncapped" if args.memory_profile == "default"
-                else f"GPU expert cache={args.gpu_expert_cache_gb:g} GB")
+memory_label = (
+    "uncapped"
+    if args.memory_profile == "default"
+    else f"GPU expert cache={args.gpu_expert_cache_gb:g} GB"
+)
 
 if args.device == "cuda":
     # HIP asynchronous memory-pool teardown can segfault after synthesis.
@@ -108,12 +143,21 @@ if args.device == "cuda":
     # default rounds allocations to powers of four, inflating their footprint.
     # Use finer bins before the first allocation; keep explicit user settings.
     os.environ.setdefault("CT2_CUDA_CACHING_ALLOCATOR_CONFIG", "2,6,24,209715200")
-compute_types = [args.compute_type] if args.compute_type else sorted(
-    ctranslate2.get_supported_compute_types(args.device, args.device_index))
+compute_types = (
+    [args.compute_type]
+    if args.compute_type
+    else sorted(ctranslate2.get_supported_compute_types(args.device, args.device_index))
+)
 if not args.compute_worker:
-    print(f"\nDevice: {args.device}:{args.device_index}"
-          + (f"; Memory profile: {args.memory_profile}; {memory_label}"
-             if args.device != "cpu" else ""), flush=True)
+    print(
+        f"\nDevice: {args.device}:{args.device_index}"
+        + (
+            f"; Memory profile: {args.memory_profile}; {memory_label}"
+            if args.device != "cpu"
+            else ""
+        ),
+        flush=True,
+    )
 if args.compute_type is None:
     failed = []
     for compute_type in compute_types:
@@ -129,8 +173,13 @@ for compute_type in compute_types:
     results.start()
     run_results = []
     quality_audio = tempfile.TemporaryDirectory() if args.check_quality else None
-    model = Model(args.model, cpu_threads=args.threads,
-                  device=args.device, device_index=args.device_index, compute_type=compute_type)
+    model = Model(
+        args.model,
+        cpu_threads=args.threads,
+        device=args.device,
+        device_index=args.device_index,
+        compute_type=compute_type,
+    )
     print(f"\nCompute type: {compute_type}", flush=True)
     model.synthesize(args.text)  # Warm up; exclude loading and first-run costs.
     total_time = total_audio = 0.0
@@ -141,12 +190,20 @@ for compute_type in compute_types:
         elapsed = perf_counter() - start
         duration = result.audio.size / result.sample_rate
         if args.runs > 1:
-            print(f"Run {i + 1}: {elapsed:.3f}s, audio={duration:.3f}s, "
-                  f"RTF={elapsed / duration:.3f}, finish_reason={result.finish_reason}")
+            print(
+                f"Run {i + 1}: {elapsed:.3f}s, audio={duration:.3f}s, "
+                f"RTF={elapsed / duration:.3f}, finish_reason={result.finish_reason}"
+            )
         if result.finish_reason != "eos":
             raise SystemExit("Frame limit reached; shorten --text.")
-        run_results.append({"time_seconds": elapsed, "audio_seconds": duration,
-                            "rtf": elapsed / duration, "finish_reason": result.finish_reason})
+        run_results.append(
+            {
+                "time_seconds": elapsed,
+                "audio_seconds": duration,
+                "rtf": elapsed / duration,
+                "finish_reason": result.finish_reason,
+            }
+        )
         total_time += elapsed
         times.append(elapsed)
         total_audio += duration
@@ -163,19 +220,34 @@ for compute_type in compute_types:
         del result
     peak_rss = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
     peak_gib = peak_rss / (1024**3 if sys.platform == "darwin" else 1024**2)
-    print(f"Mean: {mean(times):.3f}s; std: {stdev(times) if len(times) > 1 else 0:.3f}s; "
-          f"RTF: {total_time / total_audio:.3f}; peak RSS: {peak_gib:.3f} GiB", flush=True)
+    print(
+        f"Mean: {mean(times):.3f}s; std: {stdev(times) if len(times) > 1 else 0:.3f}s; "
+        f"RTF: {total_time / total_audio:.3f}; peak RSS: {peak_gib:.3f} GiB",
+        flush=True,
+    )
     results.success(run_results, peak_gib)
     del model
     if quality_audio is not None:
         # Capture and flush synthesis peak RSS before starting ASR. The checker
         # uses a separate process, excluded from RUSAGE_SELF above.
         try:
-            subprocess.run([sys.executable, str(Path(__file__).with_name("check_quality.py")),
-                            "--text", args.text, "--threads", str(args.threads),
-                            "--label", f"{args.device}:{args.device_index} {compute_type} {args.memory_profile}",
-                            *(["--show-progress"] if args.show_progress else []),
-                            *[str(Path(quality_audio.name) / f"run-{i + 1}.wav")
-                              for i in range(args.runs)]], check=True)
+            subprocess.run(
+                [
+                    sys.executable,
+                    str(Path(__file__).with_name("check_quality.py")),
+                    "--text",
+                    args.text,
+                    "--threads",
+                    str(args.threads),
+                    "--label",
+                    f"{args.device}:{args.device_index} {compute_type} {args.memory_profile}",
+                    *(["--show-progress"] if args.show_progress else []),
+                    *[
+                        str(Path(quality_audio.name) / f"run-{i + 1}.wav")
+                        for i in range(args.runs)
+                    ],
+                ],
+                check=True,
+            )
         finally:
             quality_audio.cleanup()

@@ -20,8 +20,13 @@ def word_errors(reference, hypothesis):
     for i, word in enumerate(reference, 1):
         current = [i]
         for j, predicted in enumerate(hypothesis, 1):
-            current.append(min(current[-1] + 1, previous[j] + 1,
-                               previous[j - 1] + (word != predicted)))
+            current.append(
+                min(
+                    current[-1] + 1,
+                    previous[j] + 1,
+                    previous[j - 1] + (word != predicted),
+                )
+            )
         previous = current
     return previous[-1]
 
@@ -31,24 +36,28 @@ def main():
     parser.add_argument("--text", required=True)
     parser.add_argument("--threads", type=int, default=8)
     parser.add_argument("--show-progress", action="store_true")
-    parser.add_argument("--label", help="benchmark device, compute type, and memory profile")
+    parser.add_argument(
+        "--label", help="benchmark device, compute type, and memory profile"
+    )
     parser.add_argument("audio", nargs="+")
     args = parser.parse_args()
     reference = normalized_words(args.text)
     if not reference:
         parser.error("WER requires at least one reference word")
 
-    from huggingface_hub.utils import disable_progress_bars
     from faster_whisper import WhisperModel
+    from huggingface_hub.utils import disable_progress_bars
 
     if not args.show_progress:
         disable_progress_bars()
-    model = WhisperModel("medium", device="cpu", compute_type="int8",
-                         cpu_threads=args.threads)
+    model = WhisperModel(
+        "medium", device="cpu", compute_type="int8", cpu_threads=args.threads
+    )
     errors = 0
     for path in args.audio:
-        segments, _ = model.transcribe(path, beam_size=5, temperature=0,
-                                       condition_on_previous_text=False)
+        segments, _ = model.transcribe(
+            path, beam_size=5, temperature=0, condition_on_previous_text=False
+        )
         transcript = " ".join(segment.text.strip() for segment in segments).strip()
         count = word_errors(reference, normalized_words(transcript))
         errors += count

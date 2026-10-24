@@ -27,3 +27,7 @@ include = ["faster_tts*"]
 [tool.uv]
 environments = ["python_version == '3.14'"]
 
+
+[tool.ruff.lint.per-file-ignores]
+# Keep assertion contexts nested so failures during setup are not swallowed.
+"tests/*.py" = ["SIM117"]
