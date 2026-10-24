@@ -1,0 +1,6 @@
+Started /usr/bin/env -u MALLOC_MMAP_THRESHOLD_ -u MALLOC_TRIM_THRESHOLD_ -u GLIBC_TUNABLES /home/jupyter/faster_tts/.venv/bin/python -u /home/jupyter/faster_tts/benchmark/benchmark.py drama-3 --device cpu --compute-type int8 --memory-profile default --runs 1 --threads 8 --log-worker --output-json /home/jupyter/faster_tts/benchmark/runs-2026-10-24-inplace/ct2-cpu-int8.json.
+Device: cpu:0
+Compute type: int8
+Mean: 75.171s; std: 0.000s; RTF: 26.978; peak RSS: 44.713 GiB
+faster-tts-ct2-int8-inplace-20261024.service: Succeeded.
+faster-tts-ct2-int8-inplace-20261024.service: Consumed 53min 46.013s CPU time.
