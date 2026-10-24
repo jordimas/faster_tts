@@ -145,8 +145,6 @@ See [benchmark instructions](benchmark/README.md) to run your own measurements.
 <!-- current-benchmarks -->
 ### Benchmark results (2026-10-24)
 
-HF baseline runs before CT2. Intel Xeon @ 2.20 GHz (8 logical CPUs), 51 GiB RAM; NVIDIA Tesla T4 (15 GiB). Eight threads, one warmup, three timed runs, text: `Hello! Welcome to our application.` Each configuration runs separately with a 44 GiB systemd RAM limit and no swap; GPU expert caches are uncapped. Peak RSS includes loading and warmup and excludes GPU memory. Failed configurations have no timing.
-
 #### CPU — Intel Xeon @ 2.20 GHz
 
 | Implementation | Precision | Mean time (s) | Peak RAM (GiB RSS) | Status |
