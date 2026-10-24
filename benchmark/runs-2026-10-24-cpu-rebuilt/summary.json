@@ -133,5 +133,11 @@
       "peak_rss_gib": 48.61920166015625
     },
     "backend": "CT2"
+  },
+  {
+    "backend": "HF / PyTorch",
+    "device": "cpu",
+    "compute_type": "int8_float32",
+    "status": "unsupported (no matching precision)"
   }
 ]
