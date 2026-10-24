@@ -1,0 +1,53 @@
+[
+  {
+    "model": "/home/jupyter/CTranslate2.jordi/drama-3-official",
+    "source": "/home/jupyter/faster_tts/benchmark/fish-speech",
+    "device": "cpu",
+    "device_index": 0,
+    "hardware": {
+      "cpu": {
+        "processor": "Intel(R) Xeon(R) CPU @ 2.20GHz",
+        "logical_cpu_count": 32,
+        "system_ram_bytes": 219538305024,
+        "system_ram_gib": 204.46097946166992
+      },
+      "gpu": null
+    },
+    "compute_type": "bfloat16",
+    "memory_profile": "default",
+    "gpu_expert_cache_gb": null,
+    "threads": 8,
+    "text": "Hello! Welcome to our application.",
+    "requested_runs": 3,
+    "warmup_runs": 1,
+    "status": "success",
+    "runs": [
+      {
+        "time_seconds": 388.97245679599973,
+        "audio_seconds": 3.1579138321995464,
+        "rtf": 123.17386650321396,
+        "finish_reason": "eos"
+      },
+      {
+        "time_seconds": 396.69272488299976,
+        "audio_seconds": 3.1579138321995464,
+        "rtf": 125.61860328110846,
+        "finish_reason": "eos"
+      },
+      {
+        "time_seconds": 397.44802044300013,
+        "audio_seconds": 3.1579138321995464,
+        "rtf": 125.85777876218052,
+        "finish_reason": "eos"
+      }
+    ],
+    "summary": {
+      "mean_time_seconds": 394.3710673739999,
+      "std_time_seconds": 4.690561264434176,
+      "mean_audio_seconds": 3.1579138321995464,
+      "rtf": 124.88341618216766,
+      "peak_rss_gib": 44.334346771240234
+    },
+    "backend": "HF / PyTorch"
+  }
+]

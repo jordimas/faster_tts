@@ -1,0 +1,29 @@
+Running as unit: faster-tts-hf-cpu-bfloat16-cpuunlimited20261024.service
+
+Backend: HF (PyTorch)
+Device: cpu:0
+
+Compute type: bfloat16
+Expert storage: FP8
+2026-10-24 06:46:44.360 | INFO     | fish_speech.models.text2semantic.fish_omni.backbone:materialize:151 - FishOmni backbone placement: cpu: layers 0-39; embed on cpu, lm_head on cpu
+2026-10-24 06:48:02.450 | INFO     | fish_speech.models.text2semantic.fish_omni.backbone:load_backbone_weights:397 - FishOmni backbone: loaded 62053 parameter slots
+2026-10-24 06:48:07.017 | INFO     | fish_speech.models.text2semantic.fish_omni.tower:load_audio_decoder_weights:421 - FishOmni tower: loaded 192 tensors on cpu
+/tmp/faster-tts-hf-baseline/lib/python3.10/site-packages/torch/nn/utils/weight_norm.py:143: FutureWarning: `torch.nn.utils.weight_norm` is deprecated in favor of `torch.nn.utils.parametrizations.weight_norm`.
+  WeightNorm.apply(module, name, dim)
+2026-10-24 06:48:16.520 | INFO     | fish_speech.models.text2semantic.inference:load_codec_model:533 - Loaded codec /home/jupyter/CTranslate2.jordi/drama-3-official/codec.pth on cpu (torch.float32)
+2026-10-24 06:48:44.072 | INFO     | fish_speech.models.text2semantic.fish_omni.generate:generate_drama3:248 - Drama 3 prefill: 23 rows in 27.50s
+2026-10-24 06:51:09.097 | INFO     | fish_speech.models.text2semantic.fish_omni.generate:generate_drama3:248 - Drama 3 prefill: 61 rows in 40.85s
+2026-10-24 06:55:25.158 | INFO     | fish_speech.models.text2semantic.fish_omni.generate:generate_drama3:248 - Drama 3 prefill: 23 rows in 27.85s
+2026-10-24 06:57:45.033 | INFO     | fish_speech.models.text2semantic.fish_omni.generate:generate_drama3:248 - Drama 3 prefill: 61 rows in 40.89s
+Run 1: 388.972s, audio=3.158s, RTF=123.174, finish_reason=eos
+2026-10-24 07:01:54.038 | INFO     | fish_speech.models.text2semantic.fish_omni.generate:generate_drama3:248 - Drama 3 prefill: 23 rows in 27.75s
+2026-10-24 07:04:15.704 | INFO     | fish_speech.models.text2semantic.fish_omni.generate:generate_drama3:248 - Drama 3 prefill: 61 rows in 40.60s
+Run 2: 396.693s, audio=3.158s, RTF=125.619, finish_reason=eos
+2026-10-24 07:08:30.852 | INFO     | fish_speech.models.text2semantic.fish_omni.generate:generate_drama3:248 - Drama 3 prefill: 23 rows in 27.87s
+2026-10-24 07:10:53.358 | INFO     | fish_speech.models.text2semantic.fish_omni.generate:generate_drama3:248 - Drama 3 prefill: 61 rows in 40.70s
+Run 3: 397.448s, audio=3.158s, RTF=125.858, finish_reason=eos
+Mean: 394.371s; std: 4.691s; RTF: 124.883; peak RSS: 44.334 GiB
+Finished with result: success
+Main processes terminated with: code=exited/status=0
+Service runtime: 28min 7.805s
+CPU time consumed: 3h 28min 39.286s
