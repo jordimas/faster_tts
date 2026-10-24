@@ -162,6 +162,7 @@ Drama 3 only. See [benchmark instructions](benchmark/README.md) to run your own 
 | --- | --- | ---: | ---: | --- |
 | HF / PyTorch | bfloat16 | 387.633 | 44.329 | success |
 | CT2 | bfloat16 | — | — | unsupported (no matching precision) |
+| HF / PyTorch | float16 | 516.623 | 44.328 | success |
 
 Pair conclusions:
 
