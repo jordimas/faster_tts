@@ -71,5 +71,16 @@ class BaseModel:
         The returned dict is a deep copy of the engine's internal view, safe to
         mutate without affecting the model. Engine-specific fields may be
         present in addition to the shared keys.
+
+        Returns:
+            dict: For Drama 3, includes `backend` and `device` (resolved device),
+                `codec_device`, `mode`, `gpu_supported`, `device_index`,
+                `compute_type`, `cpu_threads` (also `intra_threads`), `num_workers`,
+                `prefill_chunk_size`, and resolved `model_path`. Expert-cache
+                budgets appear as `gpu_expert_cache_gb` (total) and
+                `gpu_expert_cache_gb_per_worker`; these are None when delegated
+                to the environment. Checkpoint metadata includes `source_revision`,
+                `quantization_policy`, `matrix_dtype`, and `activation_dtype`,
+                which may be None. Compute type is the requested loader setting.
         """
         return deepcopy(self._info)

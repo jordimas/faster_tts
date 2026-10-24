@@ -25,6 +25,24 @@ from .prompt import Drama3PromptBuilder
 
 @dataclass(frozen=True)
 class SynthesisResult:
+    """Generated speech and diagnostics returned by `Model.synthesize`.
+
+    Attributes:
+        audio: Contiguous mono float32 NumPy array of shape `(samples,)`.
+            Values are finite; no clipping or amplitude normalization is applied here.
+        sample_rate: Audio sample rate in Hz (44100 for Drama 3).
+        codes: Contiguous int32 codec indices of shape `(frames, 10)`.
+            Each frame corresponds to 2048 audio samples.
+        finish_reason: `"eos"` for a stop token, or `"length"` when generation
+            exhausts its frame budget. EOS does not guarantee complete speech.
+        timings: Native phase names mapped to elapsed seconds, summed across
+            chunks and attempts, including discarded retries. Keys depend on CT2.
+        attempts: Tuple of dictionaries with `seed`, `finish_reason`, `frames`,
+            wall-clock `seconds`, and native `timings` for each attempt. Split
+            input also records zero-based `chunk_index` and chunk `text`.
+            Discarded retry audio and codes are not retained.
+    """
+
     audio: np.ndarray
     sample_rate: int
     codes: np.ndarray
@@ -70,6 +88,42 @@ class Model(BaseModel):
     in decimal GB. "auto" reserves at least 2 GB and 30% of currently free GPU
     memory for other allocations. None preserves CT2's environment configuration.
     This is not a total GPU or system memory limit.
+
+    Args:
+        model_path: Default checkpoint, `"drama-3"` alias, converted Hub ID
+            (optionally prefixed with `hf://`), or local directory. Explicit
+            paths never trigger downloads.
+        intra_threads: Legacy CPU thread count. Defaults to 8.
+        compute_type: CT2 precision, such as `"default"`, `"float16"`, or `"int8"`.
+            Availability depends on the device and CT2 build.
+        prefill_chunk_size: Positive number of prompt rows processed per prefill
+            chunk. Defaults to 16.
+        cpu_threads: Positive CPU thread count; overrides `intra_threads`.
+        num_workers: Positive number of native workers for concurrent calls.
+            Defaults to 1. A single call remains blocking and sequential.
+        device: `"cpu"`, `"cuda"`, or `"auto"` (GPU when available).
+        device_index: Nonnegative GPU index. Defaults to 0.
+        revision: Optional Hub branch, tag, or commit revision.
+        cache_dir: Optional Hugging Face download cache directory.
+        local_files_only: Use cached/local assets without downloading.
+        gpu_expert_cache_gb: Positive total expert-cache budget in decimal GB,
+            `"auto"`, or `None` to preserve `CT2_DRAMA3_GPU_EXPERT_CACHE_GB`.
+            Explicit and automatic budgets are divided across workers and
+            require GPU execution and a supporting CT2 build.
+
+    Raises:
+        ValueError: Invalid settings or incompatible checkpoint metadata.
+        FileNotFoundError: An explicit local checkpoint path does not exist.
+        RuntimeError: Required native bindings or runtime capabilities are missing.
+
+    Example:
+        ```python
+        from faster_tts import Model
+
+        model = Model()
+        result = model.synthesize("Hello!")
+        print(result.audio.shape, result.sample_rate)
+        ```
     """
 
     def __init__(
@@ -190,6 +244,35 @@ class Model(BaseModel):
         incomplete speech ending with EOS. attempts records all attempt metadata;
         discarded attempt audio/codes are not retained. timings sums native phase
         timings across attempts; exhausted retries return the last partial result.
+
+        Args:
+            text: Nonempty text, optionally containing canonical speaker tags
+                `<|speaker:0|>` through `<|speaker:15|>`. Defaults to speaker 0
+                when no leading tag is supplied. Reserved protocol tags are rejected.
+            max_frames: Positive frame budget for the combined returned audio.
+                Defaults to 512 (about 23.8 seconds at 44100 Hz).
+            temperature: Positive finite sampling temperature. Defaults to 0.7.
+            top_k: Positive sampling candidate count. Defaults to 30.
+            top_p: Nucleus sampling threshold in `(0, 1]`. Defaults to 0.7.
+            seed: Sampling seed in `[0, 2**64)`. Defaults to 0; each chunk starts
+                with the same seed. Retry seeds increment with uint64 wrapping.
+            greedy: Use diagnostic greedy decoding instead of sampling.
+            max_retries: 0 (default) or 1; retry length-capped sampled generation.
+                Greedy generation never retries.
+            history: Iterable of completed `(text, codes)` turns. Codes must be
+                nonempty integer arrays of shape `(frames, 10)` within the codec
+                vocabulary. History consumes context but is not returned as audio.
+            split_sentences: Split sentences/long clauses and concatenate audio.
+                Defaults to True. Completed first and latest chunks condition
+                subsequent chunks, together with supplied history.
+
+        Returns:
+            SynthesisResult: Speech, codec indices, finish status, and diagnostics.
+
+        Raises:
+            TypeError: Text is not a string.
+            ValueError: Invalid text, sampling settings, history, or context size.
+            RuntimeError: Native generation fails or returns invalid/empty audio.
         """
         _positive_int(max_frames, "max_frames")
         if (
