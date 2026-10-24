@@ -1,0 +1,9 @@
+Running as unit: faster-tts-ct2-cpu-float32-cpu1run20261024.service
+
+Device: cpu:0
+
+Compute type: float32
+Finished with result: success
+Main processes terminated with: code=killed/status=TERM
+Service runtime: 43min 14.431s
+CPU time consumed: 21h 35min 15.520s

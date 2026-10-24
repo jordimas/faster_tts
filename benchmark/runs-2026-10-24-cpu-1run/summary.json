@@ -127,5 +127,30 @@
       "peak_rss_gib": 51.19865417480469
     },
     "backend": "HF / PyTorch"
+  },
+  {
+    "model": "drama-3",
+    "source": null,
+    "device": "cpu",
+    "device_index": 0,
+    "hardware": {
+      "cpu": {
+        "processor": "Intel(R) Xeon(R) CPU @ 2.20GHz",
+        "logical_cpu_count": 32,
+        "system_ram_bytes": 219538305024,
+        "system_ram_gib": 204.46097946166992
+      },
+      "gpu": null
+    },
+    "compute_type": "float32",
+    "memory_profile": "default",
+    "gpu_expert_cache_gb": null,
+    "threads": 8,
+    "text": "Hello! Welcome to our application.",
+    "requested_runs": 1,
+    "warmup_runs": 1,
+    "status": "failed",
+    "error": "Configuration did not complete; see console output.",
+    "backend": "CT2"
   }
 ]
