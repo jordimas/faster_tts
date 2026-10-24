@@ -145,14 +145,14 @@ See [benchmark instructions](benchmark/README.md) to run your own measurements.
 <!-- current-benchmarks -->
 ### Benchmark results (2026-10-24)
 
-#### CPU — Intel Xeon @ 2.20 GHz
+#### CPU — Intel Xeon @ 2.20 GHz (51 GiB RAM)
 
 | Implementation | Precision | Mean time (s) | Peak RAM (GiB RSS) | Status |
 | --- | --- | ---: | ---: | --- |
 | HF / PyTorch | bfloat16 | — | — | failed (see log) |
 | HF / PyTorch | float16 | — | — | failed (see log) |
 
-#### GPU — NVIDIA Tesla T4
+#### GPU — NVIDIA Tesla T4 (15 GiB VRAM)
 
 | Implementation | Precision | Mean time (s) | Peak RAM (GiB RSS) | Status |
 | --- | --- | ---: | ---: | --- |
