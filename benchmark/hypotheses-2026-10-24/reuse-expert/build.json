@@ -1,0 +1,11 @@
+{
+  "baseline_commit": "613c119cb5ecdd9fb25cab470e991b521fa93890",
+  "patch": "reuse-expert.patch",
+  "isolated_python": "/tmp/ct2-reuse-expert/venv/bin/python",
+  "isolated_library": "/tmp/ct2-reuse-expert/venv/lib/python3.10/site-packages/ctranslate2.libs/libctranslate2-88a3bd90.so.4.8.3",
+  "library_sha256": "553a7013d18dc67dcf9674e465c3c1857fde784e6d6416567d7998016ab29cf0",
+  "tests": "Drama3MixedPrecisionTest.*: 6 passed, 0 skipped",
+  "main_source_modified": false,
+  "main_environment_modified": false,
+  "bundled_dependencies": "Copied from baseline wheel; libopenblasp-r0-85eef338.3.13.so and libgomp-e80b85fe.so.1.0.0 selected explicitly, RUY identical static build objects."
+}

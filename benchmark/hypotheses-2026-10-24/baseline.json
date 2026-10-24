@@ -1,0 +1,29 @@
+{
+  "label": "baseline",
+  "model": "/tmp/faster-tts-hf-cache/hub/models--jordimas--drama-3-ct2/snapshots/9aba67191f7f44b915c63ae3bfa08dde5eafdd84",
+  "threads": 8,
+  "warmup_runs": 1,
+  "timed_runs": 1,
+  "ct2_version": "4.8.3",
+  "load_seconds": 42.83817522699974,
+  "load_peak_rss_gib": 68.38430786132812,
+  "loaded_rss_gib": 58.606414794921875,
+  "warmup_seconds": 71.79261633799979,
+  "warmup_output": {
+    "audio_sha256": "97036b75b39816a0d180ae67545d6d73f3588286e6199baf5727794ec41713c0",
+    "codes_sha256": "c64d751b42a2edd83058309ef59f71e9928ad70b50d692dad13934674d9c36ef",
+    "audio_seconds": 2.786394557823129,
+    "finish_reason": "eos"
+  },
+  "synthesis_seconds": 75.2724009700014,
+  "total_seconds": 189.9084956859988,
+  "peak_rss_gib": 68.38430786132812,
+  "final_rss_gib": 58.9359016418457,
+  "output": {
+    "audio_sha256": "97036b75b39816a0d180ae67545d6d73f3588286e6199baf5727794ec41713c0",
+    "codes_sha256": "c64d751b42a2edd83058309ef59f71e9928ad70b50d692dad13934674d9c36ef",
+    "audio_seconds": 2.786394557823129,
+    "finish_reason": "eos"
+  },
+  "status": "success"
+}

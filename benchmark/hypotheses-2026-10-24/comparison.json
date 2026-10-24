@@ -1,0 +1,105 @@
+{
+  "runs": [
+    {
+      "label": "baseline",
+      "model": "/tmp/faster-tts-hf-cache/hub/models--jordimas--drama-3-ct2/snapshots/9aba67191f7f44b915c63ae3bfa08dde5eafdd84",
+      "threads": 8,
+      "warmup_runs": 1,
+      "timed_runs": 1,
+      "ct2_version": "4.8.3",
+      "load_seconds": 42.83817522699974,
+      "load_peak_rss_gib": 68.38430786132812,
+      "loaded_rss_gib": 58.606414794921875,
+      "warmup_seconds": 71.79261633799979,
+      "warmup_output": {
+        "audio_sha256": "97036b75b39816a0d180ae67545d6d73f3588286e6199baf5727794ec41713c0",
+        "codes_sha256": "c64d751b42a2edd83058309ef59f71e9928ad70b50d692dad13934674d9c36ef",
+        "audio_seconds": 2.786394557823129,
+        "finish_reason": "eos"
+      },
+      "synthesis_seconds": 75.2724009700014,
+      "total_seconds": 189.9084956859988,
+      "peak_rss_gib": 68.38430786132812,
+      "final_rss_gib": 58.9359016418457,
+      "output": {
+        "audio_sha256": "97036b75b39816a0d180ae67545d6d73f3588286e6199baf5727794ec41713c0",
+        "codes_sha256": "c64d751b42a2edd83058309ef59f71e9928ad70b50d692dad13934674d9c36ef",
+        "audio_seconds": 2.786394557823129,
+        "finish_reason": "eos"
+      },
+      "status": "success",
+      "total_change_percent": 0.0,
+      "peak_rss_reduction_percent": 0.0
+    },
+    {
+      "label": "saved-int8",
+      "model": "/tmp/faster-tts-saved-int8",
+      "threads": 8,
+      "warmup_runs": 1,
+      "timed_runs": 1,
+      "ct2_version": "4.8.3",
+      "load_seconds": 27.541755440999623,
+      "load_peak_rss_gib": 34.42618179321289,
+      "loaded_rss_gib": 34.42618179321289,
+      "warmup_seconds": 75.06389839800067,
+      "warmup_output": {
+        "audio_sha256": "97036b75b39816a0d180ae67545d6d73f3588286e6199baf5727794ec41713c0",
+        "codes_sha256": "c64d751b42a2edd83058309ef59f71e9928ad70b50d692dad13934674d9c36ef",
+        "audio_seconds": 2.786394557823129,
+        "finish_reason": "eos"
+      },
+      "synthesis_seconds": 74.92621828399933,
+      "total_seconds": 177.53634628700092,
+      "peak_rss_gib": 35.08979415893555,
+      "final_rss_gib": 34.70275115966797,
+      "output": {
+        "audio_sha256": "97036b75b39816a0d180ae67545d6d73f3588286e6199baf5727794ec41713c0",
+        "codes_sha256": "c64d751b42a2edd83058309ef59f71e9928ad70b50d692dad13934674d9c36ef",
+        "audio_seconds": 2.786394557823129,
+        "finish_reason": "eos"
+      },
+      "status": "success",
+      "total_change_percent": -6.514795114513672,
+      "peak_rss_reduction_percent": 48.68735934259691
+    },
+    {
+      "label": "reuse-expert",
+      "model": "/tmp/faster-tts-hf-cache/hub/models--jordimas--drama-3-ct2/snapshots/9aba67191f7f44b915c63ae3bfa08dde5eafdd84",
+      "threads": 8,
+      "warmup_runs": 1,
+      "timed_runs": 1,
+      "ct2_version": "4.8.3",
+      "load_seconds": 42.140321066999604,
+      "load_peak_rss_gib": 44.694496154785156,
+      "loaded_rss_gib": 34.94755935668945,
+      "warmup_seconds": 75.66096701900096,
+      "warmup_output": {
+        "audio_sha256": "97036b75b39816a0d180ae67545d6d73f3588286e6199baf5727794ec41713c0",
+        "codes_sha256": "c64d751b42a2edd83058309ef59f71e9928ad70b50d692dad13934674d9c36ef",
+        "audio_seconds": 2.786394557823129,
+        "finish_reason": "eos"
+      },
+      "synthesis_seconds": 76.60421156300072,
+      "total_seconds": 194.40954907999912,
+      "peak_rss_gib": 44.694496154785156,
+      "final_rss_gib": 35.25740432739258,
+      "output": {
+        "audio_sha256": "97036b75b39816a0d180ae67545d6d73f3588286e6199baf5727794ec41713c0",
+        "codes_sha256": "c64d751b42a2edd83058309ef59f71e9928ad70b50d692dad13934674d9c36ef",
+        "audio_seconds": 2.786394557823129,
+        "finish_reason": "eos"
+      },
+      "status": "success",
+      "total_change_percent": 2.37011692275344,
+      "peak_rss_reduction_percent": 34.64217515308032
+    }
+  ],
+  "one_time_conversion": {
+    "conversion_seconds": 75.8727,
+    "peak_rss_gib": 74.0815,
+    "tensor_payload_bytes": 36773589540,
+    "tensors": 63004,
+    "aliases": 0
+  },
+  "all_output_hashes_match": true
+}
