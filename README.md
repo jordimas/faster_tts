@@ -146,5 +146,10 @@ See [benchmark instructions](benchmark/README.md) to run your own measurements.
 | Implementation | Precision | Mean time (s) | Peak RAM (GiB RSS) | Status |
 | --- | --- | ---: | ---: | --- |
 | HF / PyTorch | bfloat16 | 394.371 | 44.334 | success |
+| CT2 | bfloat16 | — | — | unsupported (no matching precision) |
+
+Pair conclusions:
+
+- CPU bfloat16: HF success; CT2 unsupported (no matching precision). No matched timing comparison available.
 
 Reports and logs: [benchmark/runs-2026-10-24-cpu-unlimited](benchmark/runs-2026-10-24-cpu-unlimited). CPU runs have no service RAM or swap caps. HF: PyTorch 2.6.0+cpu; Fish Speech source `541566932abbaebcb0a40e562a1f846738383f38`. CT2: latest local Python 3.10 wheel, version 4.8.3. Measurements are written as configurations finish.

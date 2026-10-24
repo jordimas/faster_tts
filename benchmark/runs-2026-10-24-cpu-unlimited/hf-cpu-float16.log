@@ -1,0 +1,15 @@
+Running as unit: faster-tts-hf-cpu-float16-cpuunlimited20261024.service
+
+Backend: HF (PyTorch)
+Device: cpu:0
+
+Compute type: float16
+Expert storage: FP8
+2026-10-24 07:14:47.471 | INFO     | fish_speech.models.text2semantic.fish_omni.backbone:materialize:151 - FishOmni backbone placement: cpu: layers 0-39; embed on cpu, lm_head on cpu
+2026-10-24 07:15:06.210 | INFO     | fish_speech.models.text2semantic.fish_omni.backbone:load_backbone_weights:397 - FishOmni backbone: loaded 62053 parameter slots
+2026-10-24 07:15:08.338 | INFO     | fish_speech.models.text2semantic.fish_omni.tower:load_audio_decoder_weights:421 - FishOmni tower: loaded 192 tensors on cpu
+/tmp/faster-tts-hf-baseline/lib/python3.10/site-packages/torch/nn/utils/weight_norm.py:143: FutureWarning: `torch.nn.utils.weight_norm` is deprecated in favor of `torch.nn.utils.parametrizations.weight_norm`.
+  WeightNorm.apply(module, name, dim)
+2026-10-24 07:15:15.208 | INFO     | fish_speech.models.text2semantic.inference:load_codec_model:533 - Loaded codec /home/jupyter/CTranslate2.jordi/drama-3-official/codec.pth on cpu (torch.float32)
+2026-10-24 07:15:46.834 | INFO     | fish_speech.models.text2semantic.fish_omni.generate:generate_drama3:248 - Drama 3 prefill: 23 rows in 31.52s
+2026-10-24 07:19:52.623 | INFO     | fish_speech.models.text2semantic.fish_omni.generate:generate_drama3:248 - Drama 3 prefill: 76 rows in 47.49s
