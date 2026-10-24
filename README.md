@@ -170,11 +170,3 @@ Drama 3 only. See [benchmark instructions](benchmark/README.md) to run your own 
 | CT2 | int8 | 73.960 | 68.306 | success (buffer-reuse fix) |
 | HF / PyTorch | int8_float32 | — | — | unsupported (no matching precision) |
 | CT2 | int8_float32 | 73.536 | 164.474 | success |
-
-Pair conclusions:
-
-- CPU bfloat16: HF success; CT2 unsupported (no matching precision). No matched timing comparison available.
-- CPU float16: HF success; CT2 unsupported (no matching precision). No matched timing comparison available.
-- CPU float32: HF success; CT2 aborted by user. No matched timing comparison available.
-- CPU int8: HF unsupported (no matching precision); CT2 success. No matched timing comparison available.
-- CPU int8_float32: HF unsupported (no matching precision); CT2 success. No matched timing comparison available.
