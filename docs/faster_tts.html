@@ -472,7 +472,11 @@ chunk. Defaults to 16.</li>
 <li><strong>cpu_threads:</strong>  Positive CPU thread count; overrides <code>intra_threads</code>.</li>
 <li><strong>num_workers:</strong>  Positive number of native workers for concurrent calls.
 Defaults to 1. A single call remains blocking and sequential.</li>
-<li><strong>device:</strong>  <code>"cpu"</code>, <code>"cuda"</code>, or <code>"auto"</code> (GPU when available).</li>
+<li><strong>device:</strong>  <code>"cpu"</code>, <code>"cuda"</code>, or <code>"auto"</code> (GPU when available). Auto CPU
+execution enables expert memory mapping on Linux/macOS when
+<code>model.bin</code> exceeds available RAM after reserving at least 2 GB and
+30% headroom. Requires default/float32 compute and detectable RAM;
+explicit <code>CT2_DRAMA3_CPU_MMAP</code> settings take precedence.</li>
 <li><strong>device_index:</strong>  Nonnegative GPU index. Defaults to 0.</li>
 <li><strong>revision:</strong>  Optional Hub branch, tag, or commit revision.</li>
 <li><strong>cache_dir:</strong>  Optional Hugging Face download cache directory.</li>

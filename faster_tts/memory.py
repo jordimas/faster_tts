@@ -1,15 +1,60 @@
-"""GPU expert-cache configuration for the environment-based Drama3 loader."""
+"""Expert-memory configuration for the environment-based Drama3 loader."""
 
 import ctypes
 import math
 import os
+import sys
 from contextlib import contextmanager
 from ctypes.util import find_library
 from numbers import Real
+from pathlib import Path
 from threading import RLock
 
 CACHE_ENV = "CT2_DRAMA3_GPU_EXPERT_CACHE_GB"
 LOADER_LOCK = RLock()
+CPU_MMAP_ENV = "CT2_DRAMA3_CPU_MMAP"
+
+
+def available_cpu_memory():
+    """Return available RAM in bytes, or None when it cannot be queried."""
+    if sys.platform == "linux":
+        try:
+            for line in Path("/proc/meminfo").read_text().splitlines():
+                if line.startswith("MemAvailable:"):
+                    return int(line.split()[1]) * 1024
+        except (OSError, ValueError, IndexError):
+            pass
+    try:
+        pages = os.sysconf("SC_AVPHYS_PAGES")
+        page_size = os.sysconf("SC_PAGE_SIZE")
+        return pages * page_size if pages > 0 and page_size > 0 else None
+    except (OSError, ValueError, AttributeError):
+        return None
+
+
+@contextmanager
+def auto_cpu_mmap(directory, enabled, compute_type):
+    """Temporarily enable CPU mapping when estimated weights exceed spare RAM."""
+    with LOADER_LOCK:
+        changed = False
+        try:
+            if (
+                enabled
+                and sys.platform in ("linux", "darwin")
+                and compute_type in ("default", "float32")
+                and CPU_MMAP_ENV not in os.environ
+            ):
+                available = available_cpu_memory()
+                # Leave at least 2 GB and 30% for runtime state and other users.
+                if available is not None and (
+                    directory / "model.bin"
+                ).stat().st_size > min(available * 0.7, available - 2e9):
+                    os.environ[CPU_MMAP_ENV] = "1"
+                    changed = True
+            yield
+        finally:
+            if changed:
+                os.environ.pop(CPU_MMAP_ENV, None)
 
 
 def validate_cache_budget(value):

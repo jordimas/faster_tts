@@ -19,7 +19,7 @@ import numpy as np
 from .base import BaseModel, _positive_int, register_engine
 from .cache import DEFAULT_MODEL, resolve_model_path
 from .chunking import split_text
-from .memory import expert_cache_budget, validate_cache_budget
+from .memory import auto_cpu_mmap, expert_cache_budget, validate_cache_budget
 from .prompt import Drama3PromptBuilder
 
 
@@ -101,7 +101,11 @@ class Model(BaseModel):
         cpu_threads: Positive CPU thread count; overrides `intra_threads`.
         num_workers: Positive number of native workers for concurrent calls.
             Defaults to 1. A single call remains blocking and sequential.
-        device: `"cpu"`, `"cuda"`, or `"auto"` (GPU when available).
+        device: `"cpu"`, `"cuda"`, or `"auto"` (GPU when available). Auto CPU
+            execution enables expert memory mapping on Linux/macOS when
+            `model.bin` exceeds available RAM after reserving at least 2 GB and
+            30% headroom. Requires default/float32 compute and detectable RAM;
+            explicit `CT2_DRAMA3_CPU_MMAP` settings take precedence.
         device_index: Nonnegative GPU index. Defaults to 0.
         revision: Optional Hub branch, tag, or commit revision.
         cache_dir: Optional Hugging Face download cache directory.
@@ -176,9 +180,14 @@ class Model(BaseModel):
                 if import_module("ctranslate2").get_cuda_device_count() > 0
                 else "cpu"
             )
-        with expert_cache_budget(
-            gpu_expert_cache_gb, resolved_device, device_index, num_workers
-        ) as cache_gb:
+        with (
+            expert_cache_budget(
+                gpu_expert_cache_gb, resolved_device, device_index, num_workers
+            ) as cache_gb,
+            auto_cpu_mmap(
+                directory, device == "auto" and resolved_device == "cpu", compute_type
+            ),
+        ):
             self._model = backend_class(
                 str(directory),
                 intra_threads=intra_threads,

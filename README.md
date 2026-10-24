@@ -92,10 +92,12 @@ Budgets are divided across workers (6 GB each above); `model.info()` reports the
 The default, `None`, uses `CT2_DRAMA3_GPU_EXPERT_CACHE_GB` per worker; unset or
 zero means uncapped. CLI: `--gpu-expert-cache-gb auto` or a numeric budget.
 
-On CPU, there is no `"auto"` budget. Set `CT2_DRAMA3_CPU_MMAP=1` before loading
-to memory-map byte-encoded experts; the OS manages cached pages automatically.
-Unset it or use `0` to restore the default (off). Requires Linux/macOS and
-`compute_type="default"` or `"float32"`; keep the checkpoint unchanged while loaded.
+When `device="auto"` selects CPU, expert memory mapping is enabled if `model.bin`
+exceeds available RAM after reserving at least 2 GB and 30% headroom. The OS
+manages cached pages. Set `CT2_DRAMA3_CPU_MMAP=0` or `1` before loading to override.
+Requires Linux/macOS and `compute_type="default"` or `"float32"`; unavailable RAM
+detection leaves CT2's default (off). Explicit `device="cpu"` keeps that default.
+This uses checkpoint size as an estimate; keep the checkpoint unchanged while loaded.
 
 Both features require a supporting CT2 build and do not limit total VRAM or RAM.
 
