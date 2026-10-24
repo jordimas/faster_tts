@@ -1,0 +1,9 @@
+{
+  "workflow_run": "https://github.com/jordimas/CTranslate2/actions/runs/40090377176",
+  "artifact": "python-wheels-Linux-auto64",
+  "artifact_id": 12559464373,
+  "commit": "4dbbaf52887c6e7cd597c56b08c1199c68e9d323",
+  "wheel": "ctranslate2-4.8.4-cp310-cp310-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl",
+  "wheel_sha256": "a74aeb18623f8b34da896aab92be7f36501beeae4b3e2ddedaf6e9a702fa7171",
+  "ctranslate2_version": "4.8.4"
+}

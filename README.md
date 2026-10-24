@@ -172,3 +172,15 @@ RTF is compute time divided by generated audio duration; lower is better, and 1 
 | CT2 | int8_float32 | 17.880 | 2.415 | 7.404 | 44.712 | success |
 | HF / PyTorch | float32 | 155.203 | 2.972 | 52.219 | 51.252 | success |
 | CT2 | float32 | 37.660 | 2.508 | 15.017 | 45.470 | success |
+
+<!-- gpu-benchmarks-ci40090377176 -->
+#### GPU — NVIDIA Tesla T4 (15 GiB VRAM)
+
+CT2 4.8.4 from [workflow run 40090377176](https://github.com/jordimas/CTranslate2/actions/runs/40090377176),
+8 CPU threads, uncapped GPU expert cache, one warmup and three timed runs per successful configuration.
+Same test text as above. Peak RAM is process RSS and excludes VRAM.
+
+| Implementation | Precision | Mean time (s) | Audio duration (s) | RTF | Peak RAM (GiB RSS) | Status |
+| --- | --- | ---: | ---: | ---: | ---: | --- |
+| CT2 | float16 | — | — | — | — | CUDA OOM during warmup |
+<!-- /gpu-benchmarks-ci40090377176 -->

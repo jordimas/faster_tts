@@ -1,0 +1,13 @@
+Traceback (most recent call last):
+  File "/home/jupyter/faster_tts/benchmark/benchmark.py", line 197, in <module>
+    model.synthesize(args.text)  # Warm up; exclude loading and first-run costs.
+  File "/home/jupyter/faster_tts/faster_tts/model.py", line 235, in synthesize
+    return self._engine.synthesize(
+  File "/home/jupyter/faster_tts/faster_tts/engines/drama3.py", line 207, in synthesize
+    return self._synthesize_chunks(
+  File "/home/jupyter/faster_tts/faster_tts/engines/drama3.py", line 325, in _synthesize_chunks
+    result = self.synthesize(
+  File "/home/jupyter/faster_tts/faster_tts/engines/drama3.py", line 232, in synthesize
+    result = self._model.generate(
+RuntimeError: CUDA failed with error out of memory
+float16 failed (exit 1)
