@@ -1,0 +1,21 @@
+{
+  "workflow_run": "https://github.com/jordimas/CTranslate2/actions/runs/40086412675",
+  "artifact": "python-wheels-Linux-auto64",
+  "artifact_id": 12558014921,
+  "source_commit": "2efa9372062c169cea6f1a9b66830ee37acfe3fd",
+  "wheels": [
+    {
+      "filename": "ctranslate2-4.8.3-cp310-cp310-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl",
+      "sha256": "bcb7a420f57f13b004148663c6dec78be884f70e32aa038a4e479fdca342660d"
+    },
+    {
+      "filename": "ctranslate2-4.8.3-cp314-cp314-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl",
+      "sha256": "382dc31dadcc42c2b52d1a45218b8433f5b897d54d2bd9e9a602e6963e5aaf09"
+    }
+  ],
+  "wheel": "/home/jupyter/faster_tts/benchmark/wheels/ctranslate2-4.8.3-cp310-cp310-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl",
+  "sha256": "bcb7a420f57f13b004148663c6dec78be884f70e32aa038a4e479fdca342660d",
+  "threads": 8,
+  "warmup_runs": 1,
+  "timed_runs": 1
+}

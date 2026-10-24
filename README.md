@@ -152,7 +152,7 @@ for conversion and native runtime details.
 Drama 3 only. See [benchmark instructions](benchmark/README.md) to run your own measurements.
 
 <!-- current-benchmarks -->
-### Benchmark results (2026-10-24, rebuilt CT2)
+### Benchmark results (2026-10-24)
 
 #### CPU — AMD EPYC 7B13 (62 GiB RAM)
 
@@ -171,3 +171,4 @@ RTF is compute time divided by generated audio duration; lower is better, and 1 
 | HF / PyTorch | int8_float32 | — | — | — | — | unsupported (no matching precision) |
 | CT2 | int8_float32 | 62.379 | 2.601 | 23.986 | 44.711 | success |
 | HF / PyTorch | float32 | 155.203 | 2.972 | 52.219 | 51.252 | success |
+| CT2 | float32 | 37.660 | 2.508 | 15.017 | 45.470 | success |

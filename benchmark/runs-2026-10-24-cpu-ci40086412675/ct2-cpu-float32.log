@@ -1,0 +1,11 @@
+Running as unit: faster-tts-ct2-cpu-float32-ci40086412675.service
+
+Device: cpu:0
+Fetching 8 files:   0%|          | 0/8 [00:00<?, ?it/s]Fetching 8 files: 100%|██████████| 8/8 [00:00<00:00, 520.53it/s]
+
+Compute type: float32
+Mean: 37.660s; std: 0.000s; RTF: 15.017; peak RSS: 45.470 GiB
+Finished with result: success
+Main processes terminated with: code=exited/status=0
+Service runtime: 3min 7.724s
+CPU time consumed: 10min 49.698s

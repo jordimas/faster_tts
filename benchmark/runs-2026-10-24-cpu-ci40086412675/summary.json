@@ -1,0 +1,41 @@
+[
+  {
+    "model": "drama-3",
+    "source": null,
+    "device": "cpu",
+    "device_index": 0,
+    "hardware": {
+      "cpu": {
+        "processor": "AMD EPYC 7B13",
+        "logical_cpu_count": 16,
+        "system_ram_bytes": 67441471488,
+        "system_ram_gib": 62.80976486206055
+      },
+      "gpu": null
+    },
+    "compute_type": "float32",
+    "memory_profile": "default",
+    "gpu_expert_cache_gb": null,
+    "threads": 8,
+    "text": "Hello! Welcome to our application.",
+    "requested_runs": 1,
+    "warmup_runs": 1,
+    "status": "success",
+    "runs": [
+      {
+        "time_seconds": 37.6598255530007,
+        "audio_seconds": 2.507755102040816,
+        "rtf": 15.017345801570919,
+        "finish_reason": "eos"
+      }
+    ],
+    "summary": {
+      "mean_time_seconds": 37.6598255530007,
+      "std_time_seconds": 0,
+      "mean_audio_seconds": 2.507755102040816,
+      "rtf": 15.017345801570919,
+      "peak_rss_gib": 45.4696159362793
+    },
+    "backend": "CT2"
+  }
+]
