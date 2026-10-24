@@ -88,5 +88,11 @@
     "device": "cpu",
     "compute_type": "float16",
     "status": "unsupported (no matching precision)"
+  },
+  {
+    "backend": "HF / PyTorch",
+    "device": "cpu",
+    "compute_type": "int8",
+    "status": "unsupported (no matching precision)"
   }
 ]
