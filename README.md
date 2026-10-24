@@ -161,3 +161,4 @@ RTF is compute time divided by generated audio duration; lower is better, and 1 
 | Implementation | Precision | Exact test text | Mean time (s) | Audio duration (s) | RTF | Peak RAM (GiB RSS) | Status |
 | --- | --- | --- | ---: | ---: | ---: | ---: | --- |
 | HF / PyTorch | bfloat16 | Hello! Welcome to our application. | 300.868 | 2.833 | 106.207 | 44.507 | success |
+| CT2 | bfloat16 | Hello! Welcome to our application. | — | — | — | — | unsupported (no matching precision) |
