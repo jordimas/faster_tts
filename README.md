@@ -154,7 +154,7 @@ Drama 3 only. See [benchmark instructions](benchmark/README.md) to run your own 
 <!-- current-benchmarks -->
 ### Benchmark results (2026-10-24, rebuilt CT2)
 
-#### CPU — Intel Xeon @ 2.20 GHz (62 GiB RAM)
+#### CPU — AMD EPYC 7B13 (62 GiB RAM)
 
 RTF is compute time divided by generated audio duration; lower is better, and 1 means real-time synthesis. Loading and warmup are excluded.
 
