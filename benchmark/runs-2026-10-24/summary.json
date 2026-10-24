@@ -20,7 +20,7 @@
     "text": "Hello! Welcome to our application.",
     "requested_runs": 3,
     "warmup_runs": 1,
-    "status": "failed (see log)",
+    "status": "Missing codec dependencies (CPU deferred)",
     "error": "Configuration did not complete; see console output.",
     "backend": "HF / PyTorch"
   },
@@ -45,7 +45,7 @@
     "text": "Hello! Welcome to our application.",
     "requested_runs": 3,
     "warmup_runs": 1,
-    "status": "failed (see log)",
+    "status": "Missing codec dependencies (CPU deferred)",
     "error": "Configuration did not complete; see console output.",
     "backend": "HF / PyTorch"
   },
@@ -76,7 +76,7 @@
     "text": "Hello! Welcome to our application.",
     "requested_runs": 3,
     "warmup_runs": 1,
-    "status": "failed (see log)",
+    "status": "CUDA VRAM OOM",
     "error": "Configuration did not complete; see console output.",
     "backend": "HF / PyTorch"
   },
@@ -107,7 +107,7 @@
     "text": "Hello! Welcome to our application.",
     "requested_runs": 3,
     "warmup_runs": 1,
-    "status": "failed (see log)",
+    "status": "CUDA VRAM OOM",
     "error": "Configuration did not complete; see console output.",
     "backend": "HF / PyTorch"
   },
@@ -138,8 +138,38 @@
     "text": "Hello! Welcome to our application.",
     "requested_runs": 3,
     "warmup_runs": 1,
-    "status": "failed (see log)",
+    "status": "CUDA VRAM OOM",
     "error": "Configuration did not complete; see console output.",
     "backend": "HF / PyTorch"
+  },
+  {
+    "model": "drama-3",
+    "source": null,
+    "device": "cuda",
+    "device_index": 0,
+    "hardware": {
+      "cpu": {
+        "processor": "Intel(R) Xeon(R) CPU @ 2.20GHz",
+        "logical_cpu_count": 8,
+        "system_ram_bytes": 54759976960,
+        "system_ram_gib": 50.999202728271484
+      },
+      "gpu": {
+        "name": "Tesla T4",
+        "runtime": "cuda",
+        "total_memory_bytes": 15642329088,
+        "total_memory_gib": 14.56805419921875
+      }
+    },
+    "compute_type": "float32",
+    "memory_profile": "default",
+    "gpu_expert_cache_gb": null,
+    "threads": 8,
+    "text": "Hello! Welcome to our application.",
+    "requested_runs": 3,
+    "warmup_runs": 1,
+    "status": "RAM limit reached",
+    "error": "Configuration did not complete; see console output.",
+    "backend": "CT2"
   }
 ]

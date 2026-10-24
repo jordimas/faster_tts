@@ -2,3 +2,5 @@ Running as unit: faster-tts-ct2-cuda-float32-20261024.service
 
 Device: cuda:0; Memory profile: default; uncapped
 Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+Started /home/jupyter/faster_tts/.venv/bin/python -u /home/jupyter/faster_tts/benchmark/benchmark.py drama-3 --memory-profile default --device cuda --compute-type float32 --runs 3 --threads 8 --output-json /home/jupyter/faster_tts/benchmark/runs-2026-10-24/ct2-cuda-float32.json --log-worker.
+faster-tts-ct2-cuda-float32-resume20261024.service: A process of this unit has been killed by the OOM killer.
