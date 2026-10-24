@@ -102,27 +102,20 @@ supporting this setting. If automatic memory detection fails, use an explicit bu
 
 ## Threads and concurrent requests
 
-Set the CPU thread count with `cpu_threads` (default: 8):
-
-```python
-model = Model("drama-3", cpu_threads=4, num_workers=2)
-```
-
-The CLI and benchmark use `--threads`. `cpu_threads` overrides the legacy
-`intra_threads` argument.
-
-`num_workers` (default: 1) enables concurrent calls from Python threads:
+Set `cpu_threads` (default: 8) per worker and `num_workers` (default: 1)
+for concurrent calls from Python threads:
 
 ```python
 from concurrent.futures import ThreadPoolExecutor
 
+model = Model("drama-3", cpu_threads=4, num_workers=2)
 with ThreadPoolExecutor(max_workers=2) as executor:
     results = list(executor.map(model.synthesize, ["Hello!", "How are you?"]))
 ```
 
-`num_workers` maps to CT2's `inter_threads`; `cpu_threads` maps to `intra_threads`.
-Native replicas share CPU checkpoint weights, while GPU expert caches and runtime
-state are per worker. A single blocking request still runs sequentially.
+The CLI and benchmark use `--threads`. `cpu_threads` overrides the legacy
+`intra_threads` argument. Workers share CPU weights but have separate GPU expert
+caches and runtime state. A single request still runs sequentially.
 
 ## Results
 
