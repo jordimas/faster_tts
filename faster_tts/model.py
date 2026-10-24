@@ -15,20 +15,17 @@ class SynthesisResult:
     """Generated speech and diagnostics returned by `Model.synthesize`.
 
     Attributes:
-        audio: Contiguous mono float32 NumPy array of shape `(samples,)`.
-            Values are finite; no clipping or amplitude normalization is applied here.
-        sample_rate: Audio sample rate in Hz (44100 for Drama 3).
-        codes: Contiguous int32 codec indices of shape `(frames, codebooks)`.
-            Drama 3 has 10 codebooks and 2048 audio samples per frame.
-            Codebook count and frame duration depend on the engine.
-        finish_reason: `"eos"` for a stop token, or `"length"` when generation
-            exhausts its frame budget. EOS does not guarantee complete speech.
+        audio: Contiguous mono float32 array `(samples,)`. Finite, unclipped.
+        sample_rate: Audio sample rate in Hz. Engine-specific (44100 for Drama 3).
+        codes: Contiguous int32 codec indices `(frames, codebooks)`.
+            Engine-specific; Drama 3 has 10 codebooks and 2048 samples/frame.
+        finish_reason: `"eos"` (stop token) or `"length"` (frame budget
+            exhausted). `"eos"` does not guarantee complete speech.
         timings: Native phase names mapped to elapsed seconds, summed across
-            chunks and attempts, including discarded retries. Keys depend on CT2.
-        attempts: Tuple of dictionaries with `seed`, `finish_reason`, `frames`,
-            wall-clock `seconds`, and native `timings` for each attempt. Split
-            input also records zero-based `chunk_index` and chunk `text`.
-            Discarded retry audio and codes are not retained.
+            chunks and attempts (including discarded retries). Keys depend on CT2.
+        attempts: Tuple of per-attempt dicts with `seed`, `finish_reason`,
+            `frames`, wall-clock `seconds`, and `timings`. Split input also
+            records `chunk_index` and `text`. Discarded audio/codes not retained.
     """
 
     audio: np.ndarray
@@ -42,74 +39,44 @@ class SynthesisResult:
 class Model:
     """Load a converted checkpoint using its registered TTS engine.
 
-    The checkpoint's `config.json` selects the engine through `model_type`.
-    `info()` reports the selected engine and its supported capabilities;
-    checkpoint validation and synthesis are handled by that engine. Required
-    assets, native backends, GPU acceleration coverage, and compute types
-    depend on the engine. Only Drama 3 is currently implemented; Qwen
-    checkpoints are not yet supported.
-
-    ``Model()`` loads the default checkpoint (``jordimas/drama-3-ct2``) from
-    the Hugging Face cache or Hub. A converted Hub repository ID (with optional
-    ``hf://`` prefix) or local directory can also be supplied.
-    ``device`` selects "cpu" (default), "cuda", or "auto"; ``device_index``
-    selects one GPU. CUDA and ROCm builds both use "cuda".
-    ``compute_type`` is passed to the native loader (default: "default").
-    ``revision`` can pin a commit; ``local_files_only=True`` prevents downloads.
-    ``cpu_threads`` sets the CPU thread count (default: 8), overriding the
-    legacy ``intra_threads`` argument when supplied.
-    ``num_workers`` (default: 1) configures CT2's native ``inter_threads`` pool
-    for concurrent calls. Replicas share CPU checkpoint weights.
-
-    Drama 3 engine: generation is offline, without cloning or reference audio.
-    Seeded sampling follows the model distribution, without bitwise PyTorch RNG
-    parity. The checkpoint requires `model.bin`, a layout-version1 `config.json`
-    with `source_config`, and a frozen `tokenizer.json`. GPU acceleration covers
-    backbone/tower projections while waveform decoding stays on CPU. The
-    ``prefill_chunk_size`` and ``gpu_expert_cache_gb`` arguments only apply to
-    this engine; other engines ignore ``CT2_DRAMA3_*`` environment variables
-    and reject ``gpu_expert_cache_gb``.
+    `config.json`'s `model_type` selects the engine. Required assets, native
+    backends, GPU coverage, and compute types depend on the engine; `info()`
+    reports the selection and its capabilities. Only Drama 3 is currently
+    implemented. `prefill_chunk_size` and `gpu_expert_cache_gb` apply only
+    to Drama 3; other engines ignore `CT2_DRAMA3_*` environment variables
+    and reject `gpu_expert_cache_gb`.
 
     Args:
         model_path: Default checkpoint, `"drama-3"` alias, converted Hub ID
-            (optionally prefixed with `hf://`), or local directory. Explicit
-            paths never trigger downloads.
-        intra_threads: Legacy CPU thread count. Defaults to 8.
-        compute_type: CT2 precision, such as `"default"`, `"float16"`, or `"int8"`.
-            Availability depends on the device and CT2 build.
-        prefill_chunk_size: Drama 3 only. Positive number of prompt rows
-            processed per prefill chunk. Defaults to 16.
-        cpu_threads: Positive CPU thread count; overrides `intra_threads`.
-        num_workers: Positive number of native workers for concurrent calls.
-            Defaults to 1. A single call remains blocking and sequential.
-        device: `"cpu"`, `"cuda"`, or `"auto"` (GPU when available). For Drama 3,
-            auto CPU execution enables expert memory mapping on Linux/macOS when
-            `model.bin` exceeds available RAM after reserving at least 2 GB and
-            30% headroom. Requires default/float32 compute and detectable RAM;
-            explicit `CT2_DRAMA3_CPU_MMAP` settings take precedence. Device
-            availability and memory policies depend on the engine.
-        device_index: Nonnegative GPU index. Defaults to 0.
-        revision: Optional Hub branch, tag, or commit revision.
-        cache_dir: Optional Hugging Face download cache directory.
-        local_files_only: Use cached/local assets without downloading.
-        gpu_expert_cache_gb: Drama 3's positive total expert-cache budget in decimal GB,
-            `"auto"`, or `None` to preserve `CT2_DRAMA3_GPU_EXPERT_CACHE_GB`.
-            Explicit and automatic budgets are divided across workers and
-            require GPU execution and a supporting CT2 build.
+            (optionally `hf://`-prefixed), or local directory. Explicit paths
+            never trigger downloads. Defaults to `jordimas/drama-3-ct2`.
+        intra_threads: Legacy alias for `cpu_threads`. Defaults to 8.
+        compute_type: CT2 precision (`"default"`, `"float16"`, `"int8"`, …);
+            availability depends on the device and CT2 build.
+        prefill_chunk_size: Drama 3 only. Prompt rows per prefill chunk.
+            Defaults to 16.
+        cpu_threads: CPU threads per worker; overrides `intra_threads`.
+        num_workers: Native workers for concurrent calls. Replicas share CPU
+            weights; a single call remains blocking. Defaults to 1.
+        device: `"cpu"` (default), `"cuda"`, or `"auto"`. CUDA and ROCm both
+            use `"cuda"`. For Drama 3, `"auto"` falling back to CPU enables
+            expert memory mapping on Linux/macOS when `model.bin` exceeds
+            available RAM (reserving 2 GB and 30% headroom) and
+            `compute_type` is `"default"` or `"float32"`; set
+            `CT2_DRAMA3_CPU_MMAP` to override.
+        device_index: GPU index. Defaults to 0.
+        revision: Hub branch, tag, or commit.
+        cache_dir: Hugging Face download cache directory.
+        local_files_only: Use cached assets without downloading.
+        gpu_expert_cache_gb: Drama 3 only. Total expert-cache budget in
+            decimal GB, `"auto"`, or `None` to preserve
+            `CT2_DRAMA3_GPU_EXPERT_CACHE_GB`. Divided across workers; requires
+            GPU execution and a supporting CT2 build.
 
     Raises:
         ValueError: Invalid settings or incompatible checkpoint metadata.
         FileNotFoundError: An explicit local checkpoint path does not exist.
-        RuntimeError: Required native bindings or runtime capabilities are missing.
-
-    Example:
-        ```python
-        from faster_tts import Model
-
-        model = Model()
-        result = model.synthesize("Hello!")
-        print(result.audio.shape, result.sample_rate)
-        ```
+        RuntimeError: Required native bindings are missing.
     """
 
     def __init__(
@@ -169,18 +136,15 @@ class Model:
         """Return resolved settings and supported engine capabilities.
 
         Returns:
-            dict: An independent copy with `engine` (checkpoint model type),
-                `capabilities` (tuple of supported feature names), and resolved
-                device, compute, worker, and checkpoint settings. Additional
-                settings depend on the engine. Drama 3 includes `backend`,
-                `device`, `codec_device`, `mode`, `gpu_supported`, `device_index`,
-                `compute_type`, `cpu_threads` (also `intra_threads`), `num_workers`,
-                `prefill_chunk_size`, and resolved `model_path`. Its expert-cache
-                budgets are `gpu_expert_cache_gb` (total) and
-                `gpu_expert_cache_gb_per_worker`; None delegates to the environment.
-                `source_revision`, `quantization_policy`, `matrix_dtype`, and
-                `activation_dtype` may be None. Compute type is the requested setting.
-                Capability names describe engine features, not runtime availability.
+            dict: Independent copy with `engine`, `capabilities` (tuple of
+                feature names), and the resolved device/compute/worker/
+                checkpoint settings. Drama 3 adds `backend`, `codec_device`,
+                `mode`, `gpu_supported`, `cpu_threads`/`intra_threads`,
+                `prefill_chunk_size`, `model_path`, expert-cache budgets
+                (`gpu_expert_cache_gb` total and `*_per_worker`; `None`
+                delegates to the environment), and checkpoint metadata
+                (`source_revision`, `quantization_policy`, `matrix_dtype`,
+                `activation_dtype`; any may be `None`).
         """
         return self._engine.info()
 
@@ -200,53 +164,41 @@ class Model:
     ):
         """Synthesize speech using the selected engine.
 
-        Returns mono float32 audio and codec indices. Codec dimensions, sample
-        rate, and the interpretation of sampling, history, retries, sentence
-        splitting, and speaker tags are engine-specific; engines must reject
-        unsupported nondefault options. ``finish_reason`` is `"eos"` (stop
-        token) or `"length"` (frame budget exhausted, audio may end
-        mid-utterance; `"eos"` does not guarantee complete speech). ``attempts``
-        records per-attempt metadata; discarded retry audio and codes are not
-        retained. ``timings`` sums native phase timings across attempts and
-        chunks, including discarded retries.
-
-        Drama 3 engine behavior: text is generated by sentence or long clause
-        with completed text/audio history, preserving a single leading speaker
-        tag on each chunk. ``split_sentences=False`` selects one native
-        generation for comparison; other marked-up text is left intact.
-        Sampling seed/options apply per chunk; ``attempts`` records chunk
-        indices/text and all attempt costs for split input. ``history``
-        accepts completed `(text, codes[frames,10])` turns for conditioning
-        later chunks; it does not establish speaker continuity or speech quality.
-        Opt-in ``max_retries=1`` retries a valid length-capped sampled result
-        once, using seed+1 (wrapping uint64) and fresh native state on the
-        loaded model. Greedy decoding never retries. Exhausted retries return
-        the last partial result.
+        Codec dimensions, sample rate, and the interpretation of sampling,
+        history, retries, sentence splitting, and speaker tags are engine-
+        specific; engines reject unsupported nondefault options. Drama 3
+        generates sentence/clause-chunked audio with completed text/audio
+        history, preserving a leading speaker tag on each chunk. Sampling
+        options and `seed` apply per chunk; retry seeds wrap uint64. Seeded
+        sampling follows the model distribution without bitwise PyTorch RNG
+        parity.
 
         Args:
-            text: Nonempty text, optionally containing canonical speaker tags
-                `<|speaker:0|>` through `<|speaker:15|>`. Defaults to speaker 0
-                when no leading tag is supplied. Reserved protocol tags are rejected.
-            max_frames: Positive codec-frame budget for the combined returned audio.
-                Defaults to 512 (about 23.8 seconds for Drama 3).
-            temperature: Positive finite sampling temperature. Defaults to 0.7.
-            top_k: Positive sampling candidate count. Defaults to 30.
-            top_p: Nucleus sampling threshold in `(0, 1]`. Defaults to 0.7.
-            seed: Sampling seed in `[0, 2**64)`. Defaults to 0; each chunk starts
-                with the same seed. Retry seeds increment with uint64 wrapping.
-            greedy: Use diagnostic greedy decoding instead of sampling.
-            max_retries: 0 (default) or 1; retry length-capped sampled generation.
-                Greedy generation never retries.
-            history: Iterable of completed `(text, codes)` turns. Codes must be
-                nonempty integer arrays of shape `(frames, codebooks)` within the
-                codec vocabulary (10 codebooks for Drama 3). History consumes
-                context but is not returned as audio.
-            split_sentences: Split sentences/long clauses and concatenate audio.
-                Defaults to True. Completed first and latest chunks condition
-                subsequent chunks, together with supplied history.
+            text: Nonempty text. For Drama 3, canonical speaker tags
+                `<|speaker:0|>`–`<|speaker:15|>` are honored and other
+                protocol tags are rejected; defaults to speaker 0.
+            max_frames: Codec-frame budget for combined returned audio.
+                Defaults to 512 (~23.8s for Drama 3).
+            temperature: Sampling temperature (positive, finite). Defaults to 0.7.
+            top_k: Sampling candidate count. Defaults to 30.
+            top_p: Nucleus threshold in `(0, 1]`. Defaults to 0.7.
+            seed: Sampling seed in `[0, 2**64)`. Defaults to 0.
+            greedy: Diagnostic greedy decoding instead of sampling.
+            max_retries: 0 (default) or 1; retry a length-capped sampled
+                result once with `seed+1`. Greedy never retries.
+            history: Completed `(text, codes)` turns conditioning later
+                chunks. Codes are integer arrays `(frames, codebooks)`
+                within the codec vocabulary (10 codebooks for Drama 3);
+                does not establish speaker continuity.
+            split_sentences: Split and concatenate (default True); False
+                forces one native generation.
 
         Returns:
-            SynthesisResult: Speech, codec indices, finish status, and diagnostics.
+            SynthesisResult: Audio, codec indices, `finish_reason`
+                (`"eos"` or `"length"`; `"length"` means the frame budget
+                was exhausted and audio may end mid-utterance, and `"eos"`
+                does not guarantee complete speech), per-attempt
+                `timings`, and `attempts` diagnostics.
 
         Raises:
             TypeError: Text is not a string.
