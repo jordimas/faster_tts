@@ -2,18 +2,74 @@
 
 import argparse
 import os
+import tempfile
 import time
 import unittest
 from concurrent.futures import ThreadPoolExecutor
+from pathlib import Path
 from threading import Barrier
 from types import SimpleNamespace
 from unittest.mock import Mock, patch
 
 from faster_tts.__main__ import _cache_budget
-from faster_tts.memory import CACHE_ENV, expert_cache_budget, free_gpu_memory
+from faster_tts.memory import (
+    CACHE_ENV,
+    CPU_MMAP_ENV,
+    auto_cpu_mmap,
+    available_cpu_memory,
+    expert_cache_budget,
+    free_gpu_memory,
+)
 
 
 class MemoryQueryTest(unittest.TestCase):
+    def test_available_ram_uses_reclaimable_memory(self):
+        with (
+            patch("faster_tts.memory.sys.platform", "linux"),
+            patch.object(Path, "read_text", return_value="MemAvailable: 12345 kB\n"),
+        ):
+            self.assertEqual(available_cpu_memory(), 12345 * 1024)
+
+    def test_unavailable_ram_query_is_optional(self):
+        with (
+            patch.object(Path, "read_text", side_effect=OSError),
+            patch("faster_tts.memory.os.sysconf", side_effect=ValueError),
+        ):
+            self.assertIsNone(available_cpu_memory())
+
+    def test_cpu_mapping_threshold_overrides_and_cleanup(self):
+        with tempfile.TemporaryDirectory() as temp:
+            directory = Path(temp)
+            with (directory / "model.bin").open("wb") as weights:
+                weights.truncate(3_000_000_000)
+            cases = [
+                (4e9, True, "default", "linux", None, "1"),
+                (10e9, True, "default", "linux", None, None),
+                (None, True, "default", "linux", None, None),
+                (4e9, False, "default", "linux", None, None),
+                (4e9, True, "int8", "linux", None, None),
+                (4e9, True, "default", "win32", None, None),
+                (4e9, True, "float32", "darwin", None, "1"),
+                (4e9, True, "default", "linux", "0", "0"),
+                (10e9, True, "default", "linux", "1", "1"),
+                (5e9, True, "default", "linux", None, None),
+            ]
+            for ram, enabled, compute, platform, explicit, expected in cases:
+                with (
+                    self.subTest(case=(ram, enabled, compute, platform, explicit)),
+                    patch.dict(os.environ),
+                    patch("faster_tts.memory.sys.platform", platform),
+                    patch("faster_tts.memory.available_cpu_memory", return_value=ram),
+                ):
+                    os.environ.pop(CPU_MMAP_ENV, None)
+                    if explicit is not None:
+                        os.environ[CPU_MMAP_ENV] = explicit
+                    with self.assertRaisesRegex(RuntimeError, "load failed"):
+                        with auto_cpu_mmap(directory, enabled, compute):
+                            self.assertEqual(os.environ.get(CPU_MMAP_ENV), expected)
+                            raise RuntimeError("load failed")
+                    self.assertEqual(os.environ.get(CPU_MMAP_ENV), explicit)
+
     def test_cli_budget_parser(self):
         self.assertEqual(_cache_budget("auto"), "auto")
         self.assertEqual(_cache_budget("12.5"), 12.5)

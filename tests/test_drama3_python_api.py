@@ -100,6 +100,34 @@ class Drama3PythonAPITest(unittest.TestCase):
             self.assertEqual(self.constructor.call_args.kwargs["intra_threads"], 4)
             self.assertEqual(model.info()["intra_threads"], 4)
 
+    def test_auto_cpu_mapping_only_applies_during_cpu_auto_load(self):
+        key = "CT2_DRAMA3_CPU_MMAP"
+        for device, gpu_count, expected in (
+            ("auto", 0, "1"),
+            ("auto", 1, None),
+            ("cpu", 0, None),
+        ):
+            observed = []
+            self.constructor.side_effect = lambda *a, observed=observed, **kw: (
+                observed.append(os.environ.get(key)) or self.backend
+            )
+            with (
+                self.subTest(device=device, gpu_count=gpu_count),
+                patch.dict(os.environ),
+                patch("faster_tts.memory.sys.platform", "linux"),
+                patch("faster_tts.memory.available_cpu_memory", return_value=1e9),
+                patch(
+                    "faster_tts.model.import_module",
+                    return_value=Mock(
+                        get_cuda_device_count=Mock(return_value=gpu_count)
+                    ),
+                ),
+            ):
+                os.environ.pop(key, None)
+                Model(self.root, device=device)
+                self.assertNotIn(key, os.environ)
+            self.assertEqual(observed, [expected])
+
     def test_cache_budget_is_shared_by_workers_and_environment_restored(self):
         key = "CT2_DRAMA3_GPU_EXPERT_CACHE_GB"
         observed = []

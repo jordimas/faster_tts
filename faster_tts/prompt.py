@@ -44,6 +44,18 @@ class Drama3Prompt:
     semantic ID. semantic_mask identifies audio rows supplied through history.
     audio_pad_token_id names a tokenizer special token;
     it is exposed as metadata and is not the filler for codec columns.
+
+    Attributes:
+        rows: Contiguous int64 prompt array of shape `(N, 11)` on CPU.
+        semantic_mask: Boolean array of shape `(N,)` identifying history audio rows.
+        normalized_text: Current input text normalized to Unicode NFC, before
+            any default speaker tag is added.
+        segments: Ordered protocol strings and history codec arrays used to
+            construct the rows. Strings are encoded separately to preserve BPE boundaries.
+        semantic_start_token_id: First tokenizer ID representing a semantic code.
+        semantic_end_token_id: Last tokenizer ID representing a semantic code.
+        eos_token_id: Tokenizer ID for the end-of-turn token.
+        audio_pad_token_id: Tokenizer audio-padding ID; not a codec-column filler.
     """
 
     rows: np.ndarray
@@ -57,7 +69,22 @@ class Drama3Prompt:
 
 
 class Drama3PromptBuilder:
-    """Load frozen local tokenizer.json/config.json; perform no downloads."""
+    """Prepare prompts from local tokenizer/config files without loading a model.
+
+    Most applications only need `faster_tts.Model`. Use this class to inspect
+    prompt rows or prepare inputs for a native Drama 3 runtime.
+
+    Args:
+        checkpoint_dir: Local directory containing `tokenizer.json` and
+            `config.json`, either a source fish_omni configuration or a converted
+            configuration wrapping it in `source_config`. No downloads occur.
+        max_prompt_rows: Maximum combined text/history rows, in `1..8192`.
+            Defaults to 8192. This does not reserve space for generated frames.
+
+    Raises:
+        ValueError: Invalid row limit, incompatible configuration, or tokenizer mismatch.
+        OSError: Required checkpoint files cannot be read.
+    """
 
     def __init__(self, checkpoint_dir, max_prompt_rows=8192):
         if (
@@ -127,6 +154,22 @@ class Drama3PromptBuilder:
 
         Include only completed generations. History is conditioning context,
         not output audio, and counts towards the prompt/context limit.
+
+        Args:
+            text: Nonempty text normalized to Unicode NFC. Canonical speaker tags
+                with IDs 0 through 15 are accepted; other protocol tags are rejected.
+                A default speaker-0 tag is added if no leading speaker tag exists.
+            history: Iterable of completed `(text, codes)` turns. Each code array
+                must be nonempty, integer, shape `(frames, 10)`, and contain only
+                indices within the configured vocabulary.
+
+        Returns:
+            Drama3Prompt: Encoded rows, semantic mask, normalized text, and metadata.
+
+        Raises:
+            TypeError: Text is not a string.
+            ValueError: Empty text, forbidden tags, invalid history codes, or a
+                combined prompt exceeding `max_prompt_rows`.
         """
         if not isinstance(text, str):
             raise TypeError("text must be a string")
