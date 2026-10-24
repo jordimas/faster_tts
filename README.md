@@ -169,6 +169,7 @@ Drama 3 only. See [benchmark instructions](benchmark/README.md) to run your own 
 | HF / PyTorch | int8 | — | — | unsupported (no matching precision) |
 | CT2 | int8 | 73.164 | 164.483 | success |
 | HF / PyTorch | int8_float32 | — | — | unsupported (no matching precision) |
+| CT2 | int8_float32 | 73.536 | 164.474 | success |
 
 Pair conclusions:
 
@@ -176,5 +177,6 @@ Pair conclusions:
 - CPU float16: HF success; CT2 unsupported (no matching precision). No matched timing comparison available.
 - CPU float32: HF success; CT2 aborted by user. No matched timing comparison available.
 - CPU int8: HF unsupported (no matching precision); CT2 success. No matched timing comparison available.
+- CPU int8_float32: HF unsupported (no matching precision); CT2 success. No matched timing comparison available.
 
 Reports and logs: [benchmark/runs-2026-10-24-cpu-1run](benchmark/runs-2026-10-24-cpu-1run). CPU runs use 1 warmup and 1 timed run, with 8 threads and no service RAM or swap caps. HF: PyTorch 2.6.0+cpu; Fish Speech source `541566932abbaebcb0a40e562a1f846738383f38`. CT2: latest local Python 3.10 wheel, version 4.8.3. Measurements are written as configurations finish.
