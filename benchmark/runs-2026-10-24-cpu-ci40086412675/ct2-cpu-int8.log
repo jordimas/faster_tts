@@ -1,0 +1,11 @@
+Running as unit: faster-tts-ct2-cpu-int8-ci40086412675.service
+
+Device: cpu:0
+Fetching 8 files:   0%|          | 0/8 [00:00<?, ?it/s]Fetching 8 files: 100%|██████████| 8/8 [00:00<00:00, 477.78it/s]
+
+Compute type: int8
+Mean: 18.391s; std: 0.000s; RTF: 7.616; peak RSS: 44.715 GiB
+Finished with result: success
+Main processes terminated with: code=exited/status=0
+Service runtime: 2min 53.649s
+CPU time consumed: 6min 40.216s
