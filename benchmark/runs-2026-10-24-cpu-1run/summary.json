@@ -152,5 +152,11 @@
     "status": "failed",
     "error": "Configuration did not complete; see console output.",
     "backend": "CT2"
+  },
+  {
+    "backend": "HF / PyTorch",
+    "device": "cpu",
+    "compute_type": "int8",
+    "status": "unsupported (no matching precision)"
   }
 ]
