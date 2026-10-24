@@ -1,0 +1,56 @@
+{
+  "schema_version": 1,
+  "backend": "ct2",
+  "backend_version": "4.8.3",
+  "created_at": "2026-10-24T09:45:28.383074+00:00",
+  "host": {
+    "platform": "Linux-5.10.0-46-cloud-amd64-x86_64-with-glibc2.31",
+    "machine": "x86_64",
+    "processor": "Intel(R) Xeon(R) CPU @ 2.20GHz",
+    "logical_cpu_count": 32,
+    "system_ram_bytes": 219538305024,
+    "system_ram_gib": 204.46097946166992,
+    "python_version": "3.10.20"
+  },
+  "memory_metric": "peak_process_rss_including_load_and_warmup_excluding_gpu",
+  "results": [
+    {
+      "model": "drama-3",
+      "source": null,
+      "device": "cpu",
+      "device_index": 0,
+      "hardware": {
+        "cpu": {
+          "processor": "Intel(R) Xeon(R) CPU @ 2.20GHz",
+          "logical_cpu_count": 32,
+          "system_ram_bytes": 219538305024,
+          "system_ram_gib": 204.46097946166992
+        },
+        "gpu": null
+      },
+      "compute_type": "int8_float32",
+      "memory_profile": "default",
+      "gpu_expert_cache_gb": null,
+      "threads": 8,
+      "text": "Hello! Welcome to our application.",
+      "requested_runs": 1,
+      "warmup_runs": 1,
+      "status": "success",
+      "runs": [
+        {
+          "time_seconds": 74.74110628299968,
+          "audio_seconds": 2.786394557823129,
+          "rtf": 26.823590389650768,
+          "finish_reason": "eos"
+        }
+      ],
+      "summary": {
+        "mean_time_seconds": 74.74110628299968,
+        "std_time_seconds": 0,
+        "mean_audio_seconds": 2.786394557823129,
+        "rtf": 26.823590389650768,
+        "peak_rss_gib": 69.9266586303711
+      }
+    }
+  ]
+}

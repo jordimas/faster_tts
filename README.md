@@ -169,4 +169,4 @@ Drama 3 only. See [benchmark instructions](benchmark/README.md) to run your own 
 | HF / PyTorch | int8 | — | — | unsupported (no matching precision) |
 | CT2 | int8 | 73.960 | 68.306 | success (buffer-reuse fix) |
 | HF / PyTorch | int8_float32 | — | — | unsupported (no matching precision) |
-| CT2 | int8_float32 | 73.536 | 164.474 | success |
+| CT2 | int8_float32 | 74.741 | 69.927 | success (buffer-reuse fix) |
