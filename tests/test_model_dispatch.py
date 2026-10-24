@@ -20,15 +20,17 @@ class TestEngine(BaseModel):
     """Synthetic engine deliberately requiring no Drama assets or codec layout."""
 
     capabilities = ("synthesis",)
+    init_options = frozenset({"custom_init"})
+    synthesize_options = frozenset({"custom_syn"})
 
     @staticmethod
     def validate_checkpoint(directory, metadata):
         if metadata.get("test_layout") != 1:
             raise ValueError("test engine requires test_layout=1")
 
-    def __init__(self, directory, metadata, **settings):
-        self.settings = settings
-        self._info = {"model_path": str(directory), "settings": settings}
+    def __init__(self, directory, metadata, custom_init=None, **settings):
+        self.settings = dict(settings, custom_init=custom_init)
+        self._info = {"model_path": str(directory), "settings": self.settings}
         self.result = SynthesisResult(
             audio=np.zeros(400, np.float32),
             sample_rate=24000,
@@ -36,10 +38,8 @@ class TestEngine(BaseModel):
             finish_reason="eos",
         )
 
-    def synthesize(self, text, **settings):
-        if settings["history"]:
-            raise ValueError("test engine does not support history")
-        self.request = (text, settings)
+    def synthesize(self, text, custom_syn=None, **settings):
+        self.request = (text, dict(settings, custom_syn=custom_syn))
         return self.result
 
 
@@ -63,27 +63,43 @@ class ModelDispatchTest(unittest.TestCase):
         with patch(
             "faster_tts.engines.drama3._native_class", side_effect=AssertionError
         ):
-            model = Model(self.root, 3, "float32", 7, cpu_threads=5, num_workers=2)
-            result = model.synthesize("Hello", 11, 0.8, 20, 0.9, 42, True)
+            model = Model(
+                self.root,
+                3,
+                "float32",
+                cpu_threads=5,
+                num_workers=2,
+                engine_options={"custom_init": 7},
+            )
+            result = model.synthesize(
+                "Hello",
+                11.0,
+                0.8,
+                20,
+                0.9,
+                42,
+                True,
+                engine_options={"custom_syn": "ok"},
+            )
         self.assertIsInstance(model, Model)
         self.assertEqual(model._engine.settings["intra_threads"], 5)
         self.assertEqual(model._engine.settings["compute_type"], "float32")
-        self.assertEqual(model._engine.settings["prefill_chunk_size"], 7)
+        self.assertEqual(model._engine.settings["custom_init"], 7)
         self.assertEqual(model._engine.settings["num_workers"], 2)
         self.assertEqual(
             model._engine.request,
             (
                 "Hello",
                 {
-                    "max_frames": 11,
+                    "max_duration_s": 11.0,
                     "temperature": 0.8,
                     "top_k": 20,
                     "top_p": 0.9,
                     "seed": 42,
                     "greedy": True,
                     "max_retries": 0,
-                    "history": (),
                     "split_sentences": True,
+                    "custom_syn": "ok",
                 },
             ),
         )
@@ -92,6 +108,20 @@ class ModelDispatchTest(unittest.TestCase):
         self.assertEqual(result.codes.shape, (2, 4))
         self.assertEqual(result.codes.dtype, np.int32)
 
+    def test_rejects_unknown_engine_options_in_init_and_synthesize(self):
+        with patch(
+            "faster_tts.engines.drama3._native_class", side_effect=AssertionError
+        ):
+            with self.assertRaisesRegex(ValueError, "Unknown engine_options"):
+                Model(self.root, engine_options={"not_a_real_option": 1})
+            model = Model(self.root)
+            with self.assertRaisesRegex(ValueError, "Unknown engine_options"):
+                model.synthesize("Hello", engine_options={"not_a_real_option": 1})
+            with self.assertRaises(TypeError):
+                Model(self.root, engine_options=42)
+            with self.assertRaises(TypeError):
+                model.synthesize("Hello", engine_options=42)
+
     def test_info_and_engine_errors_pass_through(self):
         model = Model(self.root)
         info = model.info()
@@ -99,8 +129,11 @@ class ModelDispatchTest(unittest.TestCase):
         self.assertEqual(info["capabilities"], ("synthesis",))
         info["settings"]["device"] = "changed"
         self.assertEqual(model.info()["settings"]["device"], "cpu")
-        with self.assertRaisesRegex(ValueError, "does not support history"):
-            model.synthesize("Hello", history=[("Hi", np.zeros((1, 4), np.int32))])
+        with self.assertRaisesRegex(ValueError, "Unknown engine_options"):
+            model.synthesize(
+                "Hello",
+                engine_options={"history": [("Hi", np.zeros((1, 4), np.int32))]},
+            )
 
     def test_engine_validates_its_own_checkpoint(self):
         self.metadata["test_layout"] = 2
@@ -143,7 +176,6 @@ class ModelDispatchTest(unittest.TestCase):
                     "model_path": "jordimas/drama-3-ct2",
                     "intra_threads": 8,
                     "compute_type": "default",
-                    "prefill_chunk_size": 16,
                     "cpu_threads": None,
                     "num_workers": 1,
                     "device": "cpu",
@@ -151,22 +183,22 @@ class ModelDispatchTest(unittest.TestCase):
                     "revision": None,
                     "cache_dir": None,
                     "local_files_only": False,
-                    "gpu_expert_cache_gb": None,
+                    "engine_options": None,
                 },
                 "cpu_threads",
             ),
             (
                 Model.synthesize,
                 {
-                    "max_frames": 512,
+                    "max_duration_s": 24.0,
                     "temperature": 0.7,
                     "top_k": 30,
                     "top_p": 0.7,
                     "seed": 0,
                     "greedy": False,
                     "max_retries": 0,
-                    "history": (),
                     "split_sentences": True,
+                    "engine_options": None,
                 },
                 "max_retries",
             ),

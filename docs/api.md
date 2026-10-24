@@ -12,7 +12,6 @@ Model(
     model_path='jordimas/drama-3-ct2',
     intra_threads=8,
     compute_type='default',
-    prefill_chunk_size=16,
     *,
     cpu_threads=None,
     num_workers=1,
@@ -21,7 +20,7 @@ Model(
     revision=None,
     cache_dir=None,
     local_files_only=False,
-    gpu_expert_cache_gb=None,
+    engine_options=None,
 )
 ```
 
@@ -30,9 +29,9 @@ Load a converted checkpoint using its registered TTS engine.
 `config.json`'s `model_type` selects the engine. Required assets, native
 backends, GPU coverage, and compute types depend on the engine; `info()`
 reports the selection and its capabilities. Only Drama 3 is currently
-implemented. `prefill_chunk_size` and `gpu_expert_cache_gb` apply only
-to Drama 3; other engines ignore `CT2_DRAMA3_*` environment variables
-and reject `gpu_expert_cache_gb`.
+implemented. Engine-specific knobs (e.g. Drama 3's `prefill_chunk_size`
+and `gpu_expert_cache_gb`) are passed through `engine_options`; unknown
+keys raise `ValueError`.
 
 **Args**
 
@@ -42,29 +41,26 @@ and reject `gpu_expert_cache_gb`.
 - **intra_threads**: Legacy alias for `cpu_threads`. Defaults to 8.
 - **compute_type**: CT2 precision (`"default"`, `"float16"`, `"int8"`, …);
     availability depends on the device and CT2 build.
-- **prefill_chunk_size**: Drama 3 only. Prompt rows per prefill chunk.
-    Defaults to 16.
 - **cpu_threads**: CPU threads per worker; overrides `intra_threads`.
 - **num_workers**: Native workers for concurrent calls. Replicas share CPU
     weights; a single call remains blocking. Defaults to 1.
 - **device**: `"cpu"` (default), `"cuda"`, or `"auto"`. CUDA and ROCm both
-    use `"cuda"`. For Drama 3, `"auto"` falling back to CPU enables
-    expert memory mapping on Linux/macOS when `model.bin` exceeds
-    available RAM (reserving 2 GB and 30% headroom) and
-    `compute_type` is `"default"` or `"float32"`; set
-    `CT2_DRAMA3_CPU_MMAP` to override.
+    use `"cuda"`.
 - **device_index**: GPU index. Defaults to 0.
 - **revision**: Hub branch, tag, or commit.
 - **cache_dir**: Hugging Face download cache directory.
 - **local_files_only**: Use cached assets without downloading.
-- **gpu_expert_cache_gb**: Drama 3 only. Total expert-cache budget in
-    decimal GB, `"auto"`, or `None` to preserve
-    `CT2_DRAMA3_GPU_EXPERT_CACHE_GB`. Divided across workers; requires
-    GPU execution and a supporting CT2 build.
+- **engine_options**: Mapping of engine-specific loader options. Drama 3
+    accepts `prefill_chunk_size` (int, default 16) and
+    `gpu_expert_cache_gb` (positive float, `"auto"`, or `None`;
+    Drama 3 only, requires GPU execution). Unknown keys raise
+    `ValueError`.
 
 **Raises**
 
-- **ValueError**: Invalid settings or incompatible checkpoint metadata.
+- **ValueError**: Invalid settings, incompatible checkpoint metadata, or
+    unknown engine_options.
+- **TypeError**: `engine_options` is not a mapping.
 - **FileNotFoundError**: An explicit local checkpoint path does not exist.
 - **RuntimeError**: Required native bindings are missing.
 
@@ -93,7 +89,7 @@ Return resolved settings and supported engine capabilities.
 ```python
 Model.synthesize(
     text,
-    max_frames=512,
+    max_duration_s=24.0,
     temperature=0.7,
     top_k=30,
     top_p=0.7,
@@ -101,29 +97,29 @@ Model.synthesize(
     greedy=False,
     *,
     max_retries=0,
-    history=(),
     split_sentences=True,
+    engine_options=None,
 )
 ```
 
 Synthesize speech using the selected engine.
 
 Codec dimensions, sample rate, and the interpretation of sampling,
-history, retries, sentence splitting, and speaker tags are engine-
-specific; engines reject unsupported nondefault options. Drama 3
-generates sentence/clause-chunked audio with completed text/audio
-history, preserving a leading speaker tag on each chunk. Sampling
-options and `seed` apply per chunk; retry seeds wrap uint64. Seeded
-sampling follows the model distribution without bitwise PyTorch RNG
-parity.
+retries, sentence splitting, and speaker tags are engine-specific;
+engines reject unsupported nondefault options. Drama 3 generates
+sentence/clause-chunked audio preserving a leading speaker tag on
+each chunk. Sampling options and `seed` apply per chunk; retry
+seeds wrap uint64. Seeded sampling follows the model distribution
+without bitwise PyTorch RNG parity.
 
 **Args**
 
 - **text**: Nonempty text. For Drama 3, canonical speaker tags
     `<|speaker:0|>`–`<|speaker:15|>` are honored and other
     protocol tags are rejected; defaults to speaker 0.
-- **max_frames**: Codec-frame budget for combined returned audio.
-    Defaults to 512 (~23.8s for Drama 3).
+- **max_duration_s**: Positive finite upper bound on returned audio
+    duration in seconds. Engines map this to their native frame
+    or token budget. Defaults to 24.0.
 - **temperature**: Sampling temperature (positive, finite). Defaults to 0.7.
 - **top_k**: Sampling candidate count. Defaults to 30.
 - **top_p**: Nucleus threshold in `(0, 1]`. Defaults to 0.7.
@@ -131,25 +127,29 @@ parity.
 - **greedy**: Diagnostic greedy decoding instead of sampling.
 - **max_retries**: 0 (default) or 1; retry a length-capped sampled
     result once with `seed+1`. Greedy never retries.
-- **history**: Completed `(text, codes)` turns conditioning later
-    chunks. Codes are integer arrays `(frames, codebooks)`
-    within the codec vocabulary (10 codebooks for Drama 3);
-    does not establish speaker continuity.
 - **split_sentences**: Split and concatenate (default True); False
     forces one native generation.
+- **engine_options**: Mapping of engine-specific synthesis options.
+    Drama 3 accepts `history` (iterable of completed
+    `(text, codes)` turns conditioning later chunks; codes are
+    integer arrays `(frames, 10)` within the codec vocabulary;
+    does not establish speaker continuity) and `max_frames`
+    (positive int override of the frame budget derived from
+    `max_duration_s`). Unknown keys raise `ValueError`.
 
 **Returns**
 
-- **SynthesisResult**: Audio, codec indices, `finish_reason`
-    (`"eos"` or `"length"`; `"length"` means the frame budget
-    was exhausted and audio may end mid-utterance, and `"eos"`
-    does not guarantee complete speech), per-attempt
-    `timings`, and `attempts` diagnostics.
+- **SynthesisResult**: Audio, codec indices (`None` for engines
+    without discrete codes), `finish_reason` (`"eos"` or
+    `"length"`; `"length"` means the budget was exhausted and
+    audio may end mid-utterance, and `"eos"` does not
+    guarantee complete speech), `timings`, and `attempts`.
 
 **Raises**
 
-- **TypeError**: Text is not a string.
-- **ValueError**: Invalid text, sampling settings, history, or context size.
+- **TypeError**: Text is not a string, or engine_options is not a mapping.
+- **ValueError**: Invalid text, sampling settings, duration, context
+    size, or unknown engine_options.
 - **RuntimeError**: Native generation fails or returns invalid/empty audio.
 
 ## SynthesisResult
@@ -158,7 +158,7 @@ parity.
 SynthesisResult(
     audio: numpy.ndarray,
     sample_rate: int,
-    codes: numpy.ndarray,
+    codes: numpy.ndarray | None,
     finish_reason: str,
     timings: dict = <factory>,
     attempts: tuple = (),
@@ -171,8 +171,9 @@ Generated speech and diagnostics returned by `Model.synthesize`.
 
 - **audio**: Contiguous mono float32 array `(samples,)`. Finite, unclipped.
 - **sample_rate**: Audio sample rate in Hz. Engine-specific (44100 for Drama 3).
-- **codes**: Contiguous int32 codec indices `(frames, codebooks)`.
-    Engine-specific; Drama 3 has 10 codebooks and 2048 samples/frame.
+- **codes**: Contiguous int32 codec indices `(frames, codebooks)`, or `None`
+    for engines without discrete codes. Drama 3 has 10 codebooks and
+    2048 samples/frame.
 - **finish_reason**: `"eos"` (stop token) or `"length"` (frame budget
     exhausted). `"eos"` does not guarantee complete speech.
 - **timings**: Native phase names mapped to elapsed seconds, summed across

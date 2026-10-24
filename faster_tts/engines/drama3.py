@@ -26,6 +26,10 @@ def _native_class():
         ) from exc
 
 
+SAMPLE_RATE = 44100
+CODEC_HOP = 2048
+
+
 @register_engine("drama3")
 class Drama3Model(BaseModel):
     """Internal Drama 3 implementation."""
@@ -38,6 +42,8 @@ class Drama3Model(BaseModel):
         "gpu_expert_cache",
         "cpu_expert_mmap",
     )
+    init_options = frozenset({"prefill_chunk_size", "gpu_expert_cache_gb"})
+    synthesize_options = frozenset({"history", "max_frames"})
 
     @staticmethod
     def validate_checkpoint(directory, config):
@@ -82,12 +88,13 @@ class Drama3Model(BaseModel):
         *,
         intra_threads,
         compute_type,
-        prefill_chunk_size,
         num_workers,
         device,
         device_index,
-        gpu_expert_cache_gb,
+        prefill_chunk_size=16,
+        gpu_expert_cache_gb=None,
     ):
+        _positive_int(prefill_chunk_size, "prefill_chunk_size")
         validate_cache_budget(gpu_expert_cache_gb)
         self._prompt = Drama3PromptBuilder(directory)
         self._prefill_chunk_size = prefill_chunk_size
@@ -141,7 +148,7 @@ class Drama3Model(BaseModel):
     def synthesize(
         self,
         text,
-        max_frames=512,
+        max_duration_s=24.0,
         temperature=0.7,
         top_k=30,
         top_p=0.7,
@@ -149,10 +156,22 @@ class Drama3Model(BaseModel):
         greedy=False,
         *,
         max_retries=0,
-        history=(),
         split_sentences=True,
+        history=(),
+        max_frames=None,
     ):
         """Run Drama 3 generation, validation, retries, and sentence splitting."""
+        if (
+            not isinstance(max_duration_s, Real)
+            or isinstance(max_duration_s, bool)
+            or not math.isfinite(max_duration_s)
+            or max_duration_s <= 0
+        ):
+            raise ValueError("max_duration_s must be positive and finite")
+        if max_frames is None:
+            max_frames = max(
+                1, math.ceil(float(max_duration_s) * SAMPLE_RATE / CODEC_HOP)
+            )
         _positive_int(max_frames, "max_frames")
         if (
             not isinstance(temperature, Real)
@@ -305,15 +324,15 @@ class Drama3Model(BaseModel):
             )
             result = self.synthesize(
                 text,
-                remaining,
-                temperature,
-                top_k,
-                top_p,
-                seed,
-                greedy,
+                temperature=temperature,
+                top_k=top_k,
+                top_p=top_p,
+                seed=seed,
+                greedy=greedy,
                 max_retries=max_retries,
                 history=context,
                 split_sentences=False,
+                max_frames=remaining,
             )
             audio.append(result.audio)
             codes.append(result.codes)

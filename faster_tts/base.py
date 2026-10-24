@@ -65,14 +65,18 @@ class BaseModel:
     Subclasses set ``self._info`` in their constructor and implement
     ``validate_checkpoint(directory, config)`` and ``synthesize``. Constructors
     receive a resolved directory, checkpoint metadata, and the public loader's
-    settings. Engines must reject unsupported nondefault synthesis options and
-    return a SynthesisResult with engine-specific codec dimensions. Declare
-    supported features in ``capabilities``. The base class adds engine identity
-    and capabilities to an independent copy of ``_info``.
+    settings. Engine-specific knobs are declared in ``init_options`` and
+    ``synthesize_options`` as frozensets of accepted keys; the dispatcher
+    validates ``engine_options`` against these and raises ``ValueError`` on
+    unknown keys. Return a SynthesisResult with engine-specific codec
+    dimensions. Declare supported features in ``capabilities``. The base class
+    adds engine identity and capabilities to an independent copy of ``_info``.
     """
 
     engine_model_type: str
     capabilities = ("synthesis",)
+    init_options: frozenset = frozenset()
+    synthesize_options: frozenset = frozenset()
 
     def info(self):
         """Return device/offline execution settings and recorded checkpoint metadata.
