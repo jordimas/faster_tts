@@ -1,0 +1,14 @@
+Running as unit: faster-tts-ct2-cpu-int8-cpurebuilt20261024.service
+
+Device: cpu:0
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+
+Compute type: int8
+Mean: 63.644s; std: 0.000s; RTF: 24.473; peak RSS: 48.619 GiB
+Finished with result: success
+Main processes terminated with: code=exited/status=0
+Service runtime: 9min 43.010s
+CPU time consumed: 35min 21.387s
+Started /home/jupyter/faster_tts/.venv/bin/python -u /home/jupyter/faster_tts/benchmark/benchmark.py drama-3 --memory-profile default --device cpu --compute-type int8 --runs 1 --threads 8 --output-json /home/jupyter/faster_tts/benchmark/runs-2026-10-24-cpu-rebuilt/ct2-cpu-int8.json --log-worker.
+faster-tts-ct2-cpu-int8-cpurebuilt20261024.service: Succeeded.
+faster-tts-ct2-cpu-int8-cpurebuilt20261024.service: Consumed 35min 21.387s CPU time.

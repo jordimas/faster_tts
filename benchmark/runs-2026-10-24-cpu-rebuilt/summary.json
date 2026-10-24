@@ -94,5 +94,44 @@
     "device": "cpu",
     "compute_type": "int8",
     "status": "unsupported (no matching precision)"
+  },
+  {
+    "model": "drama-3",
+    "source": null,
+    "device": "cpu",
+    "device_index": 0,
+    "hardware": {
+      "cpu": {
+        "processor": "AMD EPYC 7B13",
+        "logical_cpu_count": 16,
+        "system_ram_bytes": 67441471488,
+        "system_ram_gib": 62.80976486206055
+      },
+      "gpu": null
+    },
+    "compute_type": "int8",
+    "memory_profile": "default",
+    "gpu_expert_cache_gb": null,
+    "threads": 8,
+    "text": "Hello! Welcome to our application.",
+    "requested_runs": 1,
+    "warmup_runs": 1,
+    "status": "success",
+    "runs": [
+      {
+        "time_seconds": 63.644194609999886,
+        "audio_seconds": 2.6006349206349206,
+        "rtf": 24.47256018328853,
+        "finish_reason": "eos"
+      }
+    ],
+    "summary": {
+      "mean_time_seconds": 63.644194609999886,
+      "std_time_seconds": 0,
+      "mean_audio_seconds": 2.6006349206349206,
+      "rtf": 24.47256018328853,
+      "peak_rss_gib": 48.61920166015625
+    },
+    "backend": "CT2"
   }
 ]

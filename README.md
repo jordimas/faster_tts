@@ -167,3 +167,4 @@ RTF is compute time divided by generated audio duration; lower is better, and 1 
 | HF / PyTorch | float16 | 351.489 | 3.204 | 109.691 | 44.671 | success |
 | CT2 | float16 | — | — | — | — | unsupported (no matching precision) |
 | HF / PyTorch | int8 | — | — | — | — | unsupported (no matching precision) |
+| CT2 | int8 | 63.644 | 2.601 | 24.473 | 48.619 | success |
