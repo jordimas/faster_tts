@@ -78,27 +78,26 @@ python -m faster_tts --device cuda --device-index 0 --compute-type float16 \
   --text "Hello!" --output hello.wav
 ```
 
-## GPU expert-cache budget
+## Expert memory on GPU and CPU
 
-Limit cached GPU expert weights with an explicit budget in decimal GB or automatic sizing:
+On GPU, `"auto"` sizes the expert cache from free memory, reserving at least
+2 GB and 30% for other allocations. Override it with a total budget in decimal GB:
 
 ```python
 model = Model(device="cuda", gpu_expert_cache_gb="auto")
 model = Model(device="cuda", gpu_expert_cache_gb=12, num_workers=2)
 ```
 
-Budgets are shared across workers (6 GB each in the second example). `"auto"`
-reserves at least 2 GB and 30% of free GPU memory for other allocations.
-This caps expert weights, not total VRAM or RAM, so out-of-memory errors remain possible.
-`model.info()` reports the selected budgets.
+Budgets are divided across workers (6 GB each above); `model.info()` reports them.
+The default, `None`, uses `CT2_DRAMA3_GPU_EXPERT_CACHE_GB` per worker; unset or
+zero means uncapped. CLI: `--gpu-expert-cache-gb auto` or a numeric budget.
 
-```bash
-python -m faster_tts --device cuda --gpu-expert-cache-gb auto --text "Hello!" --output hello.wav
-```
+On CPU, there is no `"auto"` budget. Set `CT2_DRAMA3_CPU_MMAP=1` before loading
+to memory-map byte-encoded experts; the OS manages cached pages automatically.
+Unset it or use `0` to restore the default (off). Requires Linux/macOS and
+`compute_type="default"` or `"float32"`; keep the checkpoint unchanged while loaded.
 
-The default (`None`) preserves `CT2_DRAMA3_GPU_EXPERT_CACHE_GB`, which applies
-per worker; unset or zero means uncapped. Requires GPU execution and a CT2 build
-supporting this setting. If automatic memory detection fails, use an explicit budget.
+Both features require a supporting CT2 build and do not limit total VRAM or RAM.
 
 ## Threads and concurrent requests
 
