@@ -61,7 +61,8 @@ model = Model(local_files_only=True)  # Use only cached assets.
 The CLI accepts the same model argument and cache options; Hub IDs may use an
 `hf://` prefix. Existing local directories take precedence. Use a `Path` object
 or an explicit path (`./`, `../`, `~/`, or absolute) to avoid interpreting missing
-local paths as Hub IDs. Custom checkpoints must use the supported Drama 3 layout.
+local paths as Hub IDs. Custom checkpoints must match the resolved engine's
+layout; `cache.py` delegates checkpoint validation to the registered engine.
 
 ## Device and compute type
 
@@ -83,7 +84,11 @@ python -m faster_tts --device cuda --device-index 0 --compute-type float16 \
   --text "Hello!" --output hello.wav
 ```
 
-## Expert memory on GPU and CPU
+## Expert memory on GPU and CPU (Drama 3)
+
+The `gpu_expert_cache_gb` and `CT2_DRAMA3_*` knobs below are specific to the
+Drama 3 engine. Other engines ignore the `CT2_DRAMA3_*` environment variables
+and do not accept `gpu_expert_cache_gb`.
 
 On GPU, `"auto"` sizes the expert cache from free memory, reserving at least
 2 GB and 30% for other allocations. Override it with a total budget in decimal GB:
@@ -139,7 +144,7 @@ for conversion and native runtime details.
 
 ## Benchmark
 
-See [benchmark instructions](benchmark/README.md) to run your own measurements.
+Drama 3 only. See [benchmark instructions](benchmark/README.md) to run your own measurements.
 
 <!-- current-benchmarks -->
 ### Benchmark results (2026-10-24)
