@@ -1,0 +1,10 @@
+repos:
+  - repo: local
+    hooks:
+      - id: api-docs
+        name: Generate Markdown API reference
+        entry: python scripts/generate_docs.py
+        language: python
+        additional_dependencies: [numpy>=1.23, tokenizers>=0.20]
+        files: ^(faster_tts/.*\.py|scripts/generate_docs\.py|docs/api\.md|\.pre-commit-config\.yaml)$
+        pass_filenames: false

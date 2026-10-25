@@ -1,0 +1,17 @@
+[
+  {
+    "name": "01_emotion",
+    "capability": "Expressive delivery",
+    "text": "[whispering] Wait... did you hear that? [excited] We found it!"
+  },
+  {
+    "name": "02_dialogue",
+    "capability": "Two speakers",
+    "text": "<|speaker:0|> Ready for takeoff? <|speaker:1|> Ready. Let's touch the stars."
+  },
+  {
+    "name": "03_multilingual",
+    "capability": "English, Spanish, and French",
+    "text": "Hello, welcome aboard. Hola, bienvenidos a bordo. Bonjour, bienvenue à bord."
+  }
+]

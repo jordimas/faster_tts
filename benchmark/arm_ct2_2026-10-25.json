@@ -1,0 +1,132 @@
+{
+  "schema_version": 1,
+  "backend": "ct2",
+  "backend_version": "4.8.4",
+  "created_at": "2026-10-25T16:17:43.100725+00:00",
+  "host": {
+    "platform": "macOS-15.7.7-arm64-arm-64bit-Mach-O",
+    "machine": "arm64",
+    "processor": "arm",
+    "logical_cpu_count": 12,
+    "system_ram_bytes": 25769803776,
+    "system_ram_gib": 24.0,
+    "python_version": "3.13.7"
+  },
+  "memory_metric": "peak_process_rss_including_load_and_warmup_excluding_gpu",
+  "results": [
+    {
+      "model": "drama-3",
+      "source": null,
+      "device": "cpu",
+      "device_index": 0,
+      "hardware": {
+        "cpu": {
+          "processor": "arm",
+          "logical_cpu_count": 12,
+          "system_ram_bytes": 25769803776,
+          "system_ram_gib": 24.0
+        },
+        "gpu": null
+      },
+      "compute_type": "float32",
+      "memory_profile": "default",
+      "gpu_expert_cache_gb": null,
+      "threads": 8,
+      "text": "Hello! Welcome to our application.",
+      "requested_runs": 1,
+      "warmup_runs": 1,
+      "status": "success",
+      "runs": [
+        {
+          "time_seconds": 284.6857345419994,
+          "audio_seconds": 2.507755102040816,
+          "rtf": 113.52214349412412,
+          "finish_reason": "eos"
+        }
+      ],
+      "summary": {
+        "mean_time_seconds": 284.6857345419994,
+        "std_time_seconds": 0,
+        "mean_audio_seconds": 2.507755102040816,
+        "rtf": 113.52214349412412,
+        "peak_rss_gib": 11.39398193359375
+      }
+    },
+    {
+      "model": "drama-3",
+      "source": null,
+      "device": "cpu",
+      "device_index": 0,
+      "hardware": {
+        "cpu": {
+          "processor": "arm",
+          "logical_cpu_count": 12,
+          "system_ram_bytes": 25769803776,
+          "system_ram_gib": 24.0
+        },
+        "gpu": null
+      },
+      "compute_type": "int8",
+      "memory_profile": "default",
+      "gpu_expert_cache_gb": null,
+      "threads": 8,
+      "text": "Hello! Welcome to our application.",
+      "requested_runs": 1,
+      "warmup_runs": 1,
+      "status": "success",
+      "runs": [
+        {
+          "time_seconds": 78.59764545899816,
+          "audio_seconds": 2.2755555555555556,
+          "rtf": 34.5399809145988,
+          "finish_reason": "eos"
+        }
+      ],
+      "summary": {
+        "mean_time_seconds": 78.59764545899816,
+        "std_time_seconds": 0,
+        "mean_audio_seconds": 2.2755555555555556,
+        "rtf": 34.5399809145988,
+        "peak_rss_gib": 15.960708618164062
+      }
+    },
+    {
+      "model": "drama-3",
+      "source": null,
+      "device": "cpu",
+      "device_index": 0,
+      "hardware": {
+        "cpu": {
+          "processor": "arm",
+          "logical_cpu_count": 12,
+          "system_ram_bytes": 25769803776,
+          "system_ram_gib": 24.0
+        },
+        "gpu": null
+      },
+      "compute_type": "int8_float32",
+      "memory_profile": "default",
+      "gpu_expert_cache_gb": null,
+      "threads": 8,
+      "text": "Hello! Welcome to our application.",
+      "requested_runs": 1,
+      "warmup_runs": 1,
+      "status": "success",
+      "runs": [
+        {
+          "time_seconds": 71.39807604200905,
+          "audio_seconds": 2.2755555555555556,
+          "rtf": 31.37610763564851,
+          "finish_reason": "eos"
+        }
+      ],
+      "summary": {
+        "mean_time_seconds": 71.39807604200905,
+        "std_time_seconds": 0,
+        "mean_audio_seconds": 2.2755555555555556,
+        "rtf": 31.37610763564851,
+        "peak_rss_gib": 17.649932861328125
+      }
+    }
+  ]
+}

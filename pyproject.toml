@@ -1,0 +1,49 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "faster-tts"
+version = "0.0.1"
+description = "Text-to-speech library on CPU and GPU using CTranslate2"
+authors = [{ name = "Jordi Mas", email = "jmas@softcatala.org" }]
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
+requires-python = ">=3.10"
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Topic :: Multimedia :: Sound/Audio :: Speech",
+]
+dependencies = [
+    "ctranslate2>=4.8.4",
+    "numpy>=1.23",
+    "tokenizers>=0.20",
+    "huggingface-hub>=0.24",
+]
+
+[project.urls]
+Homepage = "https://github.com/jordimas/faster_tts"
+Repository = "https://github.com/jordimas/faster_tts"
+Documentation = "https://github.com/jordimas/faster_tts/blob/main/docs/api.md"
+Issues = "https://github.com/jordimas/faster_tts/issues"
+
+[project.optional-dependencies]
+docs = ["pre-commit>=4"]
+
+[project.scripts]
+faster-tts = "faster_tts.__main__:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["faster_tts*"]
+
+[tool.uv]
+environments = ["python_version == '3.14'"]
+
+[tool.ruff.lint.per-file-ignores]
+# Keep assertion contexts nested so failures during setup are not swallowed.
+"tests/*.py" = ["SIM117"]

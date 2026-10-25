@@ -1,0 +1,168 @@
+{
+  "schema_version": 1,
+  "backend": "ct2",
+  "backend_version": "4.8.4",
+  "created_at": "2026-10-25T16:48:04.062130+00:00",
+  "host": {
+    "platform": "macOS-15.7.7-arm64-arm-64bit-Mach-O",
+    "machine": "arm64",
+    "processor": "arm",
+    "logical_cpu_count": 12,
+    "system_ram_bytes": 25769803776,
+    "system_ram_gib": 24.0,
+    "python_version": "3.13.7"
+  },
+  "memory_metric": "peak_process_rss_including_load_and_warmup_excluding_gpu",
+  "results": [
+    {
+      "model": "drama-3",
+      "source": null,
+      "device": "cpu",
+      "device_index": 0,
+      "hardware": {
+        "cpu": {
+          "processor": "arm",
+          "logical_cpu_count": 12,
+          "system_ram_bytes": 25769803776,
+          "system_ram_gib": 24.0
+        },
+        "gpu": null
+      },
+      "compute_type": "float32",
+      "memory_profile": "default",
+      "gpu_expert_cache_gb": null,
+      "threads": 8,
+      "text": "Hello! Welcome to our application.",
+      "requested_runs": 3,
+      "warmup_runs": 1,
+      "status": "success",
+      "runs": [
+        {
+          "time_seconds": 266.31349699999555,
+          "audio_seconds": 2.507755102040816,
+          "rtf": 106.19597455240708,
+          "finish_reason": "eos"
+        },
+        {
+          "time_seconds": 265.21818008401897,
+          "audio_seconds": 2.507755102040816,
+          "rtf": 105.75920267022241,
+          "finish_reason": "eos"
+        },
+        {
+          "time_seconds": 273.49660854198737,
+          "audio_seconds": 2.507755102040816,
+          "rtf": 109.06033380987452,
+          "finish_reason": "eos"
+        }
+      ],
+      "summary": {
+        "mean_time_seconds": 268.34276187533396,
+        "std_time_seconds": 4.496835707932517,
+        "mean_audio_seconds": 2.507755102040816,
+        "rtf": 107.00517034416801,
+        "peak_rss_gib": 11.148101806640625
+      }
+    },
+    {
+      "model": "drama-3",
+      "source": null,
+      "device": "cpu",
+      "device_index": 0,
+      "hardware": {
+        "cpu": {
+          "processor": "arm",
+          "logical_cpu_count": 12,
+          "system_ram_bytes": 25769803776,
+          "system_ram_gib": 24.0
+        },
+        "gpu": null
+      },
+      "compute_type": "int8",
+      "memory_profile": "default",
+      "gpu_expert_cache_gb": null,
+      "threads": 8,
+      "text": "Hello! Welcome to our application.",
+      "requested_runs": 3,
+      "warmup_runs": 1,
+      "status": "success",
+      "runs": [
+        {
+          "time_seconds": 69.5769462499884,
+          "audio_seconds": 2.2755555555555556,
+          "rtf": 30.57580645751443,
+          "finish_reason": "eos"
+        },
+        {
+          "time_seconds": 68.17719295897405,
+          "audio_seconds": 2.2755555555555556,
+          "rtf": 29.96068049954914,
+          "finish_reason": "eos"
+        },
+        {
+          "time_seconds": 71.06906312497449,
+          "audio_seconds": 2.2755555555555556,
+          "rtf": 31.231521881092306,
+          "finish_reason": "eos"
+        }
+      ],
+      "summary": {
+        "mean_time_seconds": 69.60773411131231,
+        "std_time_seconds": 1.4461808958614184,
+        "mean_audio_seconds": 2.2755555555555556,
+        "rtf": 30.589336279385297,
+        "peak_rss_gib": 16.025421142578125
+      }
+    },
+    {
+      "model": "drama-3",
+      "source": null,
+      "device": "cpu",
+      "device_index": 0,
+      "hardware": {
+        "cpu": {
+          "processor": "arm",
+          "logical_cpu_count": 12,
+          "system_ram_bytes": 25769803776,
+          "system_ram_gib": 24.0
+        },
+        "gpu": null
+      },
+      "compute_type": "int8_float32",
+      "memory_profile": "default",
+      "gpu_expert_cache_gb": null,
+      "threads": 8,
+      "text": "Hello! Welcome to our application.",
+      "requested_runs": 3,
+      "warmup_runs": 1,
+      "status": "success",
+      "runs": [
+        {
+          "time_seconds": 60.758588249998866,
+          "audio_seconds": 2.2755555555555556,
+          "rtf": 26.700551477050283,
+          "finish_reason": "eos"
+        },
+        {
+          "time_seconds": 73.84597587498138,
+          "audio_seconds": 2.2755555555555556,
+          "rtf": 32.451844866935176,
+          "finish_reason": "eos"
+        },
+        {
+          "time_seconds": 79.01291025002138,
+          "audio_seconds": 2.2755555555555556,
+          "rtf": 34.722470324716426,
+          "finish_reason": "eos"
+        }
+      ],
+      "summary": {
+        "mean_time_seconds": 71.20582479166721,
+        "std_time_seconds": 9.409190519230133,
+        "mean_audio_seconds": 2.2755555555555556,
+        "rtf": 31.29162222290063,
+        "peak_rss_gib": 16.9395751953125
+      }
+    }
+  ]
+}
