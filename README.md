@@ -33,7 +33,7 @@ faster-tts --text "Hello!" --output hello.wav
 ```
 
 Generate emotion, dialogue, and multilingual audio with the
-[sample scripts](https://github.com/jordimas/faster_tts/blob/dev/samples/README.md), or narrate a UTF-8 article:
+[sample scripts](https://github.com/jordimas/faster_tts/blob/main/samples/README.md), or narrate a UTF-8 article:
 
 ```bash
 python samples/article_voice.py article.txt --output article.wav
@@ -103,18 +103,18 @@ Speech spans are capped at 256 frames and breathing events at 22, within the
 overall budget. Events use empty history and do not condition later speech.
 Listen to check voice, prosody, and event quality. CLI: `--directed-spans`.
 
-[`SynthesisResult`](https://github.com/jordimas/faster_tts/blob/dev/docs/api.md#synthesisresult) includes audio, sample rate, and
+[`SynthesisResult`](https://github.com/jordimas/faster_tts/blob/main/docs/api.md#synthesisresult) includes audio, sample rate, and
 `finish_reason`. A `"length"` result may be truncated; the CLI saves it and exits
 with status 1. `"eos"` does not guarantee complete speech.
 Enable INFO logging for `faster_tts.engines.drama3` for device and segment details.
 
-See the [API reference](https://github.com/jordimas/faster_tts/blob/dev/docs/api.md), `python -m faster_tts --help`, and
+See the [API reference](https://github.com/jordimas/faster_tts/blob/main/docs/api.md), `python -m faster_tts --help`, and
 [CT2 Drama 3 guide](https://github.com/OpenNMT/CTranslate2/blob/master/docs/guides/drama3.md)
 for options and conversion instructions.
 
 ## Benchmark
 
-Drama 3 only. See [benchmark instructions](https://github.com/jordimas/faster_tts/blob/dev/benchmark/README.md) to run your own measurements.
+Drama 3 only. See [benchmark instructions](https://github.com/jordimas/faster_tts/blob/main/benchmark/README.md) to run your own measurements.
 
 <!-- current-benchmarks -->
 ### Benchmark results (2026-10-24)
