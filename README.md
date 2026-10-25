@@ -3,10 +3,22 @@
 
 # faster_tts
 
+The goal is to provide a Python library for accessing all text-to-speech models
+supported by CTranslate2.
+
 Text-to-speech with **Drama 3 on CPU and GPU**, powered by CTranslate2.
 Provides a Python library API and the `faster-tts` command-line interface (CLI).
 Includes model downloading and caching, sentence splitting, speaker tags, and WAV output.
 Requires CTranslate2 **4.8.4+**.
+
+Drama 3 supports [83 languages](https://fish.audio/blog/fish-audio-drama-3/).
+With this library and CTranslate2, you can use:
+
+- Natural-language directions for emotion, tone, and pacing, such as `[whispering]`.
+- Inline vocal sounds such as laughter and breathing, and delivery tags such as
+  `<emphasis>…</emphasis>` for individual words or phrases.
+- Speaker-tagged dialogue using `<|speaker:0|>`, `<|speaker:1|>`, and so on.
+- Offline synthesis with mono audio output at 44.1 kHz on CPU or GPU.
 
 ## Quick start
 
