@@ -1,3 +1,6 @@
+[![PyPI version](https://img.shields.io/pypi/v/faster-tts.svg?logo=pypi&logoColor=FFE873)](https://pypi.org/project/faster-tts/)
+[![PyPI downloads](https://img.shields.io/pypi/dm/faster-tts.svg)](https://pypistats.org/packages/faster-tts)
+
 # faster_tts
 
 Text-to-speech with **Drama 3 on CPU and GPU**, powered by CTranslate2.
