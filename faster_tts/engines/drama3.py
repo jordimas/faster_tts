@@ -94,7 +94,7 @@ class Drama3Model(BaseModel):
         num_workers,
         device,
         device_index,
-        prefill_chunk_size=16,
+        prefill_chunk_size=128,
         gpu_expert_cache_gb=None,
     ):
         _positive_int(prefill_chunk_size, "prefill_chunk_size")

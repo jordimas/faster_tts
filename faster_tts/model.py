@@ -93,7 +93,7 @@ class Model:
         cache_dir: Hugging Face download cache directory.
         local_files_only: Use cached assets without downloading.
         engine_options: Mapping of engine-specific loader options. Drama 3
-            accepts `prefill_chunk_size` (int, default 16) and
+            accepts `prefill_chunk_size` (int, default 128) and
             `gpu_expert_cache_gb` (positive float, `"auto"`, `"uncapped"`, or
             `None`). On GPU, omission or `None` honors
             `CT2_DRAMA3_GPU_EXPERT_CACHE_GB` if set; otherwise it automatically
