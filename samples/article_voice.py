@@ -3,6 +3,7 @@
 import argparse
 import logging
 from pathlib import Path
+from time import perf_counter
 
 from faster_tts import Model
 
@@ -46,9 +47,11 @@ def main():
     print("Loading model…", flush=True)
     model = Model(args.model, device=args.device, compute_type=args.compute_type)
     print("Reading article…", flush=True)
+    start = perf_counter()
     result = model.synthesize(
         text, max_duration_s=args.max_duration_s, output=args.output
     )
+    print(f"Total inference time: {perf_counter() - start:.2f}s")
     print(f"Saved {result.audio.size / result.sample_rate:.1f}s to {args.output}")
     if result.finish_reason != "eos":
         raise SystemExit(
