@@ -665,7 +665,7 @@ class Drama3PythonAPITest(unittest.TestCase):
             self.backend.generate.call_args.kwargs,
             {
                 "max_frames": 1,
-                "prefill_chunk_size": 16,
+                "prefill_chunk_size": 128,
                 "temperature": 0.6,
                 "top_k": 7,
                 "top_p": 0.95,
