@@ -5,7 +5,6 @@ import ctypes
 import json
 import os
 import platform
-import re
 import subprocess
 import sys
 import tempfile
@@ -142,8 +141,7 @@ class Results:
 
     def save(self):
         if self.path is None:
-            name = platform.node() or self.document["host"]["machine"]
-            slug = re.sub(r"[^a-z0-9]+", "-", name.lower()).strip("-")
+            slug = self.document["host"]["machine"] or "unknown"
             date = self.document["created_at"][:10]
             stem = f"{slug}_{self.document['backend']}_{date}"
             self.path = Path(f"{stem}.json")

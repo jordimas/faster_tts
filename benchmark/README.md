@@ -35,9 +35,9 @@ successful workloads, excluding loading and warmup. Groups containing failed or
 skipped workloads are marked `incomplete`; unavailable RTF or memory is `null`.
 
 By default, each invocation writes one report in the current directory named
-`<hostname>_<backend>_<YYYY-MM-DD>.json`, with all tested devices, workloads,
-compute types, and memory profiles together. Hostnames use lowercase letters
-and hyphens. Existing
+`<hardware>_<backend>_<YYYY-MM-DD>.json`, with all tested devices, workloads,
+compute types, and memory profiles together. The hardware prefix is the machine
+architecture from `platform.machine()`, such as `x86_64`, `arm64`, or `aarch64`. Existing
 reports are preserved using `_01`, `_02`, etc.; dates use UTC. Omit
 `--compute-type` to test all supported types. Use `--output-json <path>` to choose
 an explicit path (overwritten on each invocation).
@@ -71,7 +71,9 @@ python benchmark/json_to_html.py benchmark/v1-*.json benchmark/v2-*.json -o benc
 Column headers use the filename prefix before the first `-` (for example,
 `v2-cpu.json` becomes `v2`). Rows identify hardware/device and compute type;
 each version shows total synthesis seconds, RTF, and peak host RAM from the
-JSON summary. Different backends, models, memory profiles, thread counts, or
+JSON summary. Backends can share rows; model names use the final path component
+so a local HF path such as `/models/drama-3` matches `drama-3`.
+Different models, memory profiles, thread counts, or
 workload selections stay in separate rows. Missing measurements show a dash;
 incomplete measurements are labeled. Duplicate measurements for the same
 version and row are rejected. Reports must contain the top-level `summary`.

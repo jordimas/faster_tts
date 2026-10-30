@@ -184,7 +184,9 @@ class ResultsTest(unittest.TestCase):
             for path in paths:
                 report = json.loads(path.read_text())
                 self.assertEqual(report["backend"], "hf")
-                self.assertIn("_hf_", path.name)
+                self.assertTrue(
+                    path.name.startswith(report["host"]["machine"] + "_hf_")
+                )
                 entries = report["results"]
                 self.assertEqual(len(entries), 4)
                 self.assertEqual(

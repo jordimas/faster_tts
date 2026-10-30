@@ -7,7 +7,7 @@ from pathlib import Path
 
 
 def render(paths):
-    versions, rows = [], {}
+    versions, rows, backends = [], {}, {}
     for path in paths:
         document = json.loads(path.read_text(encoding="utf-8"))
         if document.get("schema_version") != 1 or "summary" not in document:
@@ -15,6 +15,7 @@ def render(paths):
         version = path.stem.split("-", 1)[0]
         if version not in versions:
             versions.append(version)
+        backends[version] = document["backend"]
         for summary in document["summary"]:
             device = summary["device"]
             index = summary["device_index"]
@@ -30,11 +31,12 @@ def render(paths):
                 "name" if device == "cuda" else "processor", "unknown hardware"
             )
             configuration = (
-                document["backend"],
-                summary["model"],
+                Path(summary["model"]).name,
                 summary["memory_profile"],
                 summary["threads"],
-                tuple(summary["workloads"]),
+                tuple(summary["workloads"])
+                if summary["workloads"] != ["all"]
+                else ("short", "medium"),
             )
             key = (f"{device}:{index} — {name}", summary["compute_type"], configuration)
             measurements = rows.setdefault(key, {})
@@ -65,14 +67,15 @@ def render(paths):
         ],
         "</tr></thead><tbody>",
     ]
+    configurations = list(dict.fromkeys(key[2] for key in rows))
     for (device, compute, configuration), measurements in sorted(rows.items()):
-        backend, model, profile, threads, workloads = configuration
-        detail = (
-            f"{backend}; {model}; {profile}; {threads} threads; {', '.join(workloads)}"
+        reference = (
+            f" <sup>{configurations.index(configuration) + 1}</sup>"
+            if len(configurations) > 1
+            else ""
         )
         lines.append(
-            f"<tr><th>{escape(device)}</th><th>{escape(compute)}"
-            f"<small>{escape(detail)}</small></th>"
+            f"<tr><th>{escape(device)}</th><th>{escape(compute)}{reference}</th>"
         )
         for version in versions:
             if version not in measurements:
@@ -86,7 +89,19 @@ def render(paths):
                     label += " (incomplete)"
                 lines.append(f'<td title="{escape(filename, quote=True)}">{label}</td>')
         lines.append("</tr>")
-    lines.append("</tbody></table></html>")
+    lines.append("</tbody></table>")
+    for number, (model, profile, threads, workloads) in enumerate(configurations, 1):
+        detail = f"{model}; {profile}; {threads} threads; {', '.join(workloads)}"
+        reference = f"{number}. " if len(configurations) > 1 else ""
+        lines.append(f"<p><small>{reference}{escape(detail)}</small></p>")
+    lines.append(
+        "<p><small>Backends: "
+        + escape(
+            "; ".join(f"{version}: {backend}" for version, backend in backends.items())
+        )
+        + "</small></p>"
+    )
+    lines.append("</html>")
     return "\n".join(lines)
 
 

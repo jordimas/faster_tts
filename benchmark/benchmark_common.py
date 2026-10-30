@@ -53,7 +53,7 @@ def benchmark_parser(description):
     parser.add_argument(
         "--output-json",
         type=Path,
-        help="JSON output (default: <hostname>_<backend>_<date>.json for all devices)",
+        help="JSON output (default: <hardware>_<backend>_<date>.json for all devices)",
     )
     for flag in ("--compute-worker", "--log-worker"):
         parser.add_argument(flag, action="store_true", help=argparse.SUPPRESS)

@@ -40,6 +40,19 @@ def report(time=10, device="cpu", name="Test CPU"):
 
 
 class HtmlTest(unittest.TestCase):
+    def test_hf_and_ct2_share_rows(self):
+        with tempfile.TemporaryDirectory() as directory:
+            ct2 = Path(directory) / "485-results.json"
+            hf = Path(directory) / "hf-results.json"
+            ct2.write_text(json.dumps(report()))
+            document = report(time=20)
+            document["backend"] = "hf"
+            document["summary"][0]["model"] = "/models/drama-3"
+            hf.write_text(json.dumps(document))
+            html = render([ct2, hf])
+        self.assertEqual(html.count("<tr><th>cpu:0"), 1)
+        self.assertIn("485: ct2; hf: hf", html)
+
     def test_versions_hardware_missing_values_and_escaping(self):
         with tempfile.TemporaryDirectory() as directory:
             paths = [
@@ -60,6 +73,7 @@ class HtmlTest(unittest.TestCase):
         self.assertIn('<th colspan="3">v1</th>', html)
         self.assertIn("cpu:0 — CPU &lt;test&gt;", html)
         self.assertIn("cuda:0 — GPU", html)
+        self.assertEqual(html.count("drama-3; default; 8 threads; short, medium"), 1)
         self.assertIn(">8.000</td>", html)
         self.assertIn(">0.400</td>", html)
         self.assertIn('<td colspan="3">—</td>', html)
