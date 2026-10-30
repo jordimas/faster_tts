@@ -9,7 +9,7 @@ from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import Mock, patch
 
-from benchmark_common import benchmark_parser, measure
+from benchmark_common import TEXTS, benchmark_parser, measure, run_workloads, workloads
 from benchmark_results import Results
 
 WORKER = """
@@ -47,6 +47,52 @@ r.success([
 
 
 class ResultsTest(unittest.TestCase):
+    def test_workload_selection(self):
+        parser = benchmark_parser("test")
+        self.assertEqual(
+            [name for name, _, _ in workloads(parser.parse_args([]))],
+            ["short", "medium"],
+        )
+        for name in TEXTS:
+            selected = workloads(parser.parse_args(["--workload", name]))
+            self.assertEqual(len(selected), 1)
+            self.assertEqual(selected[0][:2], (name, TEXTS[name]))
+        self.assertEqual(
+            workloads(parser.parse_args(["--text", "My custom input."])),
+            [("custom", "My custom input.", 24.0)],
+        )
+
+    def test_workloads_keep_separate_timings_and_shared_peak(self):
+        args = benchmark_parser("test").parse_args(["--runs", "2"])
+        args.model, args.device, args.compute_type = "test-model", "cpu", "float32"
+        observed = []
+
+        def synthesize():
+            observed.append((args.workload, args.text, args.max_duration_s))
+            return SimpleNamespace(size=200), 100, "eos"
+
+        with tempfile.TemporaryDirectory() as directory:
+            args.output_json = Path(directory) / "results.json"
+            results = Results(args, "ct2", "test")
+            results.start()
+            with (
+                patch(
+                    "benchmark_common.perf_counter",
+                    side_effect=[0, 1, 2, 3, 4, 7, 8, 11],
+                ),
+                patch("benchmark_common.peak_rss_gib", side_effect=[4, 6, 6]),
+            ):
+                run_workloads(results, synthesize, Mock())
+            entries = json.loads(args.output_json.read_text())["results"]
+        self.assertEqual([e["workload"] for e in entries], ["short", "medium"])
+        self.assertEqual([e["summary"]["mean_time_seconds"] for e in entries], [1, 3])
+        self.assertEqual([e["summary"]["peak_rss_gib"] for e in entries], [6, 6])
+        self.assertEqual([e["max_duration_s"] for e in entries], [24, 90])
+        self.assertEqual(
+            [name for name, _, _ in observed], ["short"] * 3 + ["medium"] * 3
+        )
+        self.assertTrue(all(text == TEXTS[name] for name, text, _ in observed))
+
     def run_worker(self, *options):
         with tempfile.TemporaryDirectory() as directory:
             # Put the worker beside the reporting module via an explicit path.

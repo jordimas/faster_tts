@@ -14,9 +14,19 @@ python benchmark/benchmark_hf.py --device cuda --compute-type float16 --runs 3
 The Hugging Face benchmark requires the Fish Speech dependencies, checkpoint,
 and source tree. Set `--source` and the model path as needed.
 
-Use `--text` to change the input and `--help` for all options. Each script loads
-and warms up the model before timing, then reports latency, audio duration,
-real-time factor, and peak process RAM. By default, each hardware model gets a report in the current directory named
+Both runners measure two fixed workloads by default: **short** (the original
+greeting) and **medium** (an 80-word paragraph). Use `--workload short` or
+`--workload medium` to select one, or `--text "Your text"` for a custom input.
+`--text` and `--workload` are mutually exclusive. Use `--help` for all options.
+
+Each device/precision worker loads the model once and warms up each workload
+before timing it. Latency, audio duration, standard deviation, and real-time
+factor are reported separately. One peak process RAM value covers model loading,
+warmups, and all timed runs across both workloads; GPU memory is excluded.
+JSON repeats this shared peak in each workload summary. Audio budgets are
+24 seconds for short/custom input and 90 seconds for medium input.
+
+By default, each hardware model gets a report in the current directory named
 `<hardware>_<backend>_<YYYY-MM-DD>.json`, with all tested compute types and memory
 profiles together. Hardware names use lowercase letters and hyphens. Existing
 reports are preserved using `_01`, `_02`, etc.; dates use UTC. Omit

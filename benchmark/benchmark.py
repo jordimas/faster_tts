@@ -2,10 +2,15 @@
 
 import importlib.util
 import os
-import tempfile
 
 import ctranslate2
-from benchmark_common import benchmark_parser, measure, run_logged, sweep
+from benchmark_common import (
+    benchmark_parser,
+    run_logged,
+    run_workloads,
+    sweep,
+    workloads,
+)
 from benchmark_results import Results, ct2_gpu_hardware
 from check_quality import run_checker
 from huggingface_hub.utils import disable_progress_bars, enable_progress_bars
@@ -16,6 +21,8 @@ parser = benchmark_parser(__doc__)
 parser.add_argument("model", nargs="?", default="drama-3")
 parser.add_argument("--compute-type", help="default: benchmark all supported types")
 args = parser.parse_args()
+if args.text is not None and not args.text.strip():
+    parser.error("text must contain non-whitespace characters")
 args.check_quality = args.check_quality or args.check == "quality"
 if args.check_quality and importlib.util.find_spec("faster_whisper") is None:
     parser.error(
@@ -24,7 +31,7 @@ if args.check_quality and importlib.util.find_spec("faster_whisper") is None:
 if args.check_quality:
     from check_quality import normalized_words
 
-    if not normalized_words(args.text):
+    if any(not normalized_words(text) for _, text, _ in workloads(args)):
         parser.error("quality checking requires at least one reference word")
 if args.runs < 1:
     parser.error("--runs must be positive")
@@ -86,18 +93,11 @@ model = Model(
     compute_type=args.compute_type,
 )
 print(f"\nCompute type: {args.compute_type}", flush=True)
-model.synthesize(args.text)  # Exclude loading and first-run costs.
 
 
 def synthesize():
-    result = model.synthesize(args.text)
+    result = model.synthesize(args.text, max_duration_s=args.max_duration_s)
     return result.audio, result.sample_rate, result.finish_reason
 
 
-with tempfile.TemporaryDirectory() as audio_dir:
-    measure(results, synthesize, audio_dir)
-    model = None
-    if args.check_quality:
-        run_checker(
-            args, audio_dir, f"{args.device}:{args.device_index} {args.compute_type}"
-        )
+run_workloads(results, synthesize, run_checker)

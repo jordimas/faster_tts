@@ -2,13 +2,19 @@
 
 import importlib.util
 import json
+import math
 import os
 import sys
-import tempfile
 import unicodedata
 from pathlib import Path
 
-from benchmark_common import benchmark_parser, measure, run_logged, sweep
+from benchmark_common import (
+    benchmark_parser,
+    run_logged,
+    run_workloads,
+    sweep,
+    workloads,
+)
 from benchmark_results import Results
 from check_quality import run_checker
 
@@ -40,7 +46,7 @@ def main():
         parser.error(
             "runs and threads must be positive; device-index must be nonnegative"
         )
-    if not args.text.strip():
+    if args.text is not None and not args.text.strip():
         parser.error("text must contain non-whitespace characters")
     if args.check_quality:
         if importlib.util.find_spec("faster_whisper") is None:
@@ -49,7 +55,7 @@ def main():
             )
         from check_quality import normalized_words
 
-        if not normalized_words(args.text):
+        if any(not normalized_words(text) for _, text, _ in workloads(args)):
             parser.error("quality checking requires at least one reference word")
     if not args.show_progress:
         os.environ["HF_HUB_DISABLE_PROGRESS_BARS"] = "1"
@@ -183,7 +189,7 @@ def main():
 
         def synthesize():
             completed, outputs = [], []
-            remaining = 512
+            remaining = math.floor(args.max_duration_s * codec.sample_rate / 2048)
             chunks = split_text(args.text)
             finish = "length"
             for chunk in chunks:
@@ -217,17 +223,7 @@ def main():
             finish = "eos" if len(completed) == len(chunks) else "length"
             return np.concatenate(outputs), codec.sample_rate, finish
 
-        synthesize()  # Exclude model/codec loading and one full warmup.
-        synchronize()
-        with tempfile.TemporaryDirectory() as audio_dir:
-            measure(results, synthesize, audio_dir, synchronize)
-            model = backbone = tower = codec = None
-            if args.check_quality:
-                run_checker(
-                    args,
-                    audio_dir,
-                    f"HF {args.device}:{args.device_index} {args.compute_type} default",
-                )
+        run_workloads(results, synthesize, run_checker, synchronize)
 
 
 if __name__ == "__main__":

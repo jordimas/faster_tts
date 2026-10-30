@@ -4,15 +4,31 @@ import argparse
 import resource
 import subprocess
 import sys
+import tempfile
 import wave
 from pathlib import Path
 from time import perf_counter
+
+TEXTS = {
+    "short": "Hello! Welcome to our application.",
+    "medium": (
+        "The town library opened its doors early on Saturday morning. "
+        "Outside, a gentle rain fell on the quiet streets, while inside, "
+        "volunteers arranged books and prepared a reading corner for children. "
+        "Maya arrived with her younger brother and chose a story about a journey "
+        "across the mountains. They settled into a comfortable chair near the "
+        "open window and began to read together. By the time the sun appeared, "
+        "they had discovered a new favorite book and made plans to return."
+    ),
+}
 
 
 def benchmark_parser(description):
     """Options shared by the CT2 and official PyTorch runners."""
     parser = argparse.ArgumentParser(description=description)
-    parser.add_argument("--text", default="Hello! Welcome to our application.")
+    inputs = parser.add_mutually_exclusive_group()
+    inputs.add_argument("--text", help="custom input instead of the built-in workloads")
+    inputs.add_argument("--workload", choices=("short", "medium", "all"), default="all")
     parser.add_argument("--runs", type=int, default=1)
     parser.add_argument("--threads", type=int, default=8)
     parser.add_argument(
@@ -44,6 +60,55 @@ def benchmark_parser(description):
     return parser
 
 
+def workloads(args):
+    """Return fixed inputs and audio budgets, or a single custom input."""
+    if args.text is not None:
+        return [("custom", args.text, 24.0)]
+    return [
+        (name, text, 24.0 if name == "short" else 90.0)
+        for name, text in TEXTS.items()
+        if args.workload in (name, "all")
+    ]
+
+
+def run_workloads(results, synthesize, checker, synchronize=lambda: None):
+    """Warm and measure each input in one process, then report shared peak RAM."""
+    args = results.args
+    selected = workloads(args)
+    # Replace the model-loading failure placeholder with per-workload entries.
+    results.document["results"] = []
+    with tempfile.TemporaryDirectory() as directory:
+        for name, text, budget in selected:
+            args.workload, args.text, args.max_duration_s = name, text, budget
+            print(f"\nWorkload: {name} ({len(text.split())} words)", flush=True)
+            results.start()
+            synthesize()
+            synchronize()
+            audio_dir = Path(directory) / name
+            audio_dir.mkdir()
+            measure(results, synthesize, audio_dir, synchronize, report_peak=False)
+        peak = peak_rss_gib()
+        for entry in results.document["results"]:
+            if "summary" in entry:
+                entry["summary"]["peak_rss_gib"] = peak
+        results.save()
+        print(f"Peak RSS across workloads: {peak:.3f} GiB", flush=True)
+        if args.check_quality:
+            for name, text, budget in selected:
+                args.workload, args.text, args.max_duration_s = name, text, budget
+                checker(
+                    args,
+                    Path(directory) / name,
+                    f"{args.device}:{args.device_index} {args.compute_type} {name}",
+                )
+
+
+def peak_rss_gib():
+    """Process lifetime high-water mark, including loading and warmup."""
+    peak = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
+    return peak / (1024**3 if sys.platform == "darwin" else 1024**2)
+
+
 def run_logged(args, backend):
     """Run the sweep once under a console/log tee; children inherit the marker."""
     if args.log_worker:
@@ -65,7 +130,7 @@ def run_logged(args, backend):
     raise SystemExit(status)
 
 
-def measure(results, synthesize, audio_dir, synchronize=lambda: None):
+def measure(results, synthesize, audio_dir, synchronize=lambda: None, report_peak=True):
     """Time warmed-up synthesis; record peak RSS before optional child ASR."""
     runs = []
     for i in range(results.args.runs):
@@ -81,7 +146,7 @@ def measure(results, synthesize, audio_dir, synchronize=lambda: None):
                 f"RTF={elapsed / duration:.3f}, finish_reason={finish}"
             )
         if finish != "eos":
-            raise SystemExit("Frame limit reached; shorten --text.")
+            raise SystemExit("Frame limit reached; shorten the input.")
         runs.append(
             {
                 "time_seconds": elapsed,
@@ -99,14 +164,14 @@ def measure(results, synthesize, audio_dir, synchronize=lambda: None):
                 wav.setframerate(sample_rate)
                 wav.writeframes((np.clip(audio, -1, 1) * 32767).astype("<i2").tobytes())
         del audio
-    peak_rss = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
-    peak_gib = peak_rss / (1024**3 if sys.platform == "darwin" else 1024**2)
+    peak_gib = peak_rss_gib()
     results.success(runs, peak_gib)
-    summary = results.document["results"][0]["summary"]
+    summary = results.document["results"][-1]["summary"]
     print(
         f"Mean: {summary['mean_time_seconds']:.3f}s; "
         f"std: {summary['std_time_seconds']:.3f}s; "
-        f"RTF: {summary['rtf']:.3f}; peak RSS: {peak_gib:.3f} GiB",
+        f"RTF: {summary['rtf']:.3f}"
+        + (f"; peak RSS: {peak_gib:.3f} GiB" if report_peak else ""),
         flush=True,
     )
 
