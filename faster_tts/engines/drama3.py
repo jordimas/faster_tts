@@ -25,7 +25,7 @@ def _native_class():
         return extension.Drama3
     except (ImportError, AttributeError) as exc:
         raise RuntimeError(
-            "This requires ctranslate2>=4.8.4 with Drama 3 support."
+            "This requires ctranslate2>=4.8.5 with Drama 3 support."
         ) from exc
 
 
@@ -263,6 +263,19 @@ class Drama3Model(BaseModel):
         if np.any(prepared.rows < 0) or np.any(prepared.rows > np.iinfo(np.int32).max):
             raise ValueError("prompt token IDs do not fit the native int32 interface")
         rows = np.ascontiguousarray(prepared.rows, dtype=np.int32)
+        cache_options = {}
+        if isinstance(getattr(self._model, "prefix_cache_stats", None), dict):
+            # Three system segments, then six segments per completed history
+            # turn. Keep the first turn pinned; later history stays dynamic.
+            cache_options = {
+                "static_prompt_rows": sum(
+                    len(self._prompt.tokenizer.encode(segment).ids)
+                    if isinstance(segment, str)
+                    else len(segment)
+                    for segment in prepared.segments[: 9 if history else 3]
+                ),
+                "cache_static_prompt": True,
+            }
         attempts = []
         aggregate_timings = {}
         for attempt in range(1 + (max_retries if not greedy else 0)):
@@ -277,6 +290,7 @@ class Drama3Model(BaseModel):
                 top_p=float(top_p),
                 seed=attempt_seed,
                 greedy=greedy,
+                **cache_options,
             )
             if callable(getattr(result, "to_dict", None)):
                 result = result.to_dict()

@@ -9,7 +9,7 @@ supported by CTranslate2.
 Text-to-speech with **Drama 3 on CPU and GPU**, powered by CTranslate2.
 Provides a Python library API and the `faster-tts` command-line interface (CLI).
 Includes model downloading and caching, sentence splitting, speaker tags, and WAV output.
-Requires CTranslate2 **4.8.4+**.
+Requires CTranslate2 **4.8.5+**.
 
 Drama 3 supports [83 languages](https://fish.audio/blog/fish-audio-drama-3/).
 With this library and CTranslate2, you can use:

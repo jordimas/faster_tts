@@ -67,6 +67,77 @@ class Drama3PythonAPITest(unittest.TestCase):
         device_patch.start()
         self.addCleanup(device_patch.stop)
 
+    def test_prefix_cache_uses_system_turn_without_history_and_across_retries(self):
+        self.backend.prefix_cache_stats = {"entries": 0, "hits": 0, "misses": 0}
+        model = Model(self.root)
+        self.backend.generate.side_effect = [
+            dict(self.result, finish_reason="length"),
+            self.result,
+        ]
+        model.synthesize("Hello", max_retries=1)
+        calls = self.backend.generate.call_args_list
+        builder = model._engine._prompt
+        expected = sum(
+            len(builder.tokenizer.encode(segment).ids)
+            for segment in builder.prepare("Hello").segments[:3]
+        )
+        for call in calls:
+            self.assertEqual(call.kwargs["static_prompt_rows"], expected)
+            self.assertTrue(call.kwargs["cache_static_prompt"])
+            self.assertLess(expected, len(call.args[0]))
+            np.testing.assert_array_equal(
+                call.args[0][:expected], calls[0].args[0][:expected]
+            )
+
+    def test_prefix_cache_pins_first_history_turn_including_audio_and_end_marker(self):
+        self.backend.prefix_cache_stats = {"entries": 0, "hits": 0, "misses": 0}
+        model = Model(self.root)
+        builder = model._engine._prompt
+        first = ("Earlier", np.full((3, 10), 1, np.int32))
+        plain = builder.prepare("Hello")
+        system_rows = sum(
+            len(builder.tokenizer.encode(segment).ids) for segment in plain.segments[:3]
+        )
+        expected = (
+            system_rows
+            + len(builder.prepare("Hello", history=[first]).rows)
+            - len(plain.rows)
+        )
+        for history in (
+            [first],
+            [first, ("Recent", self.result["codes"])],
+            [first, ("Changed", np.full((2, 10), 2, np.int32))],
+        ):
+            model.synthesize("Hello", engine_options={"history": iter(history)})
+        calls = self.backend.generate.call_args_list
+        for call in calls:
+            self.assertEqual(call.kwargs["static_prompt_rows"], expected)
+            self.assertTrue(call.kwargs["cache_static_prompt"])
+            self.assertLess(expected, len(call.args[0]))
+            np.testing.assert_array_equal(
+                call.args[0][:expected], calls[0].args[0][:expected]
+            )
+        self.assertEqual(np.count_nonzero(calls[0].args[0][:expected, 1]), 3)
+
+    def test_chunk_prefix_cache_reuses_first_completed_segment(self):
+        self.backend.prefix_cache_stats = {"entries": 0, "hits": 0, "misses": 0}
+        Model(self.root).synthesize("First. Second. Third. Fourth.")
+        calls = self.backend.generate.call_args_list
+        sizes = [call.kwargs["static_prompt_rows"] for call in calls]
+        self.assertLess(sizes[0], sizes[1])
+        self.assertEqual(sizes[1:], [sizes[1]] * 3)
+        for call in calls[2:]:
+            np.testing.assert_array_equal(
+                call.args[0][: sizes[1]], calls[1].args[0][: sizes[1]]
+            )
+
+    def test_older_bindings_generate_without_prefix_cache_keywords(self):
+        del self.backend.prefix_cache_stats
+        Model(self.root).synthesize("Hello. Goodbye.")
+        for call in self.backend.generate.call_args_list:
+            self.assertNotIn("static_prompt_rows", call.kwargs)
+            self.assertNotIn("cache_static_prompt", call.kwargs)
+
     def test_loading_logs_resolved_device_and_compute_type(self):
         self.backend.compute_type = "int8_float32"
         for requested in ("default", "auto", "int8"):
@@ -826,7 +897,7 @@ class Drama3PythonAPITest(unittest.TestCase):
             side_effect=ImportError("no extension"),
         ):
             with self.assertRaisesRegex(
-                RuntimeError, r"requires ctranslate2>=4\.8\.4 with Drama 3 support"
+                RuntimeError, r"requires ctranslate2>=4\.8\.5 with Drama 3 support"
             ):
                 Model(self.root)
         self.native_patch.start()
