@@ -400,6 +400,14 @@ class Drama3Model(BaseModel):
                     + (completed[-1:] if len(completed) > 1 else [])
                 )
             )
+            # The article budget spans calls; each call has native/context limits.
+            allowance = min(allowance, 8192)
+            maximum = self._prompt.config.get("text_config", {}).get(
+                "max_position_embeddings"
+            )
+            if isinstance(maximum, int):
+                prompt_rows = len(self._prompt.prepare(text, history=context).rows)
+                allowance = min(allowance, maximum - prompt_rows)
             result = self.synthesize(
                 text,
                 temperature=temperature,
