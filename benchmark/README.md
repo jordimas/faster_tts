@@ -27,6 +27,13 @@ warmups, and all timed runs across both workloads; GPU memory is excluded.
 JSON repeats this shared peak in each workload summary. Audio budgets are
 24 seconds for short/custom input and 90 seconds for medium input.
 
+The top-level JSON `summary` groups workloads by device/index and compute type
+(and model, thread count, and memory profile). It includes `total_time_seconds`,
+`total_audio_seconds`, overall `rtf` (total time divided by total audio), and
+`peak_rss_gib` (the maximum observed peak). Totals include all timed runs of
+successful workloads, excluding loading and warmup. Groups containing failed or
+skipped workloads are marked `incomplete`; unavailable RTF or memory is `null`.
+
 By default, each hardware model gets a report in the current directory named
 `<hardware>_<backend>_<YYYY-MM-DD>.json`, with all tested compute types and memory
 profiles together. Hardware names use lowercase letters and hyphens. Existing

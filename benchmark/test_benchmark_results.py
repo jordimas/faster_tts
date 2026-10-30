@@ -84,7 +84,15 @@ class ResultsTest(unittest.TestCase):
                 patch("benchmark_common.peak_rss_gib", side_effect=[4, 6, 6]),
             ):
                 run_workloads(results, synthesize, Mock())
-            entries = json.loads(args.output_json.read_text())["results"]
+            report = json.loads(args.output_json.read_text())
+            entries = report["results"]
+        self.assertEqual(len(report["summary"]), 1)
+        summary = report["summary"][0]
+        self.assertEqual(summary["total_time_seconds"], 8)
+        self.assertEqual(summary["total_audio_seconds"], 8)
+        self.assertEqual(summary["rtf"], 1)
+        self.assertEqual(summary["peak_rss_gib"], 6)
+        self.assertEqual(summary["workloads"], ["short", "medium"])
         self.assertEqual([e["workload"] for e in entries], ["short", "medium"])
         self.assertEqual([e["summary"]["mean_time_seconds"] for e in entries], [1, 3])
         self.assertEqual([e["summary"]["peak_rss_gib"] for e in entries], [6, 6])
@@ -113,6 +121,14 @@ class ResultsTest(unittest.TestCase):
 
     def test_nested_sweep_preserves_successes_and_failure(self):
         status, report = self.run_worker()
+        self.assertEqual(len(report["summary"]), 4)
+        for summary in report["summary"]:
+            failed = (
+                summary["device"] == "cuda" and summary["compute_type"] == "float32"
+            )
+            self.assertEqual(summary["status"], "incomplete" if failed else "success")
+            self.assertEqual(summary["total_time_seconds"], 0 if failed else 4)
+            self.assertEqual(summary["rtf"], None if failed else 1)
         self.assertEqual(status, 1)
         self.assertEqual(report["schema_version"], 1)
         entries = report["results"]

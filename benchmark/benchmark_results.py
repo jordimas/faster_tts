@@ -171,6 +171,60 @@ class Results:
 
     @staticmethod
     def write(path, document):
+        groups = {}
+        for entry in document["results"]:
+            key = tuple(
+                entry[field]
+                for field in (
+                    "device",
+                    "device_index",
+                    "compute_type",
+                    "memory_profile",
+                    "model",
+                    "threads",
+                )
+            )
+            groups.setdefault(key, []).append(entry)
+        summaries = []
+        for entries in groups.values():
+            first = entries[0]
+            runs = [
+                run
+                for entry in entries
+                if entry["status"] == "success"
+                for run in entry.get("runs", [])
+            ]
+            elapsed = sum(run["time_seconds"] for run in runs)
+            duration = sum(run["audio_seconds"] for run in runs)
+            peaks = [
+                entry["summary"]["peak_rss_gib"]
+                for entry in entries
+                if "summary" in entry
+            ]
+            summaries.append(
+                {
+                    **{
+                        field: first[field]
+                        for field in (
+                            "device",
+                            "device_index",
+                            "compute_type",
+                            "memory_profile",
+                            "model",
+                            "threads",
+                        )
+                    },
+                    "workloads": [entry.get("workload", "custom") for entry in entries],
+                    "status": "success"
+                    if all(entry["status"] == "success" for entry in entries)
+                    else "incomplete",
+                    "total_time_seconds": elapsed,
+                    "total_audio_seconds": duration,
+                    "rtf": elapsed / duration if duration else None,
+                    "peak_rss_gib": max(peaks) if peaks else None,
+                }
+            )
+        document = {**document, "summary": summaries}
         path.parent.mkdir(parents=True, exist_ok=True)
         # Replace atomically so interrupted sweeps leave a readable report.
         with tempfile.NamedTemporaryFile(
