@@ -34,12 +34,13 @@ The top-level JSON `summary` groups workloads by device/index and compute type
 successful workloads, excluding loading and warmup. Groups containing failed or
 skipped workloads are marked `incomplete`; unavailable RTF or memory is `null`.
 
-By default, each hardware model gets a report in the current directory named
-`<hardware>_<backend>_<YYYY-MM-DD>.json`, with all tested compute types and memory
-profiles together. Hardware names use lowercase letters and hyphens. Existing
+By default, each invocation writes one report in the current directory named
+`<hostname>_<backend>_<YYYY-MM-DD>.json`, with all tested devices, workloads,
+compute types, and memory profiles together. Hostnames use lowercase letters
+and hyphens. Existing
 reports are preserved using `_01`, `_02`, etc.; dates use UTC. Omit
-`--compute-type` to test all supported types. Use `--output-json <path>` to write
-all devices into one file at an explicit path (overwritten on each invocation).
+`--compute-type` to test all supported types. Use `--output-json <path>` to choose
+an explicit path (overwritten on each invocation).
 
 Convert all saved reports to a public Markdown section (from the repository root):
 
@@ -57,3 +58,22 @@ python benchmark/json_to_markdown.py benchmark/*.json >> README.md
 Each report remains a separate measurement, including repeated hardware runs.
 Failed and skipped configurations are retained; successful rows show completed
 versus requested runs and generation finish reasons.
+
+Compare JSON summaries in a standalone HTML table:
+
+```bash
+# All JSON reports directly under benchmark/
+python benchmark/json_to_html.py
+# Selected reports (shell wildcards also work)
+python benchmark/json_to_html.py benchmark/v1-*.json benchmark/v2-*.json -o benchmark/comparison.html
+```
+
+Column headers use the filename prefix before the first `-` (for example,
+`v2-cpu.json` becomes `v2`). Rows identify hardware/device and compute type;
+each version shows total synthesis seconds, RTF, and peak host RAM from the
+JSON summary. Different backends, models, memory profiles, thread counts, or
+workload selections stay in separate rows. Missing measurements show a dash;
+incomplete measurements are labeled. Duplicate measurements for the same
+version and row are rejected. Reports must contain the top-level `summary`.
+Output defaults to `benchmark.html` in the current directory; use `--output` to
+choose another path.

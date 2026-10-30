@@ -179,19 +179,21 @@ class ResultsTest(unittest.TestCase):
                 )
                 self.assertEqual(completed.returncode, 1, completed.stderr)
             paths = sorted(Path(directory).glob("*.json"))
-            self.assertEqual(len(paths), 4)
-            self.assertEqual(len(list(Path(directory).glob("*_01.json"))), 2)
-            self.assertTrue(any(p.name.startswith("test-gpu_hf_") for p in paths))
+            self.assertEqual(len(paths), 2)
+            self.assertEqual(len(list(Path(directory).glob("*_01.json"))), 1)
             for path in paths:
                 report = json.loads(path.read_text())
                 self.assertEqual(report["backend"], "hf")
                 self.assertIn("_hf_", path.name)
                 entries = report["results"]
-                self.assertEqual(len(entries), 2)
+                self.assertEqual(len(entries), 4)
                 self.assertEqual(
-                    [e["compute_type"] for e in entries], ["float32", "int8"]
+                    {entry["device"] for entry in entries}, {"cpu", "cuda"}
                 )
-                self.assertEqual(len({e["device"] for e in entries}), 1)
+                self.assertEqual(
+                    [e["compute_type"] for e in entries], ["float32", "int8"] * 2
+                )
+                self.assertEqual(len(report["summary"]), 4)
                 self.assertIn(report["created_at"][:10], path.name)
 
     def test_logging_overwrites_and_captures_worker_errors(self):

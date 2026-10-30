@@ -89,7 +89,6 @@ class Results:
         self.args = args
         self.path = args.output_json
         self.gpu_hardware = None
-        self.default_paths = {}
         self.document = {
             "schema_version": 1,
             "backend": backend,
@@ -142,32 +141,18 @@ class Results:
         }
 
     def save(self):
-        if self.path is not None:
-            self.write(Path(self.path), self.document)
-            return
-        groups = {}
-        for entry in self.document["results"]:
-            hardware = entry["hardware"]
-            name = (
-                (hardware["gpu"] or {}).get("name")
-                if entry["device"] == "cuda"
-                else hardware["cpu"]["processor"]
-            )
-            name = name or f"{entry['device']}-{entry['device_index']}"
+        if self.path is None:
+            name = platform.node() or self.document["host"]["machine"]
             slug = re.sub(r"[^a-z0-9]+", "-", name.lower()).strip("-")
-            groups.setdefault(slug, []).append(entry)
-        for slug, entries in groups.items():
-            if slug not in self.default_paths:
-                date = self.document["created_at"][:10]
-                stem = f"{slug}_{self.document['backend']}_{date}"
-                path = Path(f"{stem}.json")
-                suffix = 1
-                while path.exists():
-                    path = Path(f"{stem}_{suffix:02d}.json")
-                    suffix += 1
-                self.default_paths[slug] = path
-                print(f"JSON report: {path}", flush=True)
-            self.write(self.default_paths[slug], {**self.document, "results": entries})
+            date = self.document["created_at"][:10]
+            stem = f"{slug}_{self.document['backend']}_{date}"
+            self.path = Path(f"{stem}.json")
+            suffix = 1
+            while self.path.exists():
+                self.path = Path(f"{stem}_{suffix:02d}.json")
+                suffix += 1
+            print(f"JSON report: {self.path}", flush=True)
+        self.write(Path(self.path), self.document)
 
     @staticmethod
     def write(path, document):
