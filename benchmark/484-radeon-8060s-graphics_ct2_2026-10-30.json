@@ -727,6 +727,282 @@
         "rtf": 3.964377082699834,
         "peak_rss_gib": 47.179508209228516
       }
+    },
+    {
+      "model": "drama-3",
+      "source": null,
+      "device": "cpu",
+      "device_index": 0,
+      "hardware": {
+        "cpu": {
+          "processor": "AMD RYZEN AI MAX+ PRO 395 w/ Radeon 8060S",
+          "logical_cpu_count": 32,
+          "system_ram_bytes": 131874361344,
+          "system_ram_gib": 122.81756973266602
+        },
+        "gpu": null
+      },
+      "compute_type": "float32",
+      "memory_profile": "default",
+      "gpu_expert_cache_gb": null,
+      "threads": 8,
+      "text": "Hello! Welcome to our application.",
+      "workload": "short",
+      "max_duration_s": 24.0,
+      "requested_runs": 2,
+      "warmup_runs": 1,
+      "status": "success",
+      "runs": [
+        {
+          "time_seconds": 25.499445649002155,
+          "audio_seconds": 2.507755102040816,
+          "rtf": 10.168235976571498,
+          "finish_reason": "eos"
+        },
+        {
+          "time_seconds": 25.77528640100354,
+          "audio_seconds": 2.507755102040816,
+          "rtf": 10.278231068108509,
+          "finish_reason": "eos"
+        }
+      ],
+      "summary": {
+        "mean_time_seconds": 25.637366025002848,
+        "std_time_seconds": 0.19504886626777687,
+        "mean_audio_seconds": 2.507755102040816,
+        "rtf": 10.223233522340003,
+        "peak_rss_gib": 46.78639221191406
+      }
+    },
+    {
+      "model": "drama-3",
+      "source": null,
+      "device": "cpu",
+      "device_index": 0,
+      "hardware": {
+        "cpu": {
+          "processor": "AMD RYZEN AI MAX+ PRO 395 w/ Radeon 8060S",
+          "logical_cpu_count": 32,
+          "system_ram_bytes": 131874361344,
+          "system_ram_gib": 122.81756973266602
+        },
+        "gpu": null
+      },
+      "compute_type": "float32",
+      "memory_profile": "default",
+      "gpu_expert_cache_gb": null,
+      "threads": 8,
+      "text": "The town library opened its doors early on Saturday morning. Outside, a gentle rain fell on the quiet streets, while inside, volunteers arranged books and prepared a reading corner for children. Maya arrived with her younger brother and chose a story about a journey across the mountains. They settled into a comfortable chair near the open window and began to read together. By the time the sun appeared, they had discovered a new favorite book and made plans to return.",
+      "workload": "medium",
+      "max_duration_s": 90.0,
+      "requested_runs": 2,
+      "warmup_runs": 1,
+      "status": "success",
+      "runs": [
+        {
+          "time_seconds": 309.8846209990006,
+          "audio_seconds": 28.514104308390024,
+          "rtf": 10.867766269194007,
+          "finish_reason": "eos"
+        },
+        {
+          "time_seconds": 317.4443040689948,
+          "audio_seconds": 28.514104308390024,
+          "rtf": 11.13288710161552,
+          "finish_reason": "eos"
+        }
+      ],
+      "summary": {
+        "mean_time_seconds": 313.6644625339977,
+        "std_time_seconds": 5.345503162414042,
+        "mean_audio_seconds": 28.514104308390024,
+        "rtf": 11.000326685404763,
+        "peak_rss_gib": 46.78639221191406
+      }
+    },
+    {
+      "model": "drama-3",
+      "source": null,
+      "device": "cpu",
+      "device_index": 0,
+      "hardware": {
+        "cpu": {
+          "processor": "AMD RYZEN AI MAX+ PRO 395 w/ Radeon 8060S",
+          "logical_cpu_count": 32,
+          "system_ram_bytes": 131874361344,
+          "system_ram_gib": 122.81756973266602
+        },
+        "gpu": null
+      },
+      "compute_type": "int8",
+      "memory_profile": "default",
+      "gpu_expert_cache_gb": null,
+      "threads": 8,
+      "text": "Hello! Welcome to our application.",
+      "workload": "short",
+      "max_duration_s": 24.0,
+      "requested_runs": 2,
+      "warmup_runs": 1,
+      "status": "success",
+      "runs": [
+        {
+          "time_seconds": 13.618174126997474,
+          "audio_seconds": 2.693514739229025,
+          "rtf": 5.055912235659589,
+          "finish_reason": "eos"
+        },
+        {
+          "time_seconds": 13.734702468995238,
+          "audio_seconds": 2.693514739229025,
+          "rtf": 5.099174795281266,
+          "finish_reason": "eos"
+        }
+      ],
+      "summary": {
+        "mean_time_seconds": 13.676438297996356,
+        "std_time_seconds": 0.08239798082704414,
+        "mean_audio_seconds": 2.693514739229025,
+        "rtf": 5.077543515470428,
+        "peak_rss_gib": 44.75117492675781
+      }
+    },
+    {
+      "model": "drama-3",
+      "source": null,
+      "device": "cpu",
+      "device_index": 0,
+      "hardware": {
+        "cpu": {
+          "processor": "AMD RYZEN AI MAX+ PRO 395 w/ Radeon 8060S",
+          "logical_cpu_count": 32,
+          "system_ram_bytes": 131874361344,
+          "system_ram_gib": 122.81756973266602
+        },
+        "gpu": null
+      },
+      "compute_type": "int8",
+      "memory_profile": "default",
+      "gpu_expert_cache_gb": null,
+      "threads": 8,
+      "text": "The town library opened its doors early on Saturday morning. Outside, a gentle rain fell on the quiet streets, while inside, volunteers arranged books and prepared a reading corner for children. Maya arrived with her younger brother and chose a story about a journey across the mountains. They settled into a comfortable chair near the open window and began to read together. By the time the sun appeared, they had discovered a new favorite book and made plans to return.",
+      "workload": "medium",
+      "max_duration_s": 90.0,
+      "requested_runs": 2,
+      "warmup_runs": 1,
+      "status": "success",
+      "runs": [
+        {
+          "time_seconds": 191.87418309899658,
+          "audio_seconds": 33.111655328798186,
+          "rtf": 5.794762635503696,
+          "finish_reason": "eos"
+        },
+        {
+          "time_seconds": 190.44010650800192,
+          "audio_seconds": 33.111655328798186,
+          "rtf": 5.751452309373688,
+          "finish_reason": "eos"
+        }
+      ],
+      "summary": {
+        "mean_time_seconds": 191.15714480349925,
+        "std_time_seconds": 1.014045282233214,
+        "mean_audio_seconds": 33.111655328798186,
+        "rtf": 5.773107472438692,
+        "peak_rss_gib": 44.75117492675781
+      }
+    },
+    {
+      "model": "drama-3",
+      "source": null,
+      "device": "cpu",
+      "device_index": 0,
+      "hardware": {
+        "cpu": {
+          "processor": "AMD RYZEN AI MAX+ PRO 395 w/ Radeon 8060S",
+          "logical_cpu_count": 32,
+          "system_ram_bytes": 131874361344,
+          "system_ram_gib": 122.81756973266602
+        },
+        "gpu": null
+      },
+      "compute_type": "int8_float32",
+      "memory_profile": "default",
+      "gpu_expert_cache_gb": null,
+      "threads": 8,
+      "text": "Hello! Welcome to our application.",
+      "workload": "short",
+      "max_duration_s": 24.0,
+      "requested_runs": 2,
+      "warmup_runs": 1,
+      "status": "success",
+      "runs": [
+        {
+          "time_seconds": 13.838356711996312,
+          "audio_seconds": 2.693514739229025,
+          "rtf": 5.137657689579719,
+          "finish_reason": "eos"
+        },
+        {
+          "time_seconds": 13.774901099997805,
+          "audio_seconds": 2.693514739229025,
+          "rtf": 5.114099024362735,
+          "finish_reason": "eos"
+        }
+      ],
+      "summary": {
+        "mean_time_seconds": 13.806628905997059,
+        "std_time_seconds": 0.04486989354848629,
+        "mean_audio_seconds": 2.693514739229025,
+        "rtf": 5.125878356971227,
+        "peak_rss_gib": 44.75166320800781
+      }
+    },
+    {
+      "model": "drama-3",
+      "source": null,
+      "device": "cpu",
+      "device_index": 0,
+      "hardware": {
+        "cpu": {
+          "processor": "AMD RYZEN AI MAX+ PRO 395 w/ Radeon 8060S",
+          "logical_cpu_count": 32,
+          "system_ram_bytes": 131874361344,
+          "system_ram_gib": 122.81756973266602
+        },
+        "gpu": null
+      },
+      "compute_type": "int8_float32",
+      "memory_profile": "default",
+      "gpu_expert_cache_gb": null,
+      "threads": 8,
+      "text": "The town library opened its doors early on Saturday morning. Outside, a gentle rain fell on the quiet streets, while inside, volunteers arranged books and prepared a reading corner for children. Maya arrived with her younger brother and chose a story about a journey across the mountains. They settled into a comfortable chair near the open window and began to read together. By the time the sun appeared, they had discovered a new favorite book and made plans to return.",
+      "workload": "medium",
+      "max_duration_s": 90.0,
+      "requested_runs": 2,
+      "warmup_runs": 1,
+      "status": "success",
+      "runs": [
+        {
+          "time_seconds": 197.35967915700166,
+          "audio_seconds": 33.111655328798186,
+          "rtf": 5.960429256623486,
+          "finish_reason": "eos"
+        },
+        {
+          "time_seconds": 189.81849552799395,
+          "audio_seconds": 33.111655328798186,
+          "rtf": 5.732679131958202,
+          "finish_reason": "eos"
+        }
+      ],
+      "summary": {
+        "mean_time_seconds": 193.5890873424978,
+        "std_time_seconds": 5.332422082244335,
+        "mean_audio_seconds": 33.111655328798186,
+        "rtf": 5.846554194290844,
+        "peak_rss_gib": 44.75166320800781
+      }
     }
   ],
   "summary": [
@@ -848,6 +1124,57 @@
       "total_audio_seconds": 55.91365079365079,
       "rtf": 3.9187767572473184,
       "peak_rss_gib": 47.179508209228516
+    },
+    {
+      "device": "cpu",
+      "device_index": 0,
+      "compute_type": "float32",
+      "memory_profile": "default",
+      "model": "drama-3",
+      "threads": 8,
+      "workloads": [
+        "short",
+        "medium"
+      ],
+      "status": "success",
+      "total_time_seconds": 678.6036571180011,
+      "total_audio_seconds": 62.043718820861685,
+      "rtf": 10.9375077770133,
+      "peak_rss_gib": 46.78639221191406
+    },
+    {
+      "device": "cpu",
+      "device_index": 0,
+      "compute_type": "int8",
+      "memory_profile": "default",
+      "model": "drama-3",
+      "threads": 8,
+      "workloads": [
+        "short",
+        "medium"
+      ],
+      "status": "success",
+      "total_time_seconds": 409.6671662029912,
+      "total_audio_seconds": 71.61034013605442,
+      "rtf": 5.72078229798453,
+      "peak_rss_gib": 44.75117492675781
+    },
+    {
+      "device": "cpu",
+      "device_index": 0,
+      "compute_type": "int8_float32",
+      "memory_profile": "default",
+      "model": "drama-3",
+      "threads": 8,
+      "workloads": [
+        "short",
+        "medium"
+      ],
+      "status": "success",
+      "total_time_seconds": 414.7914324969897,
+      "total_audio_seconds": 71.61034013605442,
+      "rtf": 5.7923399289671895,
+      "peak_rss_gib": 44.75166320800781
     }
   ]
 }
