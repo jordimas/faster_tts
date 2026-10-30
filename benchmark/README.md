@@ -4,11 +4,11 @@ Run from the repository root:
 
 ```bash
 # CTranslate2
-uv run python benchmark/benchmark.py drama-3 --device cpu --runs 3
-uv run python benchmark/benchmark.py drama-3 --device cuda --compute-type float16 --memory-profile default --runs 3
+uv run python benchmark/benchmark.py drama-3 --device cpu
+uv run python benchmark/benchmark.py drama-3 --device cuda --compute-type float16
 
 # Official Hugging Face / PyTorch implementation
-python benchmark/benchmark_hf.py --device cuda --compute-type float16 --runs 3
+python benchmark/benchmark_hf.py --device cuda --compute-type float16
 ```
 
 The Hugging Face benchmark requires the Fish Speech dependencies, checkpoint,
@@ -18,6 +18,7 @@ Both runners measure two fixed workloads by default: **short** (the original
 greeting) and **medium** (an 80-word paragraph). Use `--workload short` or
 `--workload medium` to select one, or `--text "Your text"` for a custom input.
 `--text` and `--workload` are mutually exclusive. Use `--help` for all options.
+Each workload runs twice by default; use `--runs` to override this.
 
 Each device/precision worker loads the model once and warms up each workload
 before timing it. Latency, audio duration, standard deviation, and real-time

@@ -49,6 +49,7 @@ r.success([
 class ResultsTest(unittest.TestCase):
     def test_workload_selection(self):
         parser = benchmark_parser("test")
+        self.assertEqual(parser.parse_args([]).runs, 2)
         self.assertEqual(
             [name for name, _, _ in workloads(parser.parse_args([]))],
             ["short", "medium"],

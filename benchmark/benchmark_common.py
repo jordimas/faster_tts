@@ -29,7 +29,7 @@ def benchmark_parser(description):
     inputs = parser.add_mutually_exclusive_group()
     inputs.add_argument("--text", help="custom input instead of the built-in workloads")
     inputs.add_argument("--workload", choices=("short", "medium", "all"), default="all")
-    parser.add_argument("--runs", type=int, default=1)
+    parser.add_argument("--runs", type=int, default=2)
     parser.add_argument("--threads", type=int, default=8)
     parser.add_argument(
         "--device",
