@@ -1,6 +1,5 @@
 """Check public reporting keeps incomplete measurements visible."""
 
-import copy
 import json
 import tempfile
 import unittest
@@ -10,25 +9,6 @@ from json_to_markdown import render
 
 
 class MarkdownTest(unittest.TestCase):
-    def test_workload_reports_keep_timings_and_shared_peak(self):
-        source = Path(__file__).parent / "arm_ct2_2026-10-25.json"
-        document = json.loads(source.read_text())
-        short = document["results"][0]
-        short["workload"] = "short"
-        short["summary"]["peak_rss_gib"] = 12
-        medium = copy.deepcopy(short)
-        medium.update(workload="medium", text="A longer paragraph.")
-        medium["summary"]["mean_time_seconds"] = 900
-        document["results"] = [short, medium]
-        with tempfile.TemporaryDirectory() as directory:
-            path = Path(directory) / "report.json"
-            path.write_text(json.dumps(document))
-            markdown = render([path], Path(directory))
-        self.assertIn("Workload: short.", markdown)
-        self.assertIn("Workload: medium.", markdown)
-        self.assertIn("900.0", markdown)
-        self.assertEqual(markdown.count("| 12.0 |"), 2)
-
     def test_incomplete_runs_failures_and_markdown_cells(self):
         source = Path(__file__).parent / "arm_ct2_2026-10-25.json"
         document = json.loads(source.read_text())

@@ -135,8 +135,6 @@ class Results:
             ),
             "threads": args.threads,
             "text": args.text,
-            "workload": getattr(args, "workload", "custom"),
-            "max_duration_s": getattr(args, "max_duration_s", 24.0),
             "requested_runs": args.runs,
             "warmup_runs": 1,
         }
@@ -189,13 +187,9 @@ class Results:
             temporary.unlink(missing_ok=True)
 
     def record(self, status, **fields):
-        entry = {**self.configuration(), "status": status, **fields}
         self.document["results"] = [
-            previous
-            for previous in self.document["results"]
-            if previous.get("workload") != entry["workload"]
+            {**self.configuration(), "status": status, **fields}
         ]
-        self.document["results"].append(entry)
         self.save()
 
     def start(self):

@@ -29,8 +29,6 @@ def render(paths, relative_to):
             "RTF is synthesis time divided by audio duration; lower is better and "
             "1 is real time. Loading and warmup are excluded from timings. Peak RAM "
             "is process RSS, including loading and warmup, and excludes GPU memory. "
-            "For workload reports, peak RAM is shared across short and medium runs "
-            "for each device and precision. "
             "These measurements describe speed, not speech quality; EOS does not "
             "guarantee complete or accurate speech. Single runs do not measure "
             "timing variability."
@@ -68,13 +66,10 @@ def render(paths, relative_to):
                 result["text"],
                 result["threads"],
                 result["warmup_runs"],
-                result.get("workload", "custom"),
             )
             groups.setdefault(context, []).append(result)
         for context, results in groups.items():
-            device, name, ram, vram, runtime, model, text, threads, warmup, workload = (
-                context
-            )
+            device, name, ram, vram, runtime, model, text, threads, warmup = context
             hardware = f"**{cell(device)} — {cell(name)}**; RAM: {cell(ram)} GiB"
             if device == "cuda":
                 hardware += f"; GPU memory: {cell(vram)} GiB; runtime: {cell(runtime)}"
@@ -83,7 +78,7 @@ def render(paths, relative_to):
                     hardware + ".",
                     "",
                     f"Model: {cell(model)}; CPU threads: {threads}; warmup runs: {warmup}.",
-                    f"Workload: {cell(workload)}. Test text: {cell(text)}",
+                    f"Test text: {cell(text)}",
                     "",
                     (
                         "| Precision | Memory profile | Expert cache (GB) | Runs | "

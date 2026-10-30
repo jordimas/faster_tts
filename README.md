@@ -128,10 +128,6 @@ for options and conversion instructions.
 
 Drama 3 only. See [benchmark instructions](https://github.com/jordimas/faster_tts/blob/main/benchmark/README.md) to run your own measurements.
 
-Both backends benchmark a short greeting and an 80-word paragraph by default,
-with separate timings and a shared peak host RAM measurement. Use
-`--workload short|medium|all` to select workloads or `--text` for custom input.
-
 <!-- current-benchmarks -->
 ### Benchmark results (2026-10-24)
 
