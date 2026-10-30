@@ -9,7 +9,7 @@ supported by CTranslate2.
 Text-to-speech with **Drama 3 on CPU and GPU**, powered by CTranslate2.
 Provides a Python library API and the `faster-tts` command-line interface (CLI).
 Includes model downloading and caching, sentence splitting, speaker tags, and WAV output.
-Requires CTranslate2 **4.8.4+**.
+Requires CTranslate2 **4.8.5+**.
 
 Drama 3 supports [83 languages](https://fish.audio/blog/fish-audio-drama-3/).
 With this library and CTranslate2, you can use:
@@ -127,10 +127,6 @@ for options and conversion instructions.
 ## Benchmark
 
 Drama 3 only. See [benchmark instructions](https://github.com/jordimas/faster_tts/blob/main/benchmark/README.md) to run your own measurements.
-
-Both backends benchmark a short greeting and an 80-word paragraph by default,
-with separate timings and a shared peak host RAM measurement. Use
-`--workload short|medium|all` to select workloads or `--text` for custom input.
 
 <!-- current-benchmarks -->
 ### Benchmark results (2026-10-24)

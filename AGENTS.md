@@ -39,7 +39,7 @@
 ## Validation and scope
 
 - Run focused tests appropriate to the change. Some runtime checks require
-  CTranslate2>=4.8.4 with Drama 3 support or local checkpoints; report unavailable checks.
+  CTranslate2>=4.8.5 with Drama 3 support or local checkpoints; report unavailable checks.
 - CI runs `ruff check faster_tts/ tests/ benchmark/ scripts/` and
   `ruff format --check faster_tts/ tests/ benchmark/ scripts/`.
 - For documentation-only changes, build the reference and check its local links

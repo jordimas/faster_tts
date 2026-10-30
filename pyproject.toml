@@ -19,7 +19,7 @@ classifiers = [
     "Topic :: Multimedia :: Sound/Audio :: Speech",
 ]
 dependencies = [
-    "ctranslate2>=4.8.4",
+    "ctranslate2>=4.8.5",
     "numpy>=1.23",
     "tokenizers>=0.20",
     "huggingface-hub>=0.24",
