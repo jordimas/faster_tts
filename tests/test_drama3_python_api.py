@@ -615,6 +615,24 @@ class Drama3PythonAPITest(unittest.TestCase):
         self.assertEqual([a["chunk_index"] for a in result.attempts], [0, 1])
         self.assertEqual([a["text"] for a in result.attempts], ["Hello.", "Hello?"])
 
+    def test_large_article_budget_respects_native_and_context_limits(self):
+        for maximum in (8192, 32768):
+            with self.subTest(maximum=maximum):
+                model = Model(self.root)
+                model._engine._prompt.config["text_config"][
+                    "max_position_embeddings"
+                ] = maximum
+                self.backend.generate.reset_mock()
+                result = model.synthesize("Hello. Hello?", max_duration_s=600)
+                self.assertEqual(result.finish_reason, "eos")
+                calls = self.backend.generate.call_args_list
+                self.assertEqual(len(calls), 2)
+                for call in calls:
+                    self.assertEqual(
+                        call.kwargs["max_frames"],
+                        min(8192, maximum - len(call.args[0])),
+                    )
+
     def test_chunk_budget_exhaustion_never_reports_full_success_or_skips_ahead(self):
         model = Model(self.root)
         result = model.synthesize(

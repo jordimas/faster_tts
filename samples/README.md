@@ -27,8 +27,9 @@ python samples/article_voice.py article.txt --output article.wav
 ```
 
 Selects the device automatically and defaults to the input filename with a `.wav`
-extension. The audio budget is 120 seconds; use `--max-duration-s` to change it.
-Reaching the limit saves partial narration.
+extension. The default safety budget scales with article length: 120 seconds per
+text chunk, with no fixed total cutoff. Use `--max-duration-s 600` to set an
+explicit total budget. Reaching the budget saves partial narration.
 
 ## Audio samples
 

@@ -6,6 +6,7 @@ from pathlib import Path
 from time import perf_counter
 
 from faster_tts import Model
+from faster_tts.chunking import split_text
 
 
 def main():
@@ -24,12 +25,12 @@ def main():
     )
     parser.add_argument("--model", default="drama-3")
     parser.add_argument("--device", choices=("cpu", "cuda", "auto"), default="auto")
-    parser.add_argument("--compute-type", default="default")
+    parser.add_argument("--compute-type", default="auto")
     parser.add_argument(
         "--max-duration-s",
         type=float,
-        default=120.0,
-        help="audio budget for the article",
+        default=None,
+        help="audio budget in seconds (default: 120 seconds per text chunk)",
     )
     args = parser.parse_args()
     logging.basicConfig(format="%(message)s")
@@ -44,15 +45,26 @@ def main():
         parser.error("the article is empty")
     if args.text_file.resolve() == args.output.resolve():
         parser.error("input and output must be different files")
+    if args.max_duration_s is None:
+        args.max_duration_s = 120.0 * len(split_text(text))
     print("Loading model…", flush=True)
     model = Model(args.model, device=args.device, compute_type=args.compute_type)
+    # info() reports the requested compute type; the native model resolves auto.
+    print(
+        f"Device: {model.info()['device']}, "
+        f"compute_type: {model._engine._model.compute_type}",
+        flush=True,
+    )
     print("Reading article…", flush=True)
     start = perf_counter()
     result = model.synthesize(
         text, max_duration_s=args.max_duration_s, output=args.output
     )
-    print(f"Total inference time: {perf_counter() - start:.2f}s")
-    print(f"Saved {result.audio.size / result.sample_rate:.1f}s to {args.output}")
+    elapsed = perf_counter() - start
+    audio_duration = result.audio.size / result.sample_rate
+    print(f"Total inference time: {elapsed:.2f}s")
+    print(f"Saved {audio_duration:.1f}s to {args.output}")
+    print(f"RTF: {elapsed / audio_duration:.3f} (lower is faster)")
     if result.finish_reason != "eos":
         raise SystemExit(
             f"Duration limit reached. {args.output} contains partial narration; "
