@@ -158,8 +158,8 @@ without bitwise PyTorch RNG parity.
     loads, mixes to mono, resamples to 44100 Hz, and encodes each
     recording once per call. References condition the voice separately
     from history and count toward the context limit. Requires the
-    `voice-cloning` extra, a runtime supporting reference encoding,
-    and a checkpoint converted with encoder weights. Defaults to None.
+    runtime supporting reference encoding and a checkpoint converted
+    with encoder weights. Defaults to None.
 - **output**: WAV destination as a string or path-like object. Defaults to
     None (no file). Creates parent directories and overwrites an
     existing file. Writes mono 16-bit PCM at the result sample rate,
@@ -180,7 +180,6 @@ without bitwise PyTorch RNG parity.
     size, reference transcript/speaker/audio, or unknown engine_options.
 - **RuntimeError**: Native generation fails, returns invalid/empty audio,
     or reference encoder support/weights are unavailable.
-- **ImportError**: Reference audio dependencies are not installed.
 - **OSError**: Reference audio cannot be read or output cannot be written.
 
 ## SynthesisResult

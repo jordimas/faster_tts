@@ -1,4 +1,4 @@
-"""Reference file loading; audio dependencies are only needed for voice cloning."""
+"""Reference audio loading and resampling for voice cloning."""
 
 import io
 import math
@@ -7,6 +7,8 @@ from numbers import Integral
 from pathlib import Path
 
 import numpy as np
+import soundfile as sf
+from scipy.signal import resample_poly
 
 
 def load_references(references):
@@ -42,13 +44,6 @@ def load_references(references):
         entries.append((text, audio))
     if not entries:
         return []
-    try:
-        import soundfile as sf
-        from scipy.signal import resample_poly
-    except ImportError as exc:
-        raise ImportError(
-            'Install voice cloning dependencies: pip install "faster-tts[voice-cloning]"'
-        ) from exc
     loaded = []
     for text, audio in entries:
         waveform, rate = sf.read(

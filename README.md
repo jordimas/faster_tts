@@ -104,10 +104,6 @@ Both memory features require a supporting CT2 build.
 Voice cloning accepts Drama 3-style references with an audio file path (or
 encoded file bytes), its transcript, and an optional speaker ID:
 
-```bash
-pip install 'faster-tts[voice-cloning]'
-```
-
 ```python
 result = model.synthesize(
     "New words spoken in the reference voice.",
