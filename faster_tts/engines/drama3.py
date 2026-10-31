@@ -170,7 +170,6 @@ class Drama3Model(BaseModel):
         for text, waveform in references:
             self._prompt.prepare(text)
             codes = self._model.encode_reference(waveform)
-            self._prompt.prepare("Reference validation", references=[(text, codes)])
             encoded.append((text, codes))
         return encoded
 

@@ -15,7 +15,7 @@ def load_references(references):
     """Return speaker-tagged transcripts and mono float32 PCM at 44100 Hz."""
     if isinstance(references, (Mapping, str, bytes)):
         raise TypeError("references must be an iterable of reference mappings")
-    entries = []
+    loaded = []
     for reference in references:
         if not isinstance(reference, Mapping):
             raise TypeError("each reference must be a mapping")
@@ -41,11 +41,6 @@ def load_references(references):
             raise TypeError(
                 "reference audio must be a file path or encoded audio bytes"
             )
-        entries.append((text, audio))
-    if not entries:
-        return []
-    loaded = []
-    for text, audio in entries:
         waveform, rate = sf.read(
             io.BytesIO(audio) if isinstance(audio, bytes) else audio,
             dtype="float32",

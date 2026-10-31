@@ -111,20 +111,18 @@ result = model.synthesize(
 )
 ```
 
-Files are mixed to mono and resampled automatically. Each recording is encoded
-once per call and retained across chunks and retries. References establish voices;
-`history` supplies previous narration. For multiple speakers, set each reference's
-`speaker` (0–15) and use matching `<|speaker:N|>` tags in the target text. An
-existing leading tag in the transcript takes precedence over `speaker`.
+Audio is mixed to mono, resampled to 44100 Hz, and encoded once per call.
+References establish voices; `history` supplies previous narration. Set each
+reference's optional `speaker` (0–15) and matching `<|speaker:N|>` tags in target
+text for multiple speakers. A leading transcript speaker tag takes precedence.
 
-This requires a CTranslate2 build with `Drama3.encode_reference` and a checkpoint
-converted with reference encoder weights; older decoder-only checkpoints must
-be reconverted. Reference encoding runs on CPU, including during GPU synthesis.
-Reference transcripts and audio count toward the context limit.
+Requires a CTranslate2 build with `Drama3.encode_reference` and a checkpoint
+converted with encoder weights. Encoding runs on CPU; references count toward
+the context limit. Older decoder-only checkpoints must be reconverted.
 
-CLI: `--reference-audio reference.wav --reference-text "The words in the recording."`.
-Repeat both flags for multiple references; optionally supply one
-`--reference-speaker` per reference.
+CLI: `--reference-audio reference.wav --reference-text "Recorded words"`.
+Repeat both flags for multiple references, optionally with one `--reference-speaker`
+each.
 
 Pass engine options through `engine_options`. Experimental `directed_spans`
 splits explicit breathing events from speech:

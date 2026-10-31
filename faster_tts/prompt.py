@@ -198,26 +198,9 @@ class Drama3PromptBuilder:
             "<|im_end|>\n",
             "<|im_start|>assistant\n<|voice|>",
         )
-        reference_segments = []
-        for index, (transcript, codes) in enumerate(references, 1):
-            validated = self.prepare(transcript, history=[(transcript, codes)])
-            spoken_reference = validated.segments[4].lstrip(_WHITE_SPACE)
-            reference_segments.extend(
-                (
-                    f"\n\n[Reference {index}]\nText: {spoken_reference}\nSpeech: ",
-                    np.asarray(codes, dtype=np.int64),
-                )
-            )
-        if reference_segments:
-            segments = (
-                segments[0],
-                "convert the provided text to speech reference to the following:",
-                *reference_segments,
-                *segments[2:],
-            )
-        system_end = 3 + len(reference_segments)
-        turns = []
-        for previous_text, codes in history:
+        references = tuple(references)
+        reference_segments, turns = [], []
+        for index, (previous_text, codes) in enumerate((*references, *history)):
             previous = self.prepare(previous_text)
             codes = np.asarray(codes)
             audio = self.config["audio_decoder_config"]
@@ -234,13 +217,25 @@ class Drama3PromptBuilder:
                 )
             if len(codes) > self.max_prompt_rows:
                 raise ValueError("history exceeds prompt row limit")
-            turns.extend(
-                (
-                    *previous.segments[3:],
-                    codes.astype(np.int64, copy=False),
-                    "<|im_end|>\n",
+            codes = codes.astype(np.int64, copy=False)
+            if index < len(references):
+                transcript = previous.segments[4].lstrip(_WHITE_SPACE)
+                reference_segments.extend(
+                    (
+                        f"\n\n[Reference {index + 1}]\nText: {transcript}\nSpeech: ",
+                        codes,
+                    )
                 )
+            else:
+                turns.extend((*previous.segments[3:], codes, "<|im_end|>\n"))
+        if reference_segments:
+            segments = (
+                segments[0],
+                "convert the provided text to speech reference to the following:",
+                *reference_segments,
+                *segments[2:],
             )
+        system_end = 3 + len(reference_segments)
         segments = segments[:system_end] + tuple(turns) + segments[system_end:]
         blocks, count = [], 0
         for segment in segments:
