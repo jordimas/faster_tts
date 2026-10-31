@@ -26,6 +26,8 @@ def main():
     parser.add_argument("--model", default="drama-3")
     parser.add_argument("--device", choices=("cpu", "cuda", "auto"), default="auto")
     parser.add_argument("--compute-type", default="auto")
+    parser.add_argument("--reference-audio", type=Path, help="reference voice recording")
+    parser.add_argument("--reference-text", help="transcript of the reference recording")
     parser.add_argument(
         "--max-duration-s",
         type=float,
@@ -33,6 +35,8 @@ def main():
         help="audio budget in seconds (default: 120 seconds per text chunk)",
     )
     args = parser.parse_args()
+    if (args.reference_audio is None) != (args.reference_text is None):
+        parser.error("provide both --reference-audio and --reference-text")
     logging.basicConfig(format="%(message)s")
     logging.getLogger("faster_tts.engines.drama3").setLevel(logging.INFO)
     if args.output is None:
@@ -58,7 +62,14 @@ def main():
     print("Reading article…", flush=True)
     start = perf_counter()
     result = model.synthesize(
-        text, max_duration_s=args.max_duration_s, output=args.output
+        text,
+        max_duration_s=args.max_duration_s,
+        output=args.output,
+        **(
+            {"references": [{"audio": args.reference_audio, "text": args.reference_text}]}
+            if args.reference_audio is not None
+            else {}
+        ),
     )
     elapsed = perf_counter() - start
     audio_duration = result.audio.size / result.sample_rate

@@ -21,6 +21,8 @@ classifiers = [
 dependencies = [
     "ctranslate2>=4.8.5",
     "numpy>=1.23",
+    "soundfile>=0.12",
+    "scipy>=1.10",
     "tokenizers>=0.20",
     "huggingface-hub>=0.24",
 ]
