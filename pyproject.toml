@@ -33,6 +33,7 @@ Issues = "https://github.com/jordimas/faster_tts/issues"
 
 [project.optional-dependencies]
 docs = ["pre-commit>=4"]
+voice-cloning = ["soundfile>=0.12", "scipy>=1.10"]
 
 [project.scripts]
 faster-tts = "faster_tts.__main__:main"

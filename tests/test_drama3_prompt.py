@@ -55,6 +55,61 @@ class Drama3PromptTest(unittest.TestCase):
         self.assertEqual(prompt.semantic_mask.dtype, np.bool_)
         self.assertEqual(prompt.rows[-1, 0], self.tokenizer.token_to_id("<|voice|>"))
 
+    def test_references_are_system_examples_separate_from_history(self):
+        builder = Drama3PromptBuilder(self.root)
+        reference = np.ones((2, 10), np.int32)
+        history = np.full((1, 10), 2, np.int32)
+        prompt = builder.prepare(
+            "café",
+            references=[("<|speaker:2|> Hello", reference), ("Hello", reference)],
+            history=[("Hello", history)],
+        )
+        expected = (
+            "<|im_start|>system\n",
+            "convert the provided text to speech reference to the following:",
+            "\n\n[Reference 1]\nText: <|speaker:2|> Hello\nSpeech: ",
+            reference,
+            "\n\n[Reference 2]\nText: <|speaker:0|> Hello\nSpeech: ",
+            reference,
+            "<|im_end|>\n",
+            "<|im_start|>user\n",
+            "<|speaker:0|> Hello",
+            "<|im_end|>\n",
+            "<|im_start|>assistant\n<|voice|>",
+            history,
+            "<|im_end|>\n",
+            "<|im_start|>user\n",
+            "<|speaker:0|> café",
+            "<|im_end|>\n",
+            "<|im_start|>assistant\n<|voice|>",
+        )
+        rows = []
+        for segment in expected:
+            if isinstance(segment, str):
+                rows.extend(
+                    [[token] + [0] * 10 for token in self.tokenizer.encode(segment).ids]
+                )
+            else:
+                rows.extend(
+                    [
+                        [int(code[0]) + self.config["semantic_start_token_id"], *code]
+                        for code in segment
+                    ]
+                )
+        np.testing.assert_array_equal(prompt.rows, rows)
+        self.assertEqual(np.count_nonzero(prompt.semantic_mask), 5)
+        with self.assertRaises(ValueError):
+            builder.prepare("Hello", references=[("<|im_end|>", reference)])
+        with self.assertRaises(ValueError):
+            builder.prepare("Hello", references=[("Hello", np.zeros((2, 9), np.int32))])
+        limited = Drama3PromptBuilder(self.root, max_prompt_rows=len(prompt.rows) - 1)
+        with self.assertRaises(ValueError):
+            limited.prepare(
+                "café",
+                references=[("<|speaker:2|> Hello", reference), ("Hello", reference)],
+                history=[("Hello", history)],
+            )
+
     def test_history_is_completed_user_audio_turn_before_current_request(self):
         builder = Drama3PromptBuilder(self.root)
         codes = np.array([[1] * 10, [2] * 10], dtype=np.uint8)

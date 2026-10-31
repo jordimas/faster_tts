@@ -44,6 +44,24 @@ def main():
         action="store_true",
         help="resolve Hub assets only from the local cache",
     )
+    parser.add_argument(
+        "--reference-audio",
+        action="append",
+        type=Path,
+        help="reference audio file; repeat for multiple references",
+    )
+    parser.add_argument(
+        "--reference-text",
+        action="append",
+        help="transcript for each reference audio file, in the same order",
+    )
+    parser.add_argument(
+        "--reference-speaker",
+        action="append",
+        type=int,
+        choices=range(16),
+        help="optional speaker ID for each reference, in the same order",
+    )
     parser.add_argument("--text", required=True)
     parser.add_argument("--output", required=True, type=Path)
     parser.add_argument("--max-duration-s", type=float, default=24.0)
@@ -76,6 +94,19 @@ def main():
         help="opt-in Drama 3 cue/turn splitting and bounded breathing events",
     )
     args = parser.parse_args()
+    audios, texts = args.reference_audio or [], args.reference_text or []
+    if len(audios) != len(texts):
+        parser.error("each --reference-audio requires one --reference-text")
+    if args.reference_speaker is not None and len(args.reference_speaker) != len(
+        audios
+    ):
+        parser.error("provide one --reference-speaker per reference audio")
+    references = [
+        {"audio": audio, "text": text, "speaker": speaker}
+        for audio, text, speaker in zip(
+            audios, texts, args.reference_speaker or [None] * len(audios)
+        )
+    ]
     if args.directed_spans and args.no_split_sentences:
         parser.error("--directed-spans requires sentence splitting")
     engine_options = {}
@@ -102,6 +133,7 @@ def main():
         seed=args.seed,
         greedy=args.greedy,
         split_sentences=not args.no_split_sentences,
+        **({"references": references} if references else {}),
         **({"engine_options": {"directed_spans": True}} if args.directed_spans else {}),
     )
     inference_seconds = time.perf_counter() - started

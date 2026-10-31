@@ -149,7 +149,7 @@ class Drama3PromptBuilder:
             if self.tokenizer.token_to_id(literal) is None:
                 raise ValueError(f"missing tokenizer special token: {literal}")
 
-    def prepare(self, text, *, history=()):
+    def prepare(self, text, *, history=(), references=()):
         """Prepare text with optional (text, integer codes[frames,10]) history.
 
         Include only completed generations. History is conditioning context,
@@ -159,6 +159,9 @@ class Drama3PromptBuilder:
             text: Nonempty text normalized to Unicode NFC. Canonical speaker tags
                 with IDs 0 through 15 are accepted; other protocol tags are rejected.
                 A default speaker-0 tag is added if no leading speaker tag exists.
+            references: Iterable of `(transcript, codes)` voice examples placed
+                in the system message, separate from completed history turns.
+                Codes follow the same shape and vocabulary rules as history.
             history: Iterable of completed `(text, codes)` turns. Each code array
                 must be nonempty, integer, shape `(frames, 10)`, and contain only
                 indices within the configured vocabulary.
@@ -195,6 +198,24 @@ class Drama3PromptBuilder:
             "<|im_end|>\n",
             "<|im_start|>assistant\n<|voice|>",
         )
+        reference_segments = []
+        for index, (transcript, codes) in enumerate(references, 1):
+            validated = self.prepare(transcript, history=[(transcript, codes)])
+            spoken_reference = validated.segments[4].lstrip(_WHITE_SPACE)
+            reference_segments.extend(
+                (
+                    f"\n\n[Reference {index}]\nText: {spoken_reference}\nSpeech: ",
+                    np.asarray(codes, dtype=np.int64),
+                )
+            )
+        if reference_segments:
+            segments = (
+                segments[0],
+                "convert the provided text to speech reference to the following:",
+                *reference_segments,
+                *segments[2:],
+            )
+        system_end = 3 + len(reference_segments)
         turns = []
         for previous_text, codes in history:
             previous = self.prepare(previous_text)
@@ -220,7 +241,7 @@ class Drama3PromptBuilder:
                     "<|im_end|>\n",
                 )
             )
-        segments = segments[:3] + tuple(turns) + segments[3:]
+        segments = segments[:system_end] + tuple(turns) + segments[system_end:]
         blocks, count = [], 0
         for segment in segments:
             if isinstance(segment, str):

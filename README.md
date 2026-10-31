@@ -101,6 +101,35 @@ Both memory features require a supporting CT2 build.
 
 ## Synthesis options and results
 
+Voice cloning accepts Drama 3-style references with an audio file path (or
+encoded file bytes), its transcript, and an optional speaker ID:
+
+```bash
+pip install 'faster-tts[voice-cloning]'
+```
+
+```python
+result = model.synthesize(
+    "New words spoken in the reference voice.",
+    references=[{"audio": "reference.wav", "text": "The words in the recording."}],
+)
+```
+
+Files are mixed to mono and resampled automatically. Each recording is encoded
+once per call and retained across chunks and retries. References establish voices;
+`history` supplies previous narration. For multiple speakers, set each reference's
+`speaker` (0–15) and use matching `<|speaker:N|>` tags in the target text. An
+existing leading tag in the transcript takes precedence over `speaker`.
+
+This requires a CTranslate2 build with `Drama3.encode_reference` and a checkpoint
+converted with reference encoder weights; older decoder-only checkpoints must
+be reconverted. Reference encoding runs on CPU, including during GPU synthesis.
+Reference transcripts and audio count toward the context limit.
+
+CLI: `--reference-audio reference.wav --reference-text "The words in the recording."`.
+Repeat both flags for multiple references; optionally supply one
+`--reference-speaker` per reference.
+
 Pass engine options through `engine_options`. Experimental `directed_spans`
 splits explicit breathing events from speech:
 
