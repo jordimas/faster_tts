@@ -37,7 +37,7 @@ def main():
     args = parser.parse_args()
     if (args.reference_audio is None) != (args.reference_text is None):
         parser.error("provide both --reference-audio and --reference-text")
-    logging.basicConfig(format="%(message)s")
+    logging.basicConfig(format="%(message)s\n")
     logging.getLogger("faster_tts.engines.drama3").setLevel(logging.INFO)
     if args.output is None:
         args.output = args.text_file.with_suffix(".wav")
