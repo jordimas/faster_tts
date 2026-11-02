@@ -194,6 +194,7 @@ class Model:
         split_sentences=True,
         engine_options=None,
         output=None,
+        references=None,
     ):
         """Synthesize speech using the selected engine.
 
@@ -238,6 +239,14 @@ class Model:
                 may have native `length` attempts while the aggregate is `eos`
                 when every speech span reaches EOS. Voice/event fidelity is not
                 validated. Unknown keys raise `ValueError`.
+            references: Optional iterable of mappings with `audio` (file path or
+                encoded audio bytes), `text` (nonempty recording transcript), and
+                optional `speaker` (integer 0..15, default speaker 0). Drama 3
+                loads, mixes to mono, resamples to 44100 Hz, and encodes each
+                recording once per call. References condition the voice separately
+                from history and count toward the context limit. Requires the
+                runtime supporting reference encoding and a checkpoint converted
+                with encoder weights. Defaults to None.
             output: WAV destination as a string or path-like object. Defaults to
                 None (no file). Creates parent directories and overwrites an
                 existing file. Writes mono 16-bit PCM at the result sample rate,
@@ -253,9 +262,10 @@ class Model:
             TypeError: Text is not a string, engine_options is not a mapping,
                 or output is not a string or path-like object.
             ValueError: Invalid text, sampling settings, duration, context
-                size, or unknown engine_options.
-            RuntimeError: Native generation fails or returns invalid/empty audio.
-            OSError: The output directory or WAV file cannot be written.
+                size, reference transcript/speaker/audio, or unknown engine_options.
+            RuntimeError: Native generation fails, returns invalid/empty audio,
+                or reference encoder support/weights are unavailable.
+            OSError: Reference audio cannot be read or output cannot be written.
         """
         output = Path(output) if output is not None else None
         if (
@@ -268,6 +278,11 @@ class Model:
         options = _check_engine_options(
             self._engine_class, engine_options, "synthesize"
         )
+        if references is not None:
+            prepare = getattr(self._engine, "prepare_references", None)
+            if prepare is None:
+                raise ValueError("Selected engine does not support references")
+            options["references"] = prepare(references)
         result = self._engine.synthesize(
             text,
             max_duration_s=float(max_duration_s),

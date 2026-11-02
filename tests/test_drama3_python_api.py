@@ -67,6 +67,104 @@ class Drama3PythonAPITest(unittest.TestCase):
         device_patch.start()
         self.addCleanup(device_patch.stop)
 
+    def test_references_encode_once_and_stay_in_system_across_chunks(self):
+        self.backend.prefix_cache_stats = {"entries": 0}
+        self.backend.encode_reference.return_value = np.ones((3, 10), np.int32)
+        waveform = np.zeros(4410, np.float32)
+        model = Model(self.root)
+        with patch(
+            "faster_tts.references.load_references",
+            return_value=[("<|speaker:2|> Reference", waveform)],
+        ):
+            result = model.synthesize(
+                "<|speaker:2|> Hello. Goodbye.",
+                references=[{"audio": "voice.wav", "text": "Reference", "speaker": 2}],
+            )
+        self.backend.encode_reference.assert_called_once_with(waveform)
+        self.assertEqual(len(result.codes), 2)
+        builder = model._engine._prompt
+        codes = self.backend.encode_reference.return_value
+        for call in self.backend.generate.call_args_list:
+            rows = call.args[0]
+            expected = builder.prepare(
+                "<|speaker:2|> Hello.", references=[("<|speaker:2|> Reference", codes)]
+            )
+            system_rows = sum(
+                len(builder.tokenizer.encode(segment).ids)
+                if isinstance(segment, str)
+                else len(segment)
+                for segment in expected.segments[:5]
+            )
+            np.testing.assert_array_equal(
+                rows[:system_rows], expected.rows[:system_rows]
+            )
+            self.assertGreaterEqual(call.kwargs["static_prompt_rows"], system_rows)
+
+    def test_references_are_not_reencoded_on_retry(self):
+        self.backend.encode_reference.return_value = np.ones((3, 10), np.int32)
+        self.backend.generate.side_effect = [
+            dict(self.result, finish_reason="length"),
+            self.result,
+        ]
+        with patch(
+            "faster_tts.references.load_references",
+            return_value=[("Reference", np.zeros(10, np.float32))],
+        ):
+            Model(self.root).synthesize(
+                "Hello",
+                max_retries=1,
+                references=[{"audio": "voice.wav", "text": "Reference"}],
+            )
+        self.assertEqual(self.backend.encode_reference.call_count, 1)
+        self.assertEqual(self.backend.generate.call_count, 2)
+        first, second = self.backend.generate.call_args_list
+        np.testing.assert_array_equal(first.args[0], second.args[0])
+
+    def test_cli_reference_files_and_speakers(self):
+        model = Mock()
+        model.synthesize.return_value = SynthesisResult(**self.result)
+        with (
+            patch(
+                "sys.argv",
+                [
+                    "faster-tts",
+                    "--text",
+                    "Hello",
+                    "--output",
+                    str(self.root / "out.wav"),
+                    "--reference-audio",
+                    "voice.wav",
+                    "--reference-text",
+                    "Reference",
+                    "--reference-speaker",
+                    "2",
+                ],
+            ),
+            patch("faster_tts.__main__.Model", return_value=model),
+        ):
+            main()
+        self.assertEqual(
+            model.synthesize.call_args.kwargs["references"],
+            [{"audio": Path("voice.wav"), "text": "Reference", "speaker": 2}],
+        )
+
+    def test_reference_runtime_without_encoder_is_actionable(self):
+        del self.backend.encode_reference
+        with patch(
+            "faster_tts.references.load_references",
+            return_value=[("Reference", np.zeros(10, np.float32))],
+        ):
+            with self.assertRaisesRegex(RuntimeError, "encode_reference support"):
+                Model(self.root).synthesize(
+                    "Hello", references=[{"audio": "voice.wav", "text": "Reference"}]
+                )
+        self.backend.generate.assert_not_called()
+
+    def test_empty_references_preserve_generation(self):
+        model = Model(self.root)
+        model.synthesize("Hello", references=[])
+        self.backend.encode_reference.assert_not_called()
+
     def test_prefix_cache_uses_system_turn_without_history_and_across_retries(self):
         self.backend.prefix_cache_stats = {"entries": 0, "hits": 0, "misses": 0}
         model = Model(self.root)
@@ -1021,7 +1119,7 @@ class Drama3PythonAPITest(unittest.TestCase):
                 seed=2**64 - 1,
                 max_retries=1,
             )
-        prepare.assert_called_once_with("Hello", history=())
+        prepare.assert_called_once_with("Hello", history=(), references=())
         calls = self.backend.generate.call_args_list
         self.assertIs(calls[0].args[0], calls[1].args[0])
         self.assertEqual([call.kwargs["seed"] for call in calls], [2**64 - 1, 0])

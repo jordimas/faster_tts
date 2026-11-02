@@ -244,6 +244,7 @@ class ModelDispatchTest(unittest.TestCase):
                     "split_sentences": True,
                     "engine_options": None,
                     "output": None,
+                    "references": None,
                 },
                 "max_retries",
             ),
