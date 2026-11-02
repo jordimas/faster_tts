@@ -23,6 +23,10 @@ reports are preserved using `_01`, `_02`, etc.; dates use UTC. Omit
 `--compute-type` to test all supported types. Use `--output-json <path>` to write
 all devices into one file at an explicit path (overwritten on each invocation).
 
+CPU float32 runs use expert memory mapping when checkpoint weights would leave
+less than 2 GB or 30% of available RAM for runtime allocations. Override with
+`CT2_DRAMA3_CPU_MMAP=0` or `1`; mapping does not cap total RAM use.
+
 Convert all saved reports to a public Markdown section (from the repository root):
 
 ```bash

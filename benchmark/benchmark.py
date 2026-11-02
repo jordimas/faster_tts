@@ -11,6 +11,8 @@ from check_quality import run_checker
 from huggingface_hub.utils import disable_progress_bars, enable_progress_bars
 
 from faster_tts import Model
+from faster_tts.cache import resolve_model_path
+from faster_tts.memory import auto_cpu_mmap
 
 parser = benchmark_parser(__doc__)
 parser.add_argument("model", nargs="?", default="drama-3")
@@ -78,13 +80,16 @@ if args.compute_type is None:
 if args.device == "cuda":
     results.gpu_hardware = ct2_gpu_hardware(args.device_index)
 results.start()
-model = Model(
-    args.model,
-    cpu_threads=args.threads,
-    device=args.device,
-    device_index=args.device_index,
-    compute_type=args.compute_type,
-)
+model_path = resolve_model_path(args.model)
+# Explicit CPU selection in the sweep bypasses Model's device="auto" safeguard.
+with auto_cpu_mmap(model_path, args.device == "cpu", args.compute_type):
+    model = Model(
+        model_path,
+        cpu_threads=args.threads,
+        device=args.device,
+        device_index=args.device_index,
+        compute_type=args.compute_type,
+    )
 print(f"\nCompute type: {args.compute_type}", flush=True)
 model.synthesize(args.text)  # Exclude loading and first-run costs.
 
