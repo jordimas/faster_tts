@@ -15,11 +15,6 @@ LOADER_LOCK = RLock()
 CPU_MMAP_ENV = "CT2_DRAMA3_CPU_MMAP"
 
 
-def _expert_memory_budget(free_bytes):
-    """Leave at least 2 decimal GB and 30% for non-expert allocations."""
-    return min(free_bytes * 0.7, free_bytes - 2e9)
-
-
 def available_cpu_memory():
     """Return available RAM in bytes, or None when it cannot be queried."""
     if sys.platform == "linux":
@@ -50,9 +45,10 @@ def auto_cpu_mmap(directory, enabled, compute_type):
                 and CPU_MMAP_ENV not in os.environ
             ):
                 available = available_cpu_memory()
+                # Leave at least 2 GB and 30% for runtime state and other users.
                 if available is not None and (
                     directory / "model.bin"
-                ).stat().st_size > _expert_memory_budget(available):
+                ).stat().st_size > min(available * 0.7, available - 2e9):
                     os.environ[CPU_MMAP_ENV] = "1"
                     changed = True
             yield
@@ -129,7 +125,8 @@ def expert_cache_budget(value, device, device_index, num_workers):
                 value = 0
             elif value == "auto":
                 free = free_gpu_memory(device_index)
-                value = _expert_memory_budget(free) / 1e9
+                # Reserve at least 2 decimal GB and 30% for non-expert allocations.
+                value = min(free * 0.7, free - 2e9) / 1e9
                 if value <= 0:
                     raise RuntimeError(
                         "Insufficient free GPU memory for automatic expert caching; "
