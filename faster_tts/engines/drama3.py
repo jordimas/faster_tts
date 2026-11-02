@@ -157,6 +157,22 @@ class Drama3Model(BaseModel):
             "activation_dtype": metadata.get("activation_dtype"),
         }
 
+    def prepare_references(self, references):
+        """Load and encode upstream-style reference mappings once per request."""
+        from ..references import load_references
+
+        references = load_references(references)
+        if references and not callable(getattr(self._model, "encode_reference", None)):
+            raise RuntimeError(
+                "Voice cloning requires CTranslate2 with Drama 3 encode_reference support"
+            )
+        encoded = []
+        for text, waveform in references:
+            self._prompt.prepare(text)
+            codes = self._model.encode_reference(waveform)
+            encoded.append((text, codes))
+        return encoded
+
     def synthesize(
         self,
         text,
@@ -172,6 +188,7 @@ class Drama3Model(BaseModel):
         history=(),
         max_frames=None,
         directed_spans=False,
+        references=(),
     ):
         """Run Drama 3 generation, validation, retries, and sentence splitting."""
         if (
@@ -223,7 +240,7 @@ class Drama3Model(BaseModel):
                 raise ValueError("directed_spans requires split_sentences=True")
             segments = directed_segments(text)
             initial = list(history)
-            self._prompt.prepare(text, history=initial)
+            self._prompt.prepare(text, history=initial, references=references)
             for _, segment in segments:
                 self._prompt.prepare(segment)
             return self._synthesize_chunks(
@@ -236,6 +253,7 @@ class Drama3Model(BaseModel):
                 greedy,
                 max_retries,
                 initial,
+                references=references,
                 segment_kinds=[kind for kind, _ in segments],
             )
         chunks = split_text(text) if split_sentences else [text]
@@ -252,9 +270,10 @@ class Drama3Model(BaseModel):
                 greedy,
                 max_retries,
                 history,
+                references=references,
             )
         history = tuple(history)
-        prepared = self._prompt.prepare(text, history=history)
+        prepared = self._prompt.prepare(text, history=history, references=references)
         maximum = self._prompt.config.get("text_config", {}).get(
             "max_position_embeddings"
         )
@@ -272,7 +291,9 @@ class Drama3Model(BaseModel):
                     len(self._prompt.tokenizer.encode(segment).ids)
                     if isinstance(segment, str)
                     else len(segment)
-                    for segment in prepared.segments[: 9 if history else 3]
+                    for segment in prepared.segments[
+                        : (9 if history else 3) + 2 * len(references)
+                    ]
                 ),
                 "cache_static_prompt": True,
             }
@@ -376,6 +397,7 @@ class Drama3Model(BaseModel):
         max_retries,
         history,
         segment_kinds=None,
+        references=(),
     ):
         initial = list(history)
         completed, audio, codes, attempts, timings = [], [], [], [], {}
@@ -406,7 +428,11 @@ class Drama3Model(BaseModel):
                 "max_position_embeddings"
             )
             if isinstance(maximum, int):
-                prompt_rows = len(self._prompt.prepare(text, history=context).rows)
+                prompt_rows = len(
+                    self._prompt.prepare(
+                        text, history=context, references=references
+                    ).rows
+                )
                 allowance = min(allowance, maximum - prompt_rows)
             result = self.synthesize(
                 text,
@@ -417,6 +443,7 @@ class Drama3Model(BaseModel):
                 greedy=greedy,
                 max_retries=0 if event else max_retries,
                 history=context,
+                references=references,
                 split_sentences=False,
                 max_frames=allowance,
             )

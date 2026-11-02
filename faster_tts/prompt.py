@@ -149,7 +149,7 @@ class Drama3PromptBuilder:
             if self.tokenizer.token_to_id(literal) is None:
                 raise ValueError(f"missing tokenizer special token: {literal}")
 
-    def prepare(self, text, *, history=()):
+    def prepare(self, text, *, history=(), references=()):
         """Prepare text with optional (text, integer codes[frames,10]) history.
 
         Include only completed generations. History is conditioning context,
@@ -159,6 +159,9 @@ class Drama3PromptBuilder:
             text: Nonempty text normalized to Unicode NFC. Canonical speaker tags
                 with IDs 0 through 15 are accepted; other protocol tags are rejected.
                 A default speaker-0 tag is added if no leading speaker tag exists.
+            references: Iterable of `(transcript, codes)` voice examples placed
+                in the system message, separate from completed history turns.
+                Codes follow the same shape and vocabulary rules as history.
             history: Iterable of completed `(text, codes)` turns. Each code array
                 must be nonempty, integer, shape `(frames, 10)`, and contain only
                 indices within the configured vocabulary.
@@ -195,8 +198,9 @@ class Drama3PromptBuilder:
             "<|im_end|>\n",
             "<|im_start|>assistant\n<|voice|>",
         )
-        turns = []
-        for previous_text, codes in history:
+        references = tuple(references)
+        reference_segments, turns = [], []
+        for index, (previous_text, codes) in enumerate((*references, *history)):
             previous = self.prepare(previous_text)
             codes = np.asarray(codes)
             audio = self.config["audio_decoder_config"]
@@ -213,14 +217,26 @@ class Drama3PromptBuilder:
                 )
             if len(codes) > self.max_prompt_rows:
                 raise ValueError("history exceeds prompt row limit")
-            turns.extend(
-                (
-                    *previous.segments[3:],
-                    codes.astype(np.int64, copy=False),
-                    "<|im_end|>\n",
+            codes = codes.astype(np.int64, copy=False)
+            if index < len(references):
+                transcript = previous.segments[4].lstrip(_WHITE_SPACE)
+                reference_segments.extend(
+                    (
+                        f"\n\n[Reference {index + 1}]\nText: {transcript}\nSpeech: ",
+                        codes,
+                    )
                 )
+            else:
+                turns.extend((*previous.segments[3:], codes, "<|im_end|>\n"))
+        if reference_segments:
+            segments = (
+                segments[0],
+                "convert the provided text to speech reference to the following:",
+                *reference_segments,
+                *segments[2:],
             )
-        segments = segments[:3] + tuple(turns) + segments[3:]
+        system_end = 3 + len(reference_segments)
+        segments = segments[:system_end] + tuple(turns) + segments[system_end:]
         blocks, count = [], 0
         for segment in segments:
             if isinstance(segment, str):
