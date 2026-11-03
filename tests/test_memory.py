@@ -43,20 +43,19 @@ class MemoryQueryTest(unittest.TestCase):
             with (directory / "model.bin").open("wb") as weights:
                 weights.truncate(3_000_000_000)
             cases = [
-                (4e9, True, "default", "linux", None, "1"),
-                (10e9, True, "default", "linux", None, None),
-                (None, True, "default", "linux", None, None),
-                (4e9, False, "default", "linux", None, None),
-                (4e9, True, "int8", "linux", None, None),
-                (4e9, True, "default", "win32", None, None),
-                (4e9, True, "float32", "darwin", None, "1"),
-                (4e9, True, "default", "linux", "0", "0"),
-                (10e9, True, "default", "linux", "1", "1"),
-                (5e9, True, "default", "linux", None, None),
+                (4e9, True, "linux", None, "1"),
+                (10e9, True, "linux", None, None),
+                (None, True, "linux", None, None),
+                (4e9, False, "linux", None, None),
+                (4e9, True, "win32", None, None),
+                (4e9, True, "darwin", None, "1"),
+                (4e9, True, "linux", "0", "0"),
+                (10e9, True, "linux", "1", "1"),
+                (5e9, True, "linux", None, None),
             ]
-            for ram, enabled, compute, platform, explicit, expected in cases:
+            for ram, enabled, platform, explicit, expected in cases:
                 with (
-                    self.subTest(case=(ram, enabled, compute, platform, explicit)),
+                    self.subTest(case=(ram, enabled, platform, explicit)),
                     patch.dict(os.environ),
                     patch("faster_tts.memory.sys.platform", platform),
                     patch("faster_tts.memory.available_cpu_memory", return_value=ram),
@@ -65,7 +64,7 @@ class MemoryQueryTest(unittest.TestCase):
                     if explicit is not None:
                         os.environ[CPU_MMAP_ENV] = explicit
                     with self.assertRaisesRegex(RuntimeError, "load failed"):
-                        with auto_cpu_mmap(directory, enabled, compute):
+                        with auto_cpu_mmap(directory, enabled):
                             self.assertEqual(os.environ.get(CPU_MMAP_ENV), expected)
                             raise RuntimeError("load failed")
                     self.assertEqual(os.environ.get(CPU_MMAP_ENV), explicit)

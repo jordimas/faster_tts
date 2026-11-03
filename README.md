@@ -94,7 +94,7 @@ Automatic sizing reserves at least 2 GB and 30% of free memory and fails if
 memory cannot be queried or is insufficient. Cache budgets do not cap total VRAM.
 
 When `device="auto"` selects CPU, large checkpoints can use expert memory mapping
-on Linux/macOS with `compute_type="default"` or `"float32"`. Override with
+on Linux/macOS for all compute types. Override with
 `CT2_DRAMA3_CPU_MMAP=0` or `1`. Explicit `device="cpu"` leaves it off by default.
 Keep the checkpoint unchanged while loaded; mapping does not cap RAM usage.
 Both memory features require a supporting CT2 build.

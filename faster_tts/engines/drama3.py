@@ -118,7 +118,7 @@ class Drama3Model(BaseModel):
                 compute_type=compute_type,
             ) as cache_gb,
             auto_cpu_mmap(
-                directory, device == "auto" and resolved_device == "cpu", compute_type
+                directory, device == "auto" and resolved_device == "cpu"
             ),
         ):
             self._model = backend_class(

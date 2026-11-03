@@ -38,7 +38,7 @@ def available_cpu_memory():
 
 
 @contextmanager
-def auto_cpu_mmap(directory, enabled, compute_type):
+def auto_cpu_mmap(directory, enabled):
     """Temporarily enable CPU mapping when estimated weights exceed spare RAM."""
     with LOADER_LOCK:
         changed = False
@@ -46,7 +46,6 @@ def auto_cpu_mmap(directory, enabled, compute_type):
             if (
                 enabled
                 and sys.platform in ("linux", "darwin")
-                and compute_type in ("default", "float32")
                 and CPU_MMAP_ENV not in os.environ
             ):
                 available = available_cpu_memory()
