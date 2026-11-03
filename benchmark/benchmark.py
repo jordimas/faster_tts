@@ -89,7 +89,7 @@ if args.device == "cuda":
 results.start()
 model_path = resolve_model_path(args.model)
 # Explicit CPU selection in the sweep bypasses Model's device="auto" safeguard.
-with auto_cpu_mmap(model_path, args.device == "cpu"):
+with auto_cpu_mmap(model_path, args.device == "cpu", args.compute_type):
     model = Model(
         model_path,
         cpu_threads=args.threads,
