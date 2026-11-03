@@ -11,8 +11,10 @@ uv run python benchmark/benchmark.py drama-3 --device cuda --compute-type float1
 python benchmark/benchmark_hf.py --device cuda --compute-type float16
 ```
 
-The Hugging Face benchmark requires the Fish Speech dependencies, checkpoint,
-and source tree. Set `--source` and the model path as needed.
+The Hugging Face benchmark requires the Fish Speech dependencies and source tree
+(`--source` or `HF_SOURCE`). The model defaults to `fishaudio/drama-3` and uses
+the standard Hugging Face cache. Pass another repo ID or a local checkpoint
+directory as the model argument, or set `HF_MODEL`.
 
 Both runners measure two fixed workloads by default: **short** (the original
 greeting) and **medium** (an 80-word paragraph). Use `--workload short` or

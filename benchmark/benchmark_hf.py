@@ -25,15 +25,13 @@ def main():
     parser.add_argument(
         "model",
         nargs="?",
-        type=Path,
-        default=Path(os.environ.get("HF_MODEL", tts / "models/drama-3-official")),
+        default=os.environ.get("HF_MODEL", "fishaudio/drama-3"),
+        help="Hugging Face repo ID or local checkpoint directory (default: fishaudio/drama-3)",
     )
     parser.add_argument(
         "--source",
         type=Path,
-        default=Path(
-            os.environ.get("HF_SOURCE", tts / "../../audio/vendor/fish-speech")
-        ),
+        default=Path(os.environ.get("HF_SOURCE", tts / "audio/vendor/fish-speech")),
     )
     parser.add_argument(
         "--compute-type",
@@ -106,8 +104,13 @@ def main():
     results.start()
     if not (args.source / "fish_speech").is_dir():
         parser.error(f"official Fish Speech source not found: {args.source}")
-    if not (args.model / "codec.pth").is_file():
-        parser.error(f"official checkpoint not found: {args.model}")
+    model_path = Path(args.model).expanduser()
+    if not model_path.is_dir():
+        from huggingface_hub import snapshot_download
+
+        model_path = Path(snapshot_download(repo_id=args.model))
+    if not (model_path / "codec.pth").is_file():
+        parser.error(f"official checkpoint not found: {model_path}")
     sys.path.insert(0, str(args.source.resolve()))
     # Use exactly the sentence boundaries used by the CT2 API.
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
@@ -145,9 +148,9 @@ def main():
     device = "cpu" if args.device == "cpu" else f"cuda:{args.device_index}"
     dtype = getattr(torch, args.compute_type)
     config = FishOmniConfig.from_dict(
-        json.loads((args.model / "config.json").read_text())
+        json.loads((model_path / "config.json").read_text())
     )
-    tokenizer = Tokenizer.from_file(str(args.model / "tokenizer.json"))
+    tokenizer = Tokenizer.from_file(str(model_path / "tokenizer.json"))
     tokenizer.no_padding()
     tokenizer.no_truncation()
     print(f"\nCompute type: {args.compute_type}", flush=True)
@@ -169,19 +172,19 @@ def main():
         backbone.materialize([device])
         load_backbone_weights(
             backbone,
-            iter_checkpoint_tensors(args.model, skip_prefixes=AUDIO_DECODER_PREFIXES),
+            iter_checkpoint_tensors(model_path, skip_prefixes=AUDIO_DECODER_PREFIXES),
         )
         tower.to_empty(device=device)
         load_audio_decoder_weights(
             tower,
             iter_checkpoint_tensors(
-                args.model,
+                model_path,
                 skip_prefixes=(CHECKPOINT_BACKBONE_PREFIX, CHECKPOINT_LM_HEAD_KEY),
             ),
         )
         model = FishOmniModel(config, backbone, tower, tokenizer).eval()
         # CT2 waveform decoding also stays on CPU in float32, including GPU runs.
-        codec = load_codec_model(args.model / "codec.pth", "cpu", torch.float32)
+        codec = load_codec_model(model_path / "codec.pth", "cpu", torch.float32)
 
         def synchronize():
             if args.device == "cuda":
