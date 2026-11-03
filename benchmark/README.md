@@ -73,7 +73,9 @@ python benchmark/json_to_html.py benchmark/v1-*.json benchmark/v2-*.json -o benc
 ```
 
 Column headers use the filename prefix before the first `-` (for example,
-`v2-cpu.json` becomes `v2`). Rows identify hardware/device and compute type;
+`v2-cpu.json` becomes `v2`). Reports named `XX-YYY.json` share a table only
+when `YYY` matches exactly. Files without that pattern get their own table.
+Rows identify hardware/device and compute type;
 each version shows total synthesis seconds, RTF, and peak host RAM from the
 JSON summary. Backends can share rows; model names use the final path component
 so a local HF path such as `/models/drama-3` matches `drama-3`.

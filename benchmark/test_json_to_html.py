@@ -57,7 +57,7 @@ class HtmlTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             paths = [
                 Path(directory) / name
-                for name in ("v1-cpu.json", "v2-cpu.json", "v2-gpu.json")
+                for name in ("v1-results.json", "v2-results.json", "v3-results.json")
             ]
             for path, document in zip(
                 paths,
@@ -77,6 +77,36 @@ class HtmlTest(unittest.TestCase):
         self.assertIn(">8.000</td>", html)
         self.assertIn(">0.400</td>", html)
         self.assertIn('<td colspan="3">—</td>', html)
+
+    def test_groups_by_suffix_and_keeps_unmatched_files_separate(self):
+        with tempfile.TemporaryDirectory() as directory:
+            paths = [
+                Path(directory) / name
+                for name in (
+                    "484-x86_64_ct2_2026-10-30.json",
+                    "485-x86_64_ct2_2026-10-30.json",
+                    "484-other.json",
+                    "standalone.json",
+                )
+            ]
+            for path in paths:
+                path.write_text(json.dumps(report()))
+            html = render(paths)
+        self.assertEqual(html.count("<table>"), 3)
+        self.assertEqual(html.count("<h2>x86_64_ct2_2026-10-30</h2>"), 1)
+        first, other, standalone = html.split("<h2>")[1:]
+        self.assertIn('<th colspan="3">484</th>', first)
+        self.assertIn('<th colspan="3">485</th>', first)
+        self.assertIn('<th colspan="3">484</th>', other)
+        self.assertNotIn('<th colspan="3">485</th>', other)
+        self.assertIn("standalone</h2>", standalone)
+        self.assertIn(
+            "JSON files: 484-x86_64_ct2_2026-10-30.json, "
+            "485-x86_64_ct2_2026-10-30.json",
+            first,
+        )
+        self.assertIn("JSON files: 484-other.json", other)
+        self.assertIn("JSON files: standalone.json", standalone)
 
     def test_incomplete_and_duplicate_measurements(self):
         with tempfile.TemporaryDirectory() as directory:

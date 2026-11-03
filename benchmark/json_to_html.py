@@ -6,7 +6,7 @@ from html import escape
 from pathlib import Path
 
 
-def render(paths):
+def render_group(paths):
     versions, rows, backends = [], {}, {}
     for path in paths:
         document = json.loads(path.read_text(encoding="utf-8"))
@@ -44,20 +44,6 @@ def render(paths):
                 raise ValueError(f"{path}: duplicate {version} measurement for {key}")
             measurements[version] = (summary, path.name)
     lines = [
-        '<!doctype html><html lang="en"><meta charset="utf-8">',
-        '<meta name="viewport" content="width=device-width, initial-scale=1">',
-        "<title>Benchmark comparison</title>",
-        (
-            "<style>body{font:16px system-ui;margin:2rem;color:#17202a}"
-            "table{border-collapse:collapse}th,td{border:1px solid #ccd1d1;padding:.6rem}"
-            "thead{background:#eef2f5}td{text-align:right}"
-            "small{display:block;font-weight:normal;color:#555}</style>"
-        ),
-        "<h1>Benchmark comparison</h1>",
-        (
-            "<p>Totals cover timed runs only. RTF = synthesis time / audio duration; "
-            "lower is better. Peak RAM includes loading and warmup, excluding GPU memory.</p>"
-        ),
         '<table><thead><tr><th rowspan="2">Device</th><th rowspan="2">Compute type</th>',
         *[f'<th colspan="3">{escape(version)}</th>' for version in versions],
         "</tr><tr>",
@@ -90,6 +76,11 @@ def render(paths):
                 lines.append(f'<td title="{escape(filename, quote=True)}">{label}</td>')
         lines.append("</tr>")
     lines.append("</tbody></table>")
+    lines.append(
+        "<p><small>JSON files: "
+        + ", ".join(escape(path.name) for path in paths)
+        + "</small></p>"
+    )
     for number, (model, profile, threads, workloads) in enumerate(configurations, 1):
         detail = f"{model}; {profile}; {threads} threads; {', '.join(workloads)}"
         reference = f"{number}. " if len(configurations) > 1 else ""
@@ -101,6 +92,35 @@ def render(paths):
         )
         + "</small></p>"
     )
+    return "\n".join(lines)
+
+
+def render(paths):
+    groups = {}
+    for path in paths:
+        prefix, separator, suffix = path.stem.partition("-")
+        key = ("group", suffix) if separator and prefix and suffix else ("file", path)
+        groups.setdefault(key, []).append(path)
+    lines = [
+        '<!doctype html><html lang="en"><meta charset="utf-8">',
+        '<meta name="viewport" content="width=device-width, initial-scale=1">',
+        "<title>Benchmark comparison</title>",
+        (
+            "<style>body{font:16px system-ui;margin:2rem;color:#17202a}"
+            "table{border-collapse:collapse}th,td{border:1px solid #ccd1d1;padding:.6rem}"
+            "thead{background:#eef2f5}td{text-align:right}"
+            "small{display:block;font-weight:normal;color:#555}</style>"
+        ),
+        "<h1>Benchmark comparison</h1>",
+        (
+            "<p>Totals cover timed runs only. RTF = synthesis time / audio duration; "
+            "lower is better. Peak RAM includes loading and warmup, excluding GPU memory.</p>"
+        ),
+    ]
+    for (kind, name), reports in groups.items():
+        label = name if kind == "group" else name.stem
+        lines.append(f"<h2>{escape(label)}</h2>")
+        lines.append(render_group(reports))
     lines.append("</html>")
     return "\n".join(lines)
 
