@@ -4,7 +4,7 @@
 # faster_tts
 
 The goal is to provide a Python library for accessing all text-to-speech models
-supported by CTranslate2.
+supported by [CTranslate2](https://github.com/OpenNMT/CTranslate2).
 
 Text-to-speech with **Drama 3 on CPU and GPU**, powered by CTranslate2.
 Provides a Python library API and the `faster-tts` command-line interface (CLI).
@@ -48,7 +48,7 @@ Generate emotion, dialogue, and multilingual audio with the
 [sample scripts](https://github.com/jordimas/faster_tts/blob/main/samples/README.md), or narrate a UTF-8 article:
 
 ```bash
-python samples/article_voice.py article.txt --output article.wav
+python samples/article_voice.py samples/article_voice.txt --output article.wav
 ```
 
 The article sample selects the device automatically. Use `--device cpu` or
@@ -68,8 +68,8 @@ model = Model(device="cpu", compute_type="int8")
 ```
 
 The default `device="auto"` selects GPU when available, otherwise CPU.
-CUDA and ROCm both use `"cuda"` with a matching CT2 build. Compute types depend
-on the build; `"default"` lets CT2 choose. Inspect settings with `model.info()`.
+CUDA and ROCm both use `"cuda"` with a matching CTranslate2 build. Compute types depend
+on the build; `"default"` lets CTranslate2 choose. Inspect settings with `model.info()`.
 Set `CT2_DRAMA_GPU_WAVEFORM=0` to decode waveforms on CPU.
 
 The CLI accepts the same model and cache options. For local models, use explicit
@@ -97,7 +97,7 @@ When `device="auto"` selects CPU, large checkpoints can use expert memory mappin
 on Linux/macOS with `compute_type="default"` or `"float32"`. Override with
 `CT2_DRAMA3_CPU_MMAP=0` or `1`. Explicit `device="cpu"` leaves it off by default.
 Keep the checkpoint unchanged while loaded; mapping does not cap RAM usage.
-Both memory features require a supporting CT2 build.
+Both memory features require a supporting CTranslate2 build.
 
 ## Synthesis options and results
 
@@ -115,10 +115,6 @@ Audio is mixed to mono, resampled to 44100 Hz, and encoded once per call.
 References establish voices; `history` supplies previous narration. Set each
 reference's optional `speaker` (0–15) and matching `<|speaker:N|>` tags in target
 text for multiple speakers. A leading transcript speaker tag takes precedence.
-
-Requires a CTranslate2 build with `Drama3.encode_reference` and a checkpoint
-converted with encoder weights. Encoding runs on CPU; references count toward
-the context limit. Older decoder-only checkpoints must be reconverted.
 
 CLI: `--reference-audio reference.wav --reference-text "Recorded words"`.
 Repeat both flags for multiple references, optionally with one `--reference-speaker`
@@ -144,7 +140,7 @@ with status 1. `"eos"` does not guarantee complete speech.
 Enable INFO logging for `faster_tts.engines.drama3` for device and segment details.
 
 See the [API reference](https://github.com/jordimas/faster_tts/blob/main/docs/api.md), `python -m faster_tts --help`, and
-[CT2 Drama 3 guide](https://github.com/OpenNMT/CTranslate2/blob/master/docs/guides/drama3.md)
+[CTranslate2 Drama 3 guide](https://github.com/OpenNMT/CTranslate2/blob/master/docs/guides/drama3.md)
 for options and conversion instructions.
 
 ## Benchmark
@@ -163,49 +159,49 @@ Times in the CPU table are means. RTF is compute time divided by generated audio
 | Implementation | Precision | Time (s) | Audio duration (s) | RTF | Peak RAM (GiB RSS) | Status |
 | --- | --- | ---: | ---: | ---: | ---: | --- |
 | HF / PyTorch | bfloat16 | 300.9 | 2.8 | 106.2 | 44.5 | success |
-| CT2 | bfloat16 | — | — | — | — | unsupported (no matching precision) |
+| CTranslate2 | bfloat16 | — | — | — | — | unsupported (no matching precision) |
 | HF / PyTorch | float16 | 351.5 | 3.2 | 109.7 | 44.7 | success |
-| CT2 | float16 | — | — | — | — | unsupported (no matching precision) |
+| CTranslate2 | float16 | — | — | — | — | unsupported (no matching precision) |
 | HF / PyTorch | int8 | — | — | — | — | unsupported (no matching precision) |
-| CT2 | int8 | 18.4 | 2.4 | 7.6 | 44.7 | success |
+| CTranslate2 | int8 | 18.4 | 2.4 | 7.6 | 44.7 | success |
 | HF / PyTorch | int8_float32 | — | — | — | — | unsupported (no matching precision) |
-| CT2 | int8_float32 | 17.9 | 2.4 | 7.4 | 44.7 | success |
+| CTranslate2 | int8_float32 | 17.9 | 2.4 | 7.4 | 44.7 | success |
 | HF / PyTorch | float32 | 155.2 | 3.0 | 52.2 | 51.3 | success |
-| CT2 | float32 | 37.7 | 2.5 | 15.0 | 45.5 | success |
+| CTranslate2 | float32 | 37.7 | 2.5 | 15.0 | 45.5 | success |
 
 <!-- gpu-benchmarks-ci40090377176 -->
 #### GPU — NVIDIA Tesla T4 (15 GiB VRAM)
 
-CT2 4.8.4, 8 CPU threads, one warmup and three timed runs per successful configuration.
+CTranslate2 4.8.4, 8 CPU threads, one warmup and three timed runs per successful configuration.
 Same test text as above. Times are means; peak RAM is process RSS and excludes VRAM.
 Expert cache: auto (10.874 GB), except the successful float16 run (8 GB).
 
 | Implementation | Precision | Time (s) | Audio duration (s) | RTF | Peak RAM (GiB RSS) | Status |
 | --- | --- | ---: | ---: | ---: | ---: | --- |
-| CT2 | float16 | — | — | — | — | CUDA OOM during warmup |
-| CT2 | float32 | 34.5 | 2.5 | 13.8 | 34.5 | success |
-| CT2 | int8 | 27.3 | 4.3 | 6.3 | 36.6 | success |
-| CT2 | int8_float16 | 26.9 | 3.0 | 9.0 | 35.9 | success |
-| CT2 | int8_float32 | 27.2 | 4.3 | 6.3 | 36.6 | success |
-| CT2 | float16 | 37.9 | 3.7 | 10.3 | 36.0 | success |
+| CTranslate2 | float16 | — | — | — | — | CUDA OOM during warmup |
+| CTranslate2 | float32 | 34.5 | 2.5 | 13.8 | 34.5 | success |
+| CTranslate2 | int8 | 27.3 | 4.3 | 6.3 | 36.6 | success |
+| CTranslate2 | int8_float16 | 26.9 | 3.0 | 9.0 | 35.9 | success |
+| CTranslate2 | int8_float32 | 27.2 | 4.3 | 6.3 | 36.6 | success |
+| CTranslate2 | float16 | 37.9 | 3.7 | 10.3 | 36.0 | success |
 <!-- /gpu-benchmarks-ci40090377176 -->
 
 <!-- gpu-benchmarks-l4-ci40090377176 -->
 #### GPU — NVIDIA L4
 
-CT2 4.8.4, 8 CPU threads, a 12 GB expert cache, one warmup and one timed run per configuration.
+CTranslate2 4.8.4, 8 CPU threads, a 12 GB expert cache, one warmup and one timed run per configuration.
 Same test text as above. Loading and warmup are excluded; peak RAM is process RSS and excludes VRAM.
 Single runs do not measure timing variability.
 
 | Implementation | Precision | Time (s) | Audio duration (s) | RTF | Peak RAM (GiB RSS) | Status |
 | --- | --- | ---: | ---: | ---: | ---: | --- |
-| CT2 | bfloat16 | 26.5 | 2.8 | 9.5 | 35.5 | success |
-| CT2 | float16 | 27.6 | 3.1 | 8.9 | 35.6 | success |
-| CT2 | float32 | 29.4 | 2.5 | 11.7 | 34.6 | success |
-| CT2 | int8 | 22.1 | 4.3 | 5.1 | 36.6 | success |
-| CT2 | int8_bfloat16 | 21.4 | 2.8 | 7.6 | 35.1 | success |
-| CT2 | int8_float16 | 22.8 | 3.0 | 7.7 | 35.9 | success |
-| CT2 | int8_float32 | 22.1 | 4.3 | 5.1 | 36.7 | success |
+| CTranslate2 | bfloat16 | 26.5 | 2.8 | 9.5 | 35.5 | success |
+| CTranslate2 | float16 | 27.6 | 3.1 | 8.9 | 35.6 | success |
+| CTranslate2 | float32 | 29.4 | 2.5 | 11.7 | 34.6 | success |
+| CTranslate2 | int8 | 22.1 | 4.3 | 5.1 | 36.6 | success |
+| CTranslate2 | int8_bfloat16 | 21.4 | 2.8 | 7.6 | 35.1 | success |
+| CTranslate2 | int8_float16 | 22.8 | 3.0 | 7.7 | 35.9 | success |
+| CTranslate2 | int8_float32 | 22.1 | 4.3 | 5.1 | 36.7 | success |
 <!-- /gpu-benchmarks-l4-ci40090377176 -->
 
 Contact: Jordi Mas <jmas@softcatala.org>
