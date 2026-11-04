@@ -9,7 +9,7 @@ from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import Mock, patch
 
-from benchmark_common import benchmark_parser, measure
+from benchmark_common import TEXTS, benchmark_parser, measure, run_workloads, workloads
 from benchmark_results import Results
 
 WORKER = """
@@ -47,6 +47,61 @@ r.success([
 
 
 class ResultsTest(unittest.TestCase):
+    def test_workload_selection(self):
+        parser = benchmark_parser("test")
+        self.assertEqual(parser.parse_args([]).runs, 2)
+        self.assertEqual(
+            [name for name, _, _ in workloads(parser.parse_args([]))],
+            ["short", "medium"],
+        )
+        for name in TEXTS:
+            selected = workloads(parser.parse_args(["--workload", name]))
+            self.assertEqual(len(selected), 1)
+            self.assertEqual(selected[0][:2], (name, TEXTS[name]))
+        self.assertEqual(
+            workloads(parser.parse_args(["--text", "My custom input."])),
+            [("custom", "My custom input.", 24.0)],
+        )
+
+    def test_workloads_keep_separate_timings_and_shared_peak(self):
+        args = benchmark_parser("test").parse_args(["--runs", "2"])
+        args.model, args.device, args.compute_type = "test-model", "cpu", "float32"
+        observed = []
+
+        def synthesize():
+            observed.append((args.workload, args.text, args.max_duration_s))
+            return SimpleNamespace(size=200), 100, "eos"
+
+        with tempfile.TemporaryDirectory() as directory:
+            args.output_json = Path(directory) / "results.json"
+            results = Results(args, "ct2", "test")
+            results.start()
+            with (
+                patch(
+                    "benchmark_common.perf_counter",
+                    side_effect=[0, 1, 2, 3, 4, 7, 8, 11],
+                ),
+                patch("benchmark_common.peak_rss_gib", side_effect=[4, 6, 6]),
+            ):
+                run_workloads(results, synthesize, Mock())
+            report = json.loads(args.output_json.read_text())
+            entries = report["results"]
+        self.assertEqual(len(report["summary"]), 1)
+        summary = report["summary"][0]
+        self.assertEqual(summary["total_time_seconds"], 8)
+        self.assertEqual(summary["total_audio_seconds"], 8)
+        self.assertEqual(summary["rtf"], 1)
+        self.assertEqual(summary["peak_rss_gib"], 6)
+        self.assertEqual(summary["workloads"], ["short", "medium"])
+        self.assertEqual([e["workload"] for e in entries], ["short", "medium"])
+        self.assertEqual([e["summary"]["mean_time_seconds"] for e in entries], [1, 3])
+        self.assertEqual([e["summary"]["peak_rss_gib"] for e in entries], [6, 6])
+        self.assertEqual([e["max_duration_s"] for e in entries], [24, 90])
+        self.assertEqual(
+            [name for name, _, _ in observed], ["short"] * 3 + ["medium"] * 3
+        )
+        self.assertTrue(all(text == TEXTS[name] for name, text, _ in observed))
+
     def run_worker(self, *options):
         with tempfile.TemporaryDirectory() as directory:
             # Put the worker beside the reporting module via an explicit path.
@@ -66,6 +121,14 @@ class ResultsTest(unittest.TestCase):
 
     def test_nested_sweep_preserves_successes_and_failure(self):
         status, report = self.run_worker()
+        self.assertEqual(len(report["summary"]), 4)
+        for summary in report["summary"]:
+            failed = (
+                summary["device"] == "cuda" and summary["compute_type"] == "float32"
+            )
+            self.assertEqual(summary["status"], "incomplete" if failed else "success")
+            self.assertEqual(summary["total_time_seconds"], 0 if failed else 4)
+            self.assertEqual(summary["rtf"], None if failed else 1)
         self.assertEqual(status, 1)
         self.assertEqual(report["schema_version"], 1)
         entries = report["results"]
@@ -116,19 +179,23 @@ class ResultsTest(unittest.TestCase):
                 )
                 self.assertEqual(completed.returncode, 1, completed.stderr)
             paths = sorted(Path(directory).glob("*.json"))
-            self.assertEqual(len(paths), 4)
-            self.assertEqual(len(list(Path(directory).glob("*_01.json"))), 2)
-            self.assertTrue(any(p.name.startswith("test-gpu_hf_") for p in paths))
+            self.assertEqual(len(paths), 2)
+            self.assertEqual(len(list(Path(directory).glob("*_01.json"))), 1)
             for path in paths:
                 report = json.loads(path.read_text())
                 self.assertEqual(report["backend"], "hf")
-                self.assertIn("_hf_", path.name)
-                entries = report["results"]
-                self.assertEqual(len(entries), 2)
-                self.assertEqual(
-                    [e["compute_type"] for e in entries], ["float32", "int8"]
+                self.assertTrue(
+                    path.name.startswith(report["host"]["machine"] + "_hf_")
                 )
-                self.assertEqual(len({e["device"] for e in entries}), 1)
+                entries = report["results"]
+                self.assertEqual(len(entries), 4)
+                self.assertEqual(
+                    {entry["device"] for entry in entries}, {"cpu", "cuda"}
+                )
+                self.assertEqual(
+                    [e["compute_type"] for e in entries], ["float32", "int8"] * 2
+                )
+                self.assertEqual(len(report["summary"]), 4)
                 self.assertIn(report["created_at"][:10], path.name)
 
     def test_logging_overwrites_and_captures_worker_errors(self):

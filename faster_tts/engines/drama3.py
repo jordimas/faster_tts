@@ -111,7 +111,11 @@ class Drama3Model(BaseModel):
             )
         with (
             expert_cache_budget(
-                gpu_expert_cache_gb, resolved_device, device_index, num_workers
+                gpu_expert_cache_gb,
+                resolved_device,
+                device_index,
+                num_workers,
+                compute_type=compute_type,
             ) as cache_gb,
             auto_cpu_mmap(
                 directory, device == "auto" and resolved_device == "cpu", compute_type

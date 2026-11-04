@@ -15,6 +15,11 @@ LOADER_LOCK = RLock()
 CPU_MMAP_ENV = "CT2_DRAMA3_CPU_MMAP"
 
 
+def _expert_memory_budget(free_bytes, fraction=0.7):
+    """Reserve at least 2 decimal GB and the non-cache fraction."""
+    return min(free_bytes * fraction, free_bytes - 2e9)
+
+
 def available_cpu_memory():
     """Return available RAM in bytes, or None when it cannot be queried."""
     if sys.platform == "linux":
@@ -45,10 +50,9 @@ def auto_cpu_mmap(directory, enabled, compute_type):
                 and CPU_MMAP_ENV not in os.environ
             ):
                 available = available_cpu_memory()
-                # Leave at least 2 GB and 30% for runtime state and other users.
                 if available is not None and (
                     directory / "model.bin"
-                ).stat().st_size > min(available * 0.7, available - 2e9):
+                ).stat().st_size > _expert_memory_budget(available):
                     os.environ[CPU_MMAP_ENV] = "1"
                     changed = True
             yield
@@ -108,7 +112,9 @@ def free_gpu_memory(device_index):
 
 
 @contextmanager
-def expert_cache_budget(value, device, device_index, num_workers):
+def expert_cache_budget(
+    value, device, device_index, num_workers, compute_type="default"
+):
     """Serialize wrapper loads and restore the caller's environment even on failure.
 
     Explicit/automatic budgets cover all workers. Inherited CT2 budgets retain
@@ -125,8 +131,11 @@ def expert_cache_budget(value, device, device_index, num_workers):
                 value = 0
             elif value == "auto":
                 free = free_gpu_memory(device_index)
-                # Reserve at least 2 decimal GB and 30% for non-expert allocations.
-                value = min(free * 0.7, free - 2e9) / 1e9
+                # FP16/BF16 expand FP8 experts and need more room for conversion
+                # buffers and allocator overhead; 50% is a conservative heuristic.
+                # Keep 70% for other types, reserving 30% for non-expert memory.
+                fraction = 0.5 if compute_type in ("float16", "bfloat16") else 0.7
+                value = _expert_memory_budget(free, fraction) / 1e9
                 if value <= 0:
                     raise RuntimeError(
                         "Insufficient free GPU memory for automatic expert caching; "

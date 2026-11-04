@@ -411,9 +411,19 @@ class Drama3PythonAPITest(unittest.TestCase):
         self.assertEqual(model.info()["gpu_expert_cache_gb_per_worker"], 6)
 
     def test_auto_cache_budget_reserves_headroom(self):
-        for free, expected in ((20e9, 14), (5e9, 3)):
+        for compute, free, expected in (
+            ("default", 20e9, 14),
+            ("float32", 20e9, 14),
+            ("int8", 20e9, 14),
+            ("int8_float16", 20e9, 14),
+            ("int8_bfloat16", 20e9, 14),
+            ("float16", 20e9, 10),
+            ("bfloat16", 20e9, 10),
+            ("default", 5e9, 3),
+            ("float16", 3e9, 1),
+        ):
             with (
-                self.subTest(free=free),
+                self.subTest(compute=compute, free=free),
                 patch("faster_tts.memory.free_gpu_memory", return_value=free) as query,
             ):
                 model = Model(
@@ -421,6 +431,7 @@ class Drama3PythonAPITest(unittest.TestCase):
                     device="cuda",
                     device_index=2,
                     num_workers=2,
+                    compute_type=compute,
                     engine_options={"gpu_expert_cache_gb": "auto"},
                 )
                 query.assert_called_once_with(2)

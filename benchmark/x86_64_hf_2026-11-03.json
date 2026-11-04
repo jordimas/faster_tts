@@ -1,0 +1,347 @@
+{
+  "schema_version": 1,
+  "backend": "hf",
+  "backend_version": "2.15.0+cu132",
+  "created_at": "2026-11-03T20:10:30.407875+00:00",
+  "host": {
+    "platform": "Linux-7.0.0-38-generic-x86_64-with-glibc2.43",
+    "machine": "x86_64",
+    "processor": "AMD RYZEN AI MAX+ PRO 395 w/ Radeon 8060S",
+    "logical_cpu_count": 32,
+    "system_ram_bytes": 131874369536,
+    "system_ram_gib": 122.81757736206055,
+    "python_version": "3.14.0"
+  },
+  "memory_metric": "peak_process_rss_including_load_and_warmup_excluding_gpu",
+  "results": [
+    {
+      "model": "fishaudio/drama-3",
+      "source": "/home/jordi/sc/audio/vendor/fish-speech",
+      "device": "cpu",
+      "device_index": 0,
+      "hardware": {
+        "cpu": {
+          "processor": "AMD RYZEN AI MAX+ PRO 395 w/ Radeon 8060S",
+          "logical_cpu_count": 32,
+          "system_ram_bytes": 131874369536,
+          "system_ram_gib": 122.81757736206055
+        },
+        "gpu": null
+      },
+      "compute_type": "bfloat16",
+      "memory_profile": "default",
+      "gpu_expert_cache_gb": null,
+      "threads": 8,
+      "text": "Hello! Welcome to our application.",
+      "workload": "short",
+      "max_duration_s": 24.0,
+      "requested_runs": 2,
+      "warmup_runs": 1,
+      "status": "success",
+      "runs": [
+        {
+          "time_seconds": 140.88499701500405,
+          "audio_seconds": 3.947392290249433,
+          "rtf": 35.69065009398942,
+          "finish_reason": "eos"
+        },
+        {
+          "time_seconds": 141.75598177099891,
+          "audio_seconds": 3.947392290249433,
+          "rtf": 35.91129823127902,
+          "finish_reason": "eos"
+        }
+      ],
+      "summary": {
+        "mean_time_seconds": 141.32048939300148,
+        "std_time_seconds": 0.615879227274082,
+        "mean_audio_seconds": 3.947392290249433,
+        "rtf": 35.80097416263422,
+        "peak_rss_gib": 45.713958740234375
+      }
+    },
+    {
+      "model": "fishaudio/drama-3",
+      "source": "/home/jordi/sc/audio/vendor/fish-speech",
+      "device": "cpu",
+      "device_index": 0,
+      "hardware": {
+        "cpu": {
+          "processor": "AMD RYZEN AI MAX+ PRO 395 w/ Radeon 8060S",
+          "logical_cpu_count": 32,
+          "system_ram_bytes": 131874369536,
+          "system_ram_gib": 122.81757736206055
+        },
+        "gpu": null
+      },
+      "compute_type": "bfloat16",
+      "memory_profile": "default",
+      "gpu_expert_cache_gb": null,
+      "threads": 8,
+      "text": "The town library opened its doors early on Saturday morning. Outside, a gentle rain fell on the quiet streets, while inside, volunteers arranged books and prepared a reading corner for children. Maya arrived with her younger brother and chose a story about a journey across the mountains. They settled into a comfortable chair near the open window and began to read together. By the time the sun appeared, they had discovered a new favorite book and made plans to return.",
+      "workload": "medium",
+      "max_duration_s": 90.0,
+      "requested_runs": 2,
+      "warmup_runs": 1,
+      "status": "success",
+      "runs": [
+        {
+          "time_seconds": 1263.6921917349973,
+          "audio_seconds": 34.690612244897956,
+          "rtf": 36.42749752624651,
+          "finish_reason": "eos"
+        },
+        {
+          "time_seconds": 1269.207155674012,
+          "audio_seconds": 34.690612244897956,
+          "rtf": 36.58647321396519,
+          "finish_reason": "eos"
+        }
+      ],
+      "summary": {
+        "mean_time_seconds": 1266.4496737045047,
+        "std_time_seconds": 3.899668399276572,
+        "mean_audio_seconds": 34.690612244897956,
+        "rtf": 36.50698537010585,
+        "peak_rss_gib": 45.713958740234375
+      }
+    },
+    {
+      "model": "fishaudio/drama-3",
+      "source": "/home/jordi/sc/audio/vendor/fish-speech",
+      "device": "cpu",
+      "device_index": 0,
+      "hardware": {
+        "cpu": {
+          "processor": "AMD RYZEN AI MAX+ PRO 395 w/ Radeon 8060S",
+          "logical_cpu_count": 32,
+          "system_ram_bytes": 131874369536,
+          "system_ram_gib": 122.81757736206055
+        },
+        "gpu": null
+      },
+      "compute_type": "float16",
+      "memory_profile": "default",
+      "gpu_expert_cache_gb": null,
+      "threads": 8,
+      "text": "Hello! Welcome to our application.",
+      "workload": "short",
+      "max_duration_s": 24.0,
+      "requested_runs": 2,
+      "warmup_runs": 1,
+      "status": "success",
+      "runs": [
+        {
+          "time_seconds": 193.2707723150088,
+          "audio_seconds": 3.7616326530612243,
+          "rtf": 51.37949133808285,
+          "finish_reason": "eos"
+        },
+        {
+          "time_seconds": 194.6679874590045,
+          "audio_seconds": 3.7616326530612243,
+          "rtf": 51.75092982579873,
+          "finish_reason": "eos"
+        }
+      ],
+      "summary": {
+        "mean_time_seconds": 193.96937988700665,
+        "std_time_seconds": 0.9879803030959041,
+        "mean_audio_seconds": 3.7616326530612243,
+        "rtf": 51.56521058194079,
+        "peak_rss_gib": 44.60484313964844
+      }
+    },
+    {
+      "model": "fishaudio/drama-3",
+      "source": "/home/jordi/sc/audio/vendor/fish-speech",
+      "device": "cpu",
+      "device_index": 0,
+      "hardware": {
+        "cpu": {
+          "processor": "AMD RYZEN AI MAX+ PRO 395 w/ Radeon 8060S",
+          "logical_cpu_count": 32,
+          "system_ram_bytes": 131874369536,
+          "system_ram_gib": 122.81757736206055
+        },
+        "gpu": null
+      },
+      "compute_type": "float16",
+      "memory_profile": "default",
+      "gpu_expert_cache_gb": null,
+      "threads": 8,
+      "text": "The town library opened its doors early on Saturday morning. Outside, a gentle rain fell on the quiet streets, while inside, volunteers arranged books and prepared a reading corner for children. Maya arrived with her younger brother and chose a story about a journey across the mountains. They settled into a comfortable chair near the open window and began to read together. By the time the sun appeared, they had discovered a new favorite book and made plans to return.",
+      "workload": "medium",
+      "max_duration_s": 90.0,
+      "requested_runs": 2,
+      "warmup_runs": 1,
+      "status": "success",
+      "runs": [
+        {
+          "time_seconds": 2277.3121362149977,
+          "audio_seconds": 38.22004535147392,
+          "rtf": 59.58423427478155,
+          "finish_reason": "eos"
+        },
+        {
+          "time_seconds": 2263.0846622659883,
+          "audio_seconds": 38.22004535147392,
+          "rtf": 59.211982650845144,
+          "finish_reason": "eos"
+        }
+      ],
+      "summary": {
+        "mean_time_seconds": 2270.198399240493,
+        "std_time_seconds": 10.06034330849952,
+        "mean_audio_seconds": 38.22004535147392,
+        "rtf": 59.39810846281335,
+        "peak_rss_gib": 44.60484313964844
+      }
+    },
+    {
+      "model": "fishaudio/drama-3",
+      "source": "/home/jordi/sc/audio/vendor/fish-speech",
+      "device": "cpu",
+      "device_index": 0,
+      "hardware": {
+        "cpu": {
+          "processor": "AMD RYZEN AI MAX+ PRO 395 w/ Radeon 8060S",
+          "logical_cpu_count": 32,
+          "system_ram_bytes": 131874369536,
+          "system_ram_gib": 122.81757736206055
+        },
+        "gpu": null
+      },
+      "compute_type": "float32",
+      "memory_profile": "default",
+      "gpu_expert_cache_gb": null,
+      "threads": 8,
+      "text": "Hello! Welcome to our application.",
+      "workload": "short",
+      "max_duration_s": 24.0,
+      "requested_runs": 2,
+      "warmup_runs": 1,
+      "status": "success",
+      "runs": [
+        {
+          "time_seconds": 127.81449203800003,
+          "audio_seconds": 3.297233560090703,
+          "rtf": 38.76416083623873,
+          "finish_reason": "eos"
+        },
+        {
+          "time_seconds": 127.36674633999064,
+          "audio_seconds": 3.297233560090703,
+          "rtf": 38.62836648323054,
+          "finish_reason": "eos"
+        }
+      ],
+      "summary": {
+        "mean_time_seconds": 127.59061918899533,
+        "std_time_seconds": 0.31660401930954,
+        "mean_audio_seconds": 3.297233560090703,
+        "rtf": 38.69626365973464,
+        "peak_rss_gib": 51.475887298583984
+      }
+    },
+    {
+      "model": "fishaudio/drama-3",
+      "source": "/home/jordi/sc/audio/vendor/fish-speech",
+      "device": "cpu",
+      "device_index": 0,
+      "hardware": {
+        "cpu": {
+          "processor": "AMD RYZEN AI MAX+ PRO 395 w/ Radeon 8060S",
+          "logical_cpu_count": 32,
+          "system_ram_bytes": 131874369536,
+          "system_ram_gib": 122.81757736206055
+        },
+        "gpu": null
+      },
+      "compute_type": "float32",
+      "memory_profile": "default",
+      "gpu_expert_cache_gb": null,
+      "threads": 8,
+      "text": "The town library opened its doors early on Saturday morning. Outside, a gentle rain fell on the quiet streets, while inside, volunteers arranged books and prepared a reading corner for children. Maya arrived with her younger brother and chose a story about a journey across the mountains. They settled into a comfortable chair near the open window and began to read together. By the time the sun appeared, they had discovered a new favorite book and made plans to return.",
+      "workload": "medium",
+      "max_duration_s": 90.0,
+      "requested_runs": 2,
+      "warmup_runs": 1,
+      "status": "success",
+      "runs": [
+        {
+          "time_seconds": 1616.9200659709895,
+          "audio_seconds": 37.94140589569161,
+          "rtf": 42.616240168227314,
+          "finish_reason": "eos"
+        },
+        {
+          "time_seconds": 1637.7457595279993,
+          "audio_seconds": 37.94140589569161,
+          "rtf": 43.16513109794837,
+          "finish_reason": "eos"
+        }
+      ],
+      "summary": {
+        "mean_time_seconds": 1627.3329127494944,
+        "std_time_seconds": 14.72598913707462,
+        "mean_audio_seconds": 37.94140589569161,
+        "rtf": 42.89068563308784,
+        "peak_rss_gib": 51.475887298583984
+      }
+    }
+  ],
+  "summary": [
+    {
+      "device": "cpu",
+      "device_index": 0,
+      "compute_type": "bfloat16",
+      "memory_profile": "default",
+      "model": "fishaudio/drama-3",
+      "threads": 8,
+      "workloads": [
+        "short",
+        "medium"
+      ],
+      "status": "success",
+      "total_time_seconds": 2815.5403261950123,
+      "total_audio_seconds": 77.27600907029478,
+      "rtf": 36.434856821265605,
+      "peak_rss_gib": 45.713958740234375
+    },
+    {
+      "device": "cpu",
+      "device_index": 0,
+      "compute_type": "float16",
+      "memory_profile": "default",
+      "model": "fishaudio/drama-3",
+      "threads": 8,
+      "workloads": [
+        "short",
+        "medium"
+      ],
+      "status": "success",
+      "total_time_seconds": 4928.335558254999,
+      "total_audio_seconds": 83.9633560090703,
+      "rtf": 58.69626694915109,
+      "peak_rss_gib": 44.60484313964844
+    },
+    {
+      "device": "cpu",
+      "device_index": 0,
+      "compute_type": "float32",
+      "memory_profile": "default",
+      "model": "fishaudio/drama-3",
+      "threads": 8,
+      "workloads": [
+        "short",
+        "medium"
+      ],
+      "status": "success",
+      "total_time_seconds": 3509.8470638769795,
+      "total_audio_seconds": 82.47727891156462,
+      "rtf": 42.55532081314631,
+      "peak_rss_gib": 51.475887298583984
+    }
+  ]
+}

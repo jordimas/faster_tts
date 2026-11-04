@@ -5,7 +5,6 @@ import ctypes
 import json
 import os
 import platform
-import re
 import subprocess
 import sys
 import tempfile
@@ -89,7 +88,6 @@ class Results:
         self.args = args
         self.path = args.output_json
         self.gpu_hardware = None
-        self.default_paths = {}
         self.document = {
             "schema_version": 1,
             "backend": backend,
@@ -135,40 +133,81 @@ class Results:
             ),
             "threads": args.threads,
             "text": args.text,
+            "workload": getattr(args, "workload", "custom"),
+            "max_duration_s": getattr(args, "max_duration_s", 24.0),
             "requested_runs": args.runs,
             "warmup_runs": 1,
         }
 
     def save(self):
-        if self.path is not None:
-            self.write(Path(self.path), self.document)
-            return
-        groups = {}
-        for entry in self.document["results"]:
-            hardware = entry["hardware"]
-            name = (
-                (hardware["gpu"] or {}).get("name")
-                if entry["device"] == "cuda"
-                else hardware["cpu"]["processor"]
-            )
-            name = name or f"{entry['device']}-{entry['device_index']}"
-            slug = re.sub(r"[^a-z0-9]+", "-", name.lower()).strip("-")
-            groups.setdefault(slug, []).append(entry)
-        for slug, entries in groups.items():
-            if slug not in self.default_paths:
-                date = self.document["created_at"][:10]
-                stem = f"{slug}_{self.document['backend']}_{date}"
-                path = Path(f"{stem}.json")
-                suffix = 1
-                while path.exists():
-                    path = Path(f"{stem}_{suffix:02d}.json")
-                    suffix += 1
-                self.default_paths[slug] = path
-                print(f"JSON report: {path}", flush=True)
-            self.write(self.default_paths[slug], {**self.document, "results": entries})
+        if self.path is None:
+            slug = self.document["host"]["machine"] or "unknown"
+            date = self.document["created_at"][:10]
+            stem = f"{slug}_{self.document['backend']}_{date}"
+            self.path = Path(f"{stem}.json")
+            suffix = 1
+            while self.path.exists():
+                self.path = Path(f"{stem}_{suffix:02d}.json")
+                suffix += 1
+            print(f"JSON report: {self.path}", flush=True)
+        self.write(Path(self.path), self.document)
 
     @staticmethod
     def write(path, document):
+        groups = {}
+        for entry in document["results"]:
+            key = tuple(
+                entry[field]
+                for field in (
+                    "device",
+                    "device_index",
+                    "compute_type",
+                    "memory_profile",
+                    "model",
+                    "threads",
+                )
+            )
+            groups.setdefault(key, []).append(entry)
+        summaries = []
+        for entries in groups.values():
+            first = entries[0]
+            runs = [
+                run
+                for entry in entries
+                if entry["status"] == "success"
+                for run in entry.get("runs", [])
+            ]
+            elapsed = sum(run["time_seconds"] for run in runs)
+            duration = sum(run["audio_seconds"] for run in runs)
+            peaks = [
+                entry["summary"]["peak_rss_gib"]
+                for entry in entries
+                if "summary" in entry
+            ]
+            summaries.append(
+                {
+                    **{
+                        field: first[field]
+                        for field in (
+                            "device",
+                            "device_index",
+                            "compute_type",
+                            "memory_profile",
+                            "model",
+                            "threads",
+                        )
+                    },
+                    "workloads": [entry.get("workload", "custom") for entry in entries],
+                    "status": "success"
+                    if all(entry["status"] == "success" for entry in entries)
+                    else "incomplete",
+                    "total_time_seconds": elapsed,
+                    "total_audio_seconds": duration,
+                    "rtf": elapsed / duration if duration else None,
+                    "peak_rss_gib": max(peaks) if peaks else None,
+                }
+            )
+        document = {**document, "summary": summaries}
         path.parent.mkdir(parents=True, exist_ok=True)
         # Replace atomically so interrupted sweeps leave a readable report.
         with tempfile.NamedTemporaryFile(
@@ -187,9 +226,13 @@ class Results:
             temporary.unlink(missing_ok=True)
 
     def record(self, status, **fields):
+        entry = {**self.configuration(), "status": status, **fields}
         self.document["results"] = [
-            {**self.configuration(), "status": status, **fields}
+            previous
+            for previous in self.document["results"]
+            if previous.get("workload") != entry["workload"]
         ]
+        self.document["results"].append(entry)
         self.save()
 
     def start(self):
