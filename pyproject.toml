@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "faster-tts"
-version = "0.0.1"
+version = "0.0.2"
 description = "Text-to-speech library on CPU and GPU using CTranslate2"
 authors = [{ name = "Jordi Mas", email = "jmas@softcatala.org" }]
 readme = "README.md"
