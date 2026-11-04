@@ -2,19 +2,28 @@
 
 import argparse
 import json
+import re
 from html import escape
 from pathlib import Path
 
 
+def report_identity(path):
+    hf = re.fullmatch(r"(.+)_hf_\d{4}-\d{2}-\d{2}(?:_\d+)?", path.stem)
+    if hf:
+        return "hf", ("group", hf[1] + "_ct2")
+    stem = re.sub(r"_\d{4}-\d{2}-\d{2}(?=_\d+$|$)", "", path.stem)
+    prefix, separator, suffix = stem.partition("-")
+    key = ("group", suffix) if separator and prefix and suffix else ("file", path)
+    return prefix, key
+
+
 def render_group(paths):
-    versions, rows, backends = [], {}, {}
+    rows, backends = {}, {}
     for path in paths:
         document = json.loads(path.read_text(encoding="utf-8"))
         if document.get("schema_version") != 1 or "summary" not in document:
             raise ValueError(f"{path}: expected a version 1 report with a summary")
-        version = path.stem.split("-", 1)[0]
-        if version not in versions:
-            versions.append(version)
+        version, _ = report_identity(path)
         backends[version] = document["backend"]
         for summary in document["summary"]:
             device = summary["device"]
@@ -43,6 +52,7 @@ def render_group(paths):
             if version in measurements:
                 raise ValueError(f"{path}: duplicate {version} measurement for {key}")
             measurements[version] = (summary, path.name)
+    versions = sorted(backends, key=lambda version: version != "hf")
     lines = [
         '<table><thead><tr><th rowspan="2">Device</th><th rowspan="2">Compute type</th>',
         *[f'<th colspan="3">{escape(version)}</th>' for version in versions],
@@ -68,12 +78,13 @@ def render_group(paths):
                 lines.append('<td colspan="3">—</td>')
                 continue
             summary, filename = measurements[version]
+            title = escape(filename)
             for field in ("total_time_seconds", "rtf", "peak_rss_gib"):
                 value = summary.get(field)
                 label = "—" if value is None else f"{value:.3f}"
                 if summary["status"] != "success":
                     label += " (incomplete)"
-                lines.append(f'<td title="{escape(filename, quote=True)}">{label}</td>')
+                lines.append(f'<td title="{title}">{label}</td>')
         lines.append("</tr>")
     lines.append("</tbody></table>")
     lines.append(
@@ -98,8 +109,7 @@ def render_group(paths):
 def render(paths):
     groups = {}
     for path in paths:
-        prefix, separator, suffix = path.stem.partition("-")
-        key = ("group", suffix) if separator and prefix and suffix else ("file", path)
+        _, key = report_identity(path)
         groups.setdefault(key, []).append(path)
     lines = [
         '<!doctype html><html lang="en"><meta charset="utf-8">',
@@ -142,8 +152,7 @@ def main():
     if not paths:
         parser.error("no JSON reports found; pass report paths explicitly")
     try:
-        html = render(paths)
-        args.output.write_text(html, encoding="utf-8")
+        args.output.write_text(render(paths), encoding="utf-8")
     except (OSError, ValueError, KeyError, TypeError) as error:
         parser.error(str(error))
 

@@ -84,7 +84,7 @@ class HtmlTest(unittest.TestCase):
                 Path(directory) / name
                 for name in (
                     "484-x86_64_ct2_2026-10-30.json",
-                    "485-x86_64_ct2_2026-10-30.json",
+                    "485-x86_64_ct2_2026-11-04.json",
                     "484-other.json",
                     "standalone.json",
                 )
@@ -93,7 +93,7 @@ class HtmlTest(unittest.TestCase):
                 path.write_text(json.dumps(report()))
             html = render(paths)
         self.assertEqual(html.count("<table>"), 3)
-        self.assertEqual(html.count("<h2>x86_64_ct2_2026-10-30</h2>"), 1)
+        self.assertEqual(html.count("<h2>x86_64_ct2</h2>"), 1)
         first, other, standalone = html.split("<h2>")[1:]
         self.assertIn('<th colspan="3">484</th>', first)
         self.assertIn('<th colspan="3">485</th>', first)
@@ -102,11 +102,36 @@ class HtmlTest(unittest.TestCase):
         self.assertIn("standalone</h2>", standalone)
         self.assertIn(
             "JSON files: 484-x86_64_ct2_2026-10-30.json, "
-            "485-x86_64_ct2_2026-10-30.json",
+            "485-x86_64_ct2_2026-11-04.json",
             first,
         )
         self.assertIn("JSON files: 484-other.json", other)
         self.assertIn("JSON files: standalone.json", standalone)
+
+    def test_unversioned_hf_joins_ct2_across_dates(self):
+        with tempfile.TemporaryDirectory() as directory:
+            paths = [
+                Path(directory) / name
+                for name in (
+                    "485-x86_64_ct2_2026-10-30.json",
+                    "x86_64_hf_2026-11-03_01.json",
+                )
+            ]
+            paths[0].write_text(json.dumps(report()))
+            document = report(time=20)
+            document["backend"] = "hf"
+            paths[1].write_text(json.dumps(document))
+            html = render(paths)
+        self.assertEqual(html.count("<table>"), 1)
+        self.assertEqual(html.count("<tr><th>cpu:0"), 1)
+        self.assertIn('<th colspan="3">hf</th>', html)
+        self.assertLess(
+            html.index('<th colspan="3">hf</th>'),
+            html.index('<th colspan="3">485</th>'),
+        )
+        self.assertIn("485: ct2; hf: hf", html)
+        for path in paths:
+            self.assertIn(path.name, html)
 
     def test_incomplete_and_duplicate_measurements(self):
         with tempfile.TemporaryDirectory() as directory:

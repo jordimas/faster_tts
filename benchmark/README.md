@@ -76,7 +76,10 @@ python benchmark/json_to_html.py benchmark/v1-*.json benchmark/v2-*.json -o benc
 
 Column headers use the filename prefix before the first `-` (for example,
 `v2-cpu.json` becomes `v2`). Reports named `XX-YYY.json` share a table only
-when `YYY` matches exactly. Files without that pattern get their own table.
+when `YYY` matches after ignoring the `_YYYY-MM-DD` date. Repeat suffixes such
+as `_01` remain distinct. Files without that pattern get their own table.
+HF reports named `<hardware>_hf_<date>[_01].json` use an `hf` column in the
+matching `<hardware>_ct2` table, without requiring a version prefix.
 Rows identify hardware/device and compute type;
 each version shows total synthesis seconds, RTF, and peak host RAM from the
 JSON summary. Backends can share rows; model names use the final path component
